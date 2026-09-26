@@ -53,51 +53,42 @@ async function saveQuestion(){
 function normalizeText(s){
  return String(s||"").replace(/\u00a0/g," ").replace(/[ \t]+/g," ").trim();
 }
-function extractDocxLines(html){
- const doc=new DOMParser().parseFromString(html,"text/html");
- const blocks=[...doc.querySelectorAll("p,li,h1,h2,h3,h4,h5,h6,td,th")];
- let lines=blocks.map(x=>normalizeText(x.textContent)).filter(Boolean);
- if(!lines.length) lines=normalizeText(doc.body.textContent).split(/\r?\n/).map(normalizeText).filter(Boolean);
+async function extractDocxLines(buffer){
+ if(!window.JSZip) throw new Error("Word reader library could not be loaded. Please refresh the Host Panel and try again.");
+ const zip=await window.JSZip.loadAsync(buffer);
+ const entry=zip.file("word/document.xml");
+ if(!entry) throw new Error("This is not a valid .docx Word document.");
+ const xml=await entry.async("string");
+ const doc=new DOMParser().parseFromString(xml,"application/xml");
+ if(doc.querySelector("parsererror")) throw new Error("The Word document could not be read.");
+ const paragraphs=[...doc.getElementsByTagName("w:p")];
+ const lines=paragraphs.map(p=>[...p.getElementsByTagName("w:t")].map(t=>t.textContent||"").join("").replace(/\u00a0/g," ").replace(/[ \t]+/g," ").trim()).filter(Boolean);
  return lines;
 }
 function parseWordQuestions(lines){
- const questions={};
+ const questions={}, answers={};
  let current=null, inAnswerKey=false;
- const answers={};
-
  for(const raw of lines){
    const line=normalizeText(raw);
    if(!line) continue;
-   if(/^(answer\s*key|उत्तरमाला|answers?|उत्तर)$/i.test(line)){
+   if(/^(उत्तरमाला|answer\s*key)(?:\s*\(.*\))?$/i.test(line)){
      inAnswerKey=true; current=null; continue;
    }
-
-   let m=line.match(/^(\d+)\s*[\.\)]\s*(.+)$/);
-   if(m && !inAnswerKey){
-     const no=Number(m[1]);
-     current={number:no,text:normalizeText(m[2]),options:{A:"",B:"",C:"",D:""}};
-     questions[no]=current;
-     continue;
-   }
-
-   m=line.match(/^([ABCD])\s*[\.\)]\s*(.+)$/i);
-   if(m && !inAnswerKey && current){
-     current.options[m[1].toUpperCase()]=normalizeText(m[2]);
-     continue;
-   }
-
-   if(inAnswerKey){
-     const pairMatches=[...line.matchAll(/(\d+)\s*[\.\:\-]?\s*([ABCD])\b/gi)];
-     if(pairMatches.length){
-       pairMatches.forEach(x=>answers[Number(x[1])]=x[2].toUpperCase());
-       continue;
+   if(!inAnswerKey){
+     let m=line.match(/^(\d+)\s*[\.\)]\s*(.+)$/);
+     if(m){
+       const no=Number(m[1]);
+       current={number:no,text:normalizeText(m[2]),options:{A:"",B:"",C:"",D:""}};
+       questions[no]=current; continue;
      }
-     const compact=[...line.matchAll(/(\d+)\s*([ABCD])\b/gi)];
-     compact.forEach(x=>answers[Number(x[1])]=x[2].toUpperCase());
+     m=line.match(/^([ABCD])\s*[\.\)]\s*(.+)$/i);
+     if(m && current){ current.options[m[1].toUpperCase()]=normalizeText(m[2]); continue; }
+   } else {
+     const pairs=[...line.matchAll(/(?:^|\s)(\d+)\s*[\.\:\-]?\s*([ABCD])(?=\s|$)/gi)];
+     pairs.forEach(x=>answers[Number(x[1])]=x[2].toUpperCase());
    }
  }
-
- const result=Object.values(questions).sort((a,b)=>a.number-b.number).filter(q=>q.text && q.options.A && q.options.B && q.options.C && q.options.D);
+ const result=Object.values(questions).sort((a,b)=>a.number-b.number).filter(q=>q.text&&q.options.A&&q.options.B&&q.options.C&&q.options.D);
  result.forEach(q=>q.correct=answers[q.number]||"");
  return result;
 }
@@ -105,14 +96,13 @@ async function importWordQuestions(){
  if(!room)return alert("Create or resume a quiz room first.");
  const file=$("wordFileInput").files?.[0];
  if(!file)return alert("Please choose a .docx Word document first.");
- if(!window.mammoth)return alert("Word document reader could not be loaded. Please refresh the Host Panel and try again.");
+ if(!window.JSZip)return alert("Word document reader could not be loaded. Please refresh the Host Panel and try again.");
 
  const msgEl=$("wordImportMsg");
  msgEl.textContent="Reading Word document…";
  try{
    const buffer=await file.arrayBuffer();
-   const converted=await window.mammoth.convertToHtml({arrayBuffer:buffer});
-   const lines=extractDocxLines(converted.value);
+   const lines=await extractDocxLines(buffer);
    const parsed=parseWordQuestions(lines);
 
    if(!parsed.length) throw new Error("No complete MCQs were found. Use the numbered-question / A–D / Answer Key format.");
@@ -241,4 +231,5 @@ $("signupBtn").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
 $("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;$("importWordBtn").onclick=importWordQuestions;
+$("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"No Word document selected.";});
 onAuthStateChanged(auth,async user=>{uid=user?.uid||null;$("authStatus").textContent=user?"Host signed in":"Not signed in";$("loginCard").classList.toggle("hidden",!!user);$("hostApp").classList.toggle("hidden",!user);if(user){await loadExistingRooms();const last=localStorage.getItem("liveQuizLastRoom");if(last) {const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}}});

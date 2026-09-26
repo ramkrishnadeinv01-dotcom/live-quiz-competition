@@ -42,6 +42,6 @@ The importer does NOT read or create prize amounts from the Word document.
 
 The Host Panel loads:
 - SheetJS for Excel export
-- Mammoth.js in the browser for reading `.docx` files
+- JSZip in the browser for reading the `.docx` ZIP/XML structure
 
 Both are loaded from public CDNs when the Host Panel is opened.
