@@ -31,7 +31,7 @@ Create a host account or sign in.
 Create a room, save all questions, then use:
 SHOW QUESTION → CLOSE ANSWERS → SHOW ANSWER & WINNER → NEXT QUESTION.
 
-### 4. Students
+### 4. Participants
 Give students the URL:
 `student.html`
 and the room code. They enter their **Name, Designation, Place of Posting and Mobile Number**. No OTP is sent. The same normalized mobile number can participate only once in a quiz room.
@@ -55,3 +55,20 @@ Upload all files to a repository. Settings → Pages → Deploy from branch → 
 for the host and:
 `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/student.html`
 for students.
+
+
+## Host-controlled timer
+
+When creating a new quiz room, the Host can set **Time per Question (seconds)**. The default is 30 seconds. Before the first question is shown, the Host can also change the timer in the room settings and click **Update Timer**.
+
+When the Host clicks **SHOW QUESTION**, the timer starts. Participants see a countdown. When the time expires, the Host panel automatically closes the question and late submissions are rejected.
+
+
+The Host Panel now displays the configured timer prominently and changes it to the live countdown when a question is shown.
+
+
+The Host Panel separates two groups:
+- **Blocked Winners** — legitimate prize winners who are blocked from all remaining questions and are not treated as disqualified.
+- **Disqualified Participants** — participants blocked because of anti-cheating violations. The Host can use **UNBLOCK** when necessary; the previous violation history is retained.
+
+Excel export creates separate sheets for **Prize Winners**, **All Participants**, **Answer Log**, **Question Results**, **Blocked Winners**, and **Disqualified Participants**.

@@ -5,6 +5,7 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),db=getDatabase(app);
 const $=id=>document.getElementById(id);
 let room="",studentKey="",selected="",questionNo=0,openedAt=0,answered=false,timer,violationCount=0,lastViolationAt=0;
+let questionTimerSeconds=30;
 const opts=["A","B","C","D"];
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
@@ -37,11 +38,10 @@ async function join(){
 function requestFullScreen(){const el=document.documentElement;const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;if(fn)Promise.resolve(fn.call(el)).catch(()=>{});}
 async function recordViolation(type){
  const now=Date.now();if(now-lastViolationAt<1200||!room||!studentKey)return;lastViolationAt=now;violationCount++;
- const pSnap=await get(ref(db,`rooms/${room}/participants/${studentKey}`));if(!pSnap.exists())return;
- const p=pSnap.val()||{};
+ const p=await get(ref(db,`rooms/${room}/participants/${studentKey}`));if(!p.exists())return;
  const audit={violationCount,lastViolationType:type,lastViolationAt:serverTimestamp()};
- // A legitimate prize winner remains a BLOCKED WINNER, not DISQUALIFIED. The violation is still logged for audit.
- if(!(p.blocked&&p.winner)) Object.assign(audit,{disqualified:true,disqualificationReason:"Anti-cheating violation"});
+ // A legitimate prize winner remains a BLOCKED WINNER, not DISQUALIFIED. Keep the violation in the audit log.
+ if(!(p.val()?.blocked && p.val()?.winner)) Object.assign(audit,{blocked:true,disqualified:true,disqualificationReason:"Anti-cheating violation"});
  await update(ref(db,`rooms/${room}/participants/${studentKey}`),audit);
  await update(ref(db,`rooms/${room}/violations/${studentKey}/${Date.now()}`),{type,at:serverTimestamp(),question:questionNo});
  $("violationStatus").classList.remove("hidden");$("violationStatus").textContent=`⚠️ Violation recorded: ${type}. Total: ${violationCount}`;
@@ -58,7 +58,7 @@ function listen(){
   if(p.blocked){$("studentStatus").className="status blocked";$("studentStatus").textContent="🏆 You have won a prize and are blocked from the remaining questions.";disable();return;}
   violationCount=p.violationCount||0;if(p.disqualified){$("studentStatus").className="status blocked";$("studentStatus").textContent="⛔ Disqualified due to an anti-cheating violation.";disable();return;}$("studentStatus").className="status "+(r.state==="open"?"live":"");
   $("studentStatus").textContent=r.state==="open"?"Question is LIVE — answer now!":r.state==="closed"?"Answers are closed.":r.state==="revealed"?(r.winnerName?`Winner: ${r.winnerName}`:"No eligible winner"):"Waiting for the host to show the next question.";
-  if(r.state==="open"&&r.currentQuestion){loadQuestion(r.currentQuestion);startTimer(r.openedAt);}
+  if(r.state==="open"&&r.currentQuestion){questionTimerSeconds=Math.max(5,Number(r.timerSeconds||30));loadQuestion(r.currentQuestion);startCountdown(r.openedAt,questionTimerSeconds);}
   if(r.state==="revealed"&&r.currentQuestion===questionNo){$("result").innerHTML=r.winnerKey===studentKey?'<div class="successbox">🏆 Congratulations! You are the winner.</div>':`Winner: <b>${esc(r.winnerName||"None")}</b>`;}
   if(r.state!=="open"){$("submitBtn").disabled=true;if(r.state!=="revealed")$("options").innerHTML="";}
  });
@@ -69,14 +69,38 @@ async function loadQuestion(n){
  $("options").innerHTML=opts.map(x=>`<button class="option" data-o="${x}"><b>${x}.</b> ${esc(q.options?.[x]||"")}</button>`).join("");
  document.querySelectorAll(".option").forEach(b=>b.onclick=()=>{if(answered)return;selected=b.dataset.o;document.querySelectorAll(".option").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");});$("submitBtn").disabled=false;
 }
-function startTimer(serverOpen){if(!serverOpen)return;openedAt=serverOpen;clearInterval(timer);timer=setInterval(()=>$("timer").textContent=Math.max(0,(Date.now()-openedAt)/1000).toFixed(3),50);}
+function startCountdown(serverOpen,seconds){
+ if(!serverOpen)return;
+ openedAt=Number(serverOpen);
+ clearInterval(timer);
+ const duration=Math.max(5,Number(seconds||30))*1000;
+ const tick=()=>{
+   const remaining=Math.max(0,duration-(Date.now()-openedAt));
+   const total=Math.ceil(remaining/1000);
+   const mm=String(Math.floor(total/60)).padStart(2,"0");
+   const ss=String(total%60).padStart(2,"0");
+   $("timer").textContent=`${mm}:${ss}`;
+   if(remaining<=0){
+     clearInterval(timer);
+     answered=true;
+     $("submitBtn").disabled=true;
+     document.querySelectorAll(".option").forEach(b=>b.disabled=true);
+     $("result").textContent="⏰ Time is over. Answers are closed.";
+   }
+ };
+ tick();
+ timer=setInterval(tick,100);
+}
 function disable(){answered=true;$("submitBtn").disabled=true;document.querySelectorAll(".option").forEach(b=>b.disabled=true);}
 $("joinBtn").onclick=join;
 $("submitBtn").onclick=async()=>{
  if(answered||!selected)return alert("Select an answer first.");answered=true;$("submitBtn").disabled=true;
  const r=(await get(ref(db,`rooms/${room}`))).val()||{};if(r.state!=="open"||r.currentQuestion!==questionNo)return $("result").textContent="Answers are closed.";
  const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};if(p.blocked||p.disqualified)return disable();
- const q=(await get(ref(db,`rooms/${room}/questions/q${questionNo}`))).val()||{};const elapsed=Math.max(0,Date.now()-Number(r.openedAt||Date.now()));
+ const q=(await get(ref(db,`rooms/${room}/questions/q${questionNo}`))).val()||{};
+ const elapsed=Math.max(0,Date.now()-Number(r.openedAt||Date.now()));
+ const limitMs=Math.max(5,Number(r.timerSeconds||30))*1000;
+ if(elapsed>limitMs){$("result").textContent="⏰ Time is over. Answers are closed.";return;}
  await update(ref(db,`rooms/${room}/answers/q${questionNo}/${studentKey}`),{studentKey,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,phone:p.phone,answer:selected,correct:selected===q.correct,elapsedMs:elapsed,serverReceivedAt:serverTimestamp(),eligible:!p.disqualified});$("result").textContent="Answer submitted. Waiting for host.";
 };
 $("connection").textContent="Ready to join";
