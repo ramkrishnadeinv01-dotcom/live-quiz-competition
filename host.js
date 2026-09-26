@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, set, update, get, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
-
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 const $=id=>document.getElementById(id);
 let uid=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
@@ -13,7 +12,6 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function roomRef(){return ref(db,`rooms/${room}`);}
 function qRef(n){return ref(db,`rooms/${room}/questions/q${n}`);}
 function clearSubscriptions(){
-  // Firebase onValue unsubscribe functions are not stored by older SDK code here; page refresh is the normal lifecycle.
   answerListeners={};
 }
 function renderParticipants(){
@@ -38,6 +36,125 @@ async function saveQuestion(){
  if(!data.text || Object.values(data.options).some(x=>!x)) return alert("Please fill the question and all four options.");
  await set(qRef(qNo),data); questionsCache[`q${qNo}`]=data; $("controlMsg").textContent=`Question ${qNo} saved.`;
 }
+
+/* Word document import.
+   Expected format:
+   1. Question text
+   A. Option A
+   B. Option B
+   C. Option C
+   D. Option D
+   ...
+   Answer Key
+   1 A
+   2 B
+   ...
+   Prize is NOT read from the Word document. */
+function normalizeText(s){
+ return String(s||"").replace(/\u00a0/g," ").replace(/[ \t]+/g," ").trim();
+}
+function extractDocxLines(html){
+ const doc=new DOMParser().parseFromString(html,"text/html");
+ const blocks=[...doc.querySelectorAll("p,li,h1,h2,h3,h4,h5,h6,td,th")];
+ let lines=blocks.map(x=>normalizeText(x.textContent)).filter(Boolean);
+ if(!lines.length) lines=normalizeText(doc.body.textContent).split(/\r?\n/).map(normalizeText).filter(Boolean);
+ return lines;
+}
+function parseWordQuestions(lines){
+ const questions={};
+ let current=null, inAnswerKey=false;
+ const answers={};
+
+ for(const raw of lines){
+   const line=normalizeText(raw);
+   if(!line) continue;
+   if(/^(answer\s*key|उत्तरमाला|answers?|उत्तर)$/i.test(line)){
+     inAnswerKey=true; current=null; continue;
+   }
+
+   let m=line.match(/^(\d+)\s*[\.\)]\s*(.+)$/);
+   if(m && !inAnswerKey){
+     const no=Number(m[1]);
+     current={number:no,text:normalizeText(m[2]),options:{A:"",B:"",C:"",D:""}};
+     questions[no]=current;
+     continue;
+   }
+
+   m=line.match(/^([ABCD])\s*[\.\)]\s*(.+)$/i);
+   if(m && !inAnswerKey && current){
+     current.options[m[1].toUpperCase()]=normalizeText(m[2]);
+     continue;
+   }
+
+   if(inAnswerKey){
+     const pairMatches=[...line.matchAll(/(\d+)\s*[\.\:\-]?\s*([ABCD])\b/gi)];
+     if(pairMatches.length){
+       pairMatches.forEach(x=>answers[Number(x[1])]=x[2].toUpperCase());
+       continue;
+     }
+     const compact=[...line.matchAll(/(\d+)\s*([ABCD])\b/gi)];
+     compact.forEach(x=>answers[Number(x[1])]=x[2].toUpperCase());
+   }
+ }
+
+ const result=Object.values(questions).sort((a,b)=>a.number-b.number).filter(q=>q.text && q.options.A && q.options.B && q.options.C && q.options.D);
+ result.forEach(q=>q.correct=answers[q.number]||"");
+ return result;
+}
+async function importWordQuestions(){
+ if(!room)return alert("Create or resume a quiz room first.");
+ const file=$("wordFileInput").files?.[0];
+ if(!file)return alert("Please choose a .docx Word document first.");
+ if(!window.mammoth)return alert("Word document reader could not be loaded. Please refresh the Host Panel and try again.");
+
+ const msgEl=$("wordImportMsg");
+ msgEl.textContent="Reading Word document…";
+ try{
+   const buffer=await file.arrayBuffer();
+   const converted=await window.mammoth.convertToHtml({arrayBuffer:buffer});
+   const lines=extractDocxLines(converted.value);
+   const parsed=parseWordQuestions(lines);
+
+   if(!parsed.length) throw new Error("No complete MCQs were found. Use the numbered-question / A–D / Answer Key format.");
+
+   const missing=parsed.filter(q=>!["A","B","C","D"].includes(q.correct));
+   if(missing.length) throw new Error(`Could not find correct answers for question(s): ${missing.map(q=>q.number).join(", ")}.`);
+
+   const preview=parsed.slice(0,3).map(q=>`Q${q.number}: ${q.text}`).join("\n");
+   if(!confirm(`Found ${parsed.length} complete questions.\\n\\n${preview}${parsed.length>3?"\\n…":""}\\n\\nImport these questions into room ${room}?`)){
+     msgEl.textContent="Import cancelled.";
+     return;
+   }
+
+   const defaultPrize=Number($("prize").value||0);
+   const updates={};
+   parsed.forEach((q,i)=>{
+     const n=i+1;
+     updates[`rooms/${room}/questions/q${n}`]={
+       number:n,
+       text:q.text,
+       options:q.options,
+       correct:q.correct,
+       prize:defaultPrize,
+       importedFrom:file.name,
+       updatedAt:serverTimestamp()
+     };
+   });
+   updates[`rooms/${room}/qCount`]=parsed.length;
+
+   await update(ref(db),updates);
+   $("qCount").value=parsed.length;
+   qNo=1;
+   await loadAllQuestions();
+   await loadQ(1);
+   msgEl.textContent=`✓ ${parsed.length} questions imported successfully. Prize is set to ₹${defaultPrize} initially; you can edit each question's prize before the quiz.`;
+   $("controlMsg").textContent=`${parsed.length} questions imported from ${file.name}.`;
+ }catch(e){
+   console.error(e);
+   msgEl.textContent=`Import failed: ${e.message||e}`;
+ }
+}
+
 async function createRoom(){
  const code=Math.random().toString(36).slice(2,8).toUpperCase(); room=code;
  const title=$("quizTitle").value.trim()||"Live Quiz", count=Number($("qCount").value||10);
@@ -123,5 +240,5 @@ async function exportExcel(){
 $("signupBtn").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Account created. You are signed in.");}catch(e){msg(e.message)}};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
-$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
+$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;$("importWordBtn").onclick=importWordQuestions;
 onAuthStateChanged(auth,async user=>{uid=user?.uid||null;$("authStatus").textContent=user?"Host signed in":"Not signed in";$("loginCard").classList.toggle("hidden",!!user);$("hostApp").classList.toggle("hidden",!user);if(user){await loadExistingRooms();const last=localStorage.getItem("liveQuizLastRoom");if(last) {const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}}});

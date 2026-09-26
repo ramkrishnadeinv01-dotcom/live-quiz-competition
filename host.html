@@ -9,7 +9,6 @@
     <div class="row" style="margin-top:12px"><button id="signupBtn">Create Host Account</button><button id="loginBtn" class="success">Sign In</button></div>
     <p id="loginMsg"></p>
   </div>
-
   <div id="hostApp" class="hidden">
     <div class="card">
       <div class="row">
@@ -23,6 +22,14 @@
 
     <div id="quizControls" class="hidden grid">
       <div>
+        <div class="card" style="margin-bottom:12px">
+          <h2>Upload MCQ Word Document</h2>
+          <p class="notice">Upload a .docx document containing numbered questions, four options (A–D), and an Answer Key. Prize amounts are entered separately in the Host Panel.</p>
+          <input id="wordFileInput" type="file" accept=".docx">
+          <button id="importWordBtn" style="margin-top:10px">Import Questions</button>
+          <p id="wordImportMsg"></p>
+        </div>
+
         <div class="card">
           <h2 id="editorHeading">Question 1</h2>
           <div class="field"><label>Question</label><textarea id="questionText"></textarea></div>
@@ -37,7 +44,6 @@
           </div>
           <div class="row" style="margin-top:12px"><button id="saveQBtn">Save Question</button><button id="prevQBtn" class="secondary">Previous</button><button id="nextEditBtn" class="secondary">Next Question</button></div>
         </div>
-
         <div class="card">
           <h2>Live Question Control</h2>
           <div id="liveQuestion" class="status">No question is open.</div>
@@ -45,7 +51,6 @@
           <p id="controlMsg"></p>
         </div>
       </div>
-
       <div>
         <div class="card"><h2>Live Statistics</h2><div class="statgrid"><div class="stat">Online<b id="onlineCount">0</b></div><div class="stat">Answers<b id="answerCount">0</b></div><div class="stat">Blocked<b id="blockedCount">0</b></div><div class="stat">Winners<b id="winnerCount">0</b></div></div></div>
         <div class="card"><h2>Winner / Tie Break</h2><div id="winnerBox" class="status">No winner selected.</div><button id="randomTieBtn" class="warning" disabled>🎲 RANDOM TIE-BREAK</button></div>
@@ -57,5 +62,6 @@
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
 <script type="module" src="host.js"></script>
 </body></html>
