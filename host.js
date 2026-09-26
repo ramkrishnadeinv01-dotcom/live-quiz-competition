@@ -14,8 +14,8 @@ function roomRef(){return ref(db,`rooms/${room}`);}
 function qRef(n){return ref(db,`rooms/${room}/questions/q${n}`);}
 function renderParticipants(){
  const arr=Object.values(participantsCache);
- $("participants").innerHTML=arr.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>'}</td></tr>`).join("");
- const blocked=arr.filter(x=>x.blocked).length,winners=arr.filter(x=>x.winner).length;
+ $("participants").innerHTML=arr.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${p.disqualified?'<span class="badge red">DISQUALIFIED</span>':p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>'}</td></tr>`).join("");
+ const blocked=arr.filter(x=>x.blocked||x.disqualified).length,winners=arr.filter(x=>x.winner).length;
  $("onlineCount").textContent=arr.length;$("blockedCount").textContent=blocked;$("winnerCount").textContent=winners;
 }
 function renderAnswers(){
@@ -59,7 +59,7 @@ async function revealWinner(randomTie=false){
  if(!room)return;
  const r=(await get(roomRef())).val()||{}, n=r.currentQuestion||qNo;
  const s=(await get(ref(db,`rooms/${room}/answers/q${n}`))).val()||{};
- const list=Object.entries(s).map(([key,a])=>({...a,key})).filter(a=>a.correct && a.eligible!==false && !participantsCache[a.studentKey]?.blocked);
+ const list=Object.entries(s).map(([key,a])=>({...a,key})).filter(a=>a.correct && a.eligible!==false && !participantsCache[a.studentKey]?.blocked && !participantsCache[a.studentKey]?.disqualified);
  if(!list.length){await update(roomRef(),{state:"revealed",revealed:true,winnerKey:null,winnerName:null,winnerTimeText:"No eligible correct answer"});return;}
  list.sort((a,b)=>(a.serverReceivedAt??Infinity)-(b.serverReceivedAt??Infinity));
  const bestTime=list[0].serverReceivedAt;
@@ -78,7 +78,7 @@ function exportExcel(){
  participants.forEach(p=>{if(p.winner)winners.push({Question:p.winnerQuestion,Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,Prize:p.winnerPrize,Status:"PRIZE WON"});});
  const allAnswers=[];
  Object.values(answersCache).forEach(a=>allAnswers.push({"Question":qNo,Name:a.name,Designation:a.designation,"Place of Posting":a.placeOfPosting,Mobile:a.phone,Answer:a.answer,Correct:a.correct?"Yes":"No","Time (sec)":a.elapsedMs==null?"":(a.elapsedMs/1000).toFixed(3),Eligible:a.eligible===false?"No":"Yes"}));
- const blocked=participants.filter(p=>p.blocked).map(p=>({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Winning Question":p.winnerQuestion||"",Prize:p.winnerPrize||0,"Status":"BLOCKED"}));
+ const blocked=participants.filter(p=>p.blocked).map(p=>({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Winning Question":p.winnerQuestion||"",Prize:p.winnerPrize||0,"Status":p.disqualified?"DISQUALIFIED":"BLOCKED"}));
  const qres=Object.keys(questionsCache).map(k=>({Question:k.replace("q",""),Prize:questionsCache[k].prize||0}));
  const wb=XLSX.utils.book_new();
  function add(name,data){const ws=XLSX.utils.json_to_sheet(data.length?data:[{Info:"No data"}]);XLSX.utils.book_append_sheet(wb,ws,name);}

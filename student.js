@@ -27,7 +27,7 @@ async function join(){
  const pRef=ref(db,`rooms/${room}/participants/${studentKey}`);
  const result=await runTransaction(pRef,current=>current===null?{
    studentKey,phone,name,designation,placeOfPosting,
-   blocked:false,winner:false,violationCount:0,joinedAt:{".sv":"timestamp"}
+   blocked:false,winner:false,disqualified:false,violationCount:0,joinedAt:{".sv":"timestamp"}
  }:undefined);
  if(!result.committed)return msg("This mobile number has already participated in this quiz. You cannot join again.");
  $("joinCard").classList.add("hidden");$("quizCard").classList.remove("hidden");
@@ -38,7 +38,7 @@ function requestFullScreen(){const el=document.documentElement;const fn=el.reque
 async function recordViolation(type){
  const now=Date.now();if(now-lastViolationAt<1200||!room||!studentKey)return;lastViolationAt=now;violationCount++;
  const p=await get(ref(db,`rooms/${room}/participants/${studentKey}`));if(!p.exists())return;
- await update(ref(db,`rooms/${room}/participants/${studentKey}`),{violationCount,lastViolationType:type,lastViolationAt:serverTimestamp()});
+ await update(ref(db,`rooms/${room}/participants/${studentKey}`),{violationCount,lastViolationType:type,lastViolationAt:serverTimestamp(),disqualified:true,disqualificationReason:"Anti-cheating violation"});
  await update(ref(db,`rooms/${room}/violations/${studentKey}/${Date.now()}`),{type,at:serverTimestamp(),question:questionNo});
  $("violationStatus").classList.remove("hidden");$("violationStatus").textContent=`⚠️ Violation recorded: ${type}. Total: ${violationCount}`;
 }
@@ -52,7 +52,7 @@ function startAntiCheat(){
 function listen(){
  onValue(ref(db,`rooms/${room}`),async s=>{const r=s.val()||{};const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};
   if(p.blocked){$("studentStatus").className="status blocked";$("studentStatus").textContent="🏆 You have won a prize and are blocked from the remaining questions.";disable();return;}
-  violationCount=p.violationCount||0;$(`studentStatus`).className="status "+(r.state==="open"?"live":"");
+  violationCount=p.violationCount||0;if(p.disqualified){$("studentStatus").className="status blocked";$("studentStatus").textContent="⛔ Disqualified due to an anti-cheating violation.";disable();return;}$("studentStatus").className="status "+(r.state==="open"?"live":"");
   $("studentStatus").textContent=r.state==="open"?"Question is LIVE — answer now!":r.state==="closed"?"Answers are closed.":r.state==="revealed"?(r.winnerName?`Winner: ${r.winnerName}`:"No eligible winner"):"Waiting for the host to show the next question.";
   if(r.state==="open"&&r.currentQuestion){loadQuestion(r.currentQuestion);startTimer(r.openedAt);}
   if(r.state==="revealed"&&r.currentQuestion===questionNo){$("result").innerHTML=r.winnerKey===studentKey?'<div class="successbox">🏆 Congratulations! You are the winner.</div>':`Winner: <b>${esc(r.winnerName||"None")}</b>`;}
@@ -71,8 +71,8 @@ $("joinBtn").onclick=join;
 $("submitBtn").onclick=async()=>{
  if(answered||!selected)return alert("Select an answer first.");answered=true;$("submitBtn").disabled=true;
  const r=(await get(ref(db,`rooms/${room}`))).val()||{};if(r.state!=="open"||r.currentQuestion!==questionNo)return $("result").textContent="Answers are closed.";
- const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};if(p.blocked)return disable();
+ const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};if(p.blocked||p.disqualified)return disable();
  const q=(await get(ref(db,`rooms/${room}/questions/q${questionNo}`))).val()||{};const elapsed=Math.max(0,Date.now()-Number(r.openedAt||Date.now()));
- await update(ref(db,`rooms/${room}/answers/q${questionNo}/${studentKey}`),{studentKey,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,phone:p.phone,answer:selected,correct:selected===q.correct,elapsedMs:elapsed,serverReceivedAt:serverTimestamp(),eligible:true});$("result").textContent="Answer submitted. Waiting for host.";
+ await update(ref(db,`rooms/${room}/answers/q${questionNo}/${studentKey}`),{studentKey,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,phone:p.phone,answer:selected,correct:selected===q.correct,elapsedMs:elapsed,serverReceivedAt:serverTimestamp(),eligible:!p.disqualified});$("result").textContent="Answer submitted. Waiting for host.";
 };
 $("connection").textContent="Ready to join";
