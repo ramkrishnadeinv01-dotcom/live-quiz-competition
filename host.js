@@ -16,9 +16,26 @@ function clearSubscriptions(){
   // Firebase onValue unsubscribe functions are not stored by older SDK code here; page refresh is the normal lifecycle.
   answerListeners={};
 }
+async function unblockDisqualified(studentKey){
+ if(!room || !uid) return;
+ const p=participantsCache[studentKey];
+ if(!p || !p.disqualified) return;
+ if(!confirm(`Unblock ${p.name || "this participant"}? They will become eligible to participate again. Their previous violation history will be retained.`)) return;
+ await update(ref(db,`rooms/${room}/participants/${studentKey}`),{
+   disqualified:false,
+   disqualificationReason:null,
+   unblockedBy:uid,
+   unblockedAt:serverTimestamp()
+ });
+}
 function renderParticipants(){
  const arr=Object.values(participantsCache);
- $("participants").innerHTML=arr.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${p.disqualified?'<span class="badge red">DISQUALIFIED</span>':p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>'}</td></tr>`).join("");
+ $("participants").innerHTML=arr.map(p=>{
+   const status=p.disqualified?'<span class="badge red">DISQUALIFIED</span>':p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>';
+   const action=p.disqualified?`<button class="unblockBtn success" data-student-key="${esc(p.studentKey)}">UNBLOCK</button>`:'';
+   return `<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${status}</td><td>${action}</td></tr>`;
+ }).join("");
+ document.querySelectorAll('.unblockBtn').forEach(btn=>btn.onclick=()=>unblockDisqualified(btn.dataset.studentKey));
  const blocked=arr.filter(x=>x.blocked||x.disqualified).length,winners=arr.filter(x=>x.winner).length;
  $("onlineCount").textContent=arr.length;$("blockedCount").textContent=blocked;$("winnerCount").textContent=winners;
 }
