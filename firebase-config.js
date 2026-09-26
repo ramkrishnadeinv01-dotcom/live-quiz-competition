@@ -1,6 +1,6 @@
 // Firebase configuration for "Hindi Question-Answer Platform"
 export const firebaseConfig = {
-  apiKey: "AIzaSyBE8oyTDM3RMPB5x_B4ieAcqj0KkdGp1A4",
+  apiKey: "AIzaSyBEgoyTDM3RMPB5x_B4ieAcqj0KkdGp1A4",
   authDomain: "hindi-question-answer-platform.firebaseapp.com",
   databaseURL: "https://hindi-question-answer-platform-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "hindi-question-answer-platform",
