@@ -1,38 +1,38 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, get, runTransaction, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
+const app=initializeApp(firebaseConfig),db=getDatabase(app);
 const $=id=>document.getElementById(id);
-let confirmation=null,room="",studentKey="",selected="",questionNo=0,openedAt=0,answered=false,timer,recaptcha,phoneVerified=false,violationCount=0,lastViolationAt=0;
+let room="",studentKey="",selected="",questionNo=0,openedAt=0,answered=false,timer,violationCount=0,lastViolationAt=0;
 const opts=["A","B","C","D"];
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
-function normalizePhone(v){v=v.trim().replace(/\s|-/g,"");return /^\d{10}$/.test(v)?"+91"+v:v;}
-function setupRecaptcha(){if(recaptcha)return;recaptcha=new RecaptchaVerifier(auth,"recaptcha-container",{size:"normal"});recaptcha.render().catch(e=>msg("reCAPTCHA could not load: "+e.message));}
-async function sendOtp(){
- room=$("roomCodeInput").value.trim().toUpperCase();const phone=normalizePhone($("phoneNumber").value);
- if(!room||!/^[+]\d{8,15}$/.test(phone))return msg("Enter a valid room code and mobile number, e.g. +91XXXXXXXXXX.");
- const rs=await get(ref(db,`rooms/${room}`));if(!rs.exists())return msg("Room not found.");
- setupRecaptcha();
- try{confirmation=await signInWithPhoneNumber(auth,phone,recaptcha);phoneVerified=false;$("otpArea").classList.remove("hidden");msg("OTP sent. Enter the OTP received on your phone.");}
- catch(e){msg("OTP could not be sent: "+e.message);if(recaptcha){recaptcha.clear();recaptcha=null;setupRecaptcha();}}
-}
-async function verifyOtp(){
- if(!confirmation)return msg("Please request an OTP first.");const code=$("otpCode").value.trim();if(!/^\d{6}$/.test(code))return msg("Enter the 6-digit OTP.");
- try{await confirmation.confirm(code);studentKey=auth.currentUser.uid;phoneVerified=true;$("detailsArea").classList.remove("hidden");$("sendOtpBtn").disabled=true;$("verifyOtpBtn").disabled=true;$("phoneNumber").disabled=true;msg("Phone verified successfully. Now enter your details and join the quiz.");}
- catch(e){msg("Invalid OTP or verification failed: "+e.message);}
-}
+function normalizePhone(v){v=v.trim().replace(/[\s()-]/g,"");if(/^\+91\d{10}$/.test(v))return v;if(/^91\d{10}$/.test(v))return "+"+v;if(/^\d{10}$/.test(v))return "+91"+v;return "";}
+function phoneKey(phone){return phone.replace(/\D/g,"");}
 async function join(){
- if(!phoneVerified||!auth.currentUser)return msg("Please verify your mobile number first.");
- room=$("roomCodeInput").value.trim().toUpperCase();const name=$("studentName").value.trim(),sid=$("studentId").value.trim(),city=$("city").value.trim();
- if(!name||!sid||!city)return msg("Please fill Name, Student ID and City.");
- const rs=await get(ref(db,`rooms/${room}`));if(!rs.exists())return msg("Room not found.");const r=rs.val();
+ room=$("roomCodeInput").value.trim().toUpperCase();
+ const phone=normalizePhone($("phoneNumber").value);
+ const name=$("studentName").value.trim();
+ const designation=$("designation").value.trim();
+ const placeOfPosting=$("placeOfPosting").value.trim();
+ if(!room||!/^[A-Z0-9]{6}$/.test(room))return msg("Enter the 6-character room code.");
+ if(!phone)return msg("Enter a valid 10-digit Indian mobile number.");
+ if(!name||!designation||!placeOfPosting)return msg("Please fill Name, Designation and Place of Posting.");
+ const rs=await get(ref(db,`rooms/${room}`));
+ if(!rs.exists())return msg("Room not found.");
+ const r=rs.val();
+ if(r.state==="finished")return msg("This quiz has already finished.");
+ studentKey=phoneKey(phone);
  const pRef=ref(db,`rooms/${room}/participants/${studentKey}`);
- const result=await runTransaction(pRef,current=>current===null?{studentKey,name,studentId:sid,city,phoneVerified:true,phoneLast4:normalizePhone($("phoneNumber").value).slice(-4),blocked:false,winner:false,violationCount:0,joinedAt:{".sv":"timestamp"}}:undefined);
- if(!result.committed)return msg("This verified phone number has already participated in this quiz. You cannot join again.");
- $("joinCard").classList.add("hidden");$("quizCard").classList.remove("hidden");$("title").textContent=r.title||"Live Quiz";$("room").textContent=room;startAntiCheat();requestFullScreen();listen();
+ const result=await runTransaction(pRef,current=>current===null?{
+   studentKey,phone,name,designation,placeOfPosting,
+   blocked:false,winner:false,violationCount:0,joinedAt:{".sv":"timestamp"}
+ }:undefined);
+ if(!result.committed)return msg("This mobile number has already participated in this quiz. You cannot join again.");
+ $("joinCard").classList.add("hidden");$("quizCard").classList.remove("hidden");
+ $("title").textContent=r.title||"Live Quiz";$("room").textContent=room;
+ $("connection").textContent="Connected";startAntiCheat();requestFullScreen();listen();
 }
 function requestFullScreen(){const el=document.documentElement;const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;if(fn)Promise.resolve(fn.call(el)).catch(()=>{});}
 async function recordViolation(type){
@@ -67,12 +67,12 @@ async function loadQuestion(n){
 }
 function startTimer(serverOpen){if(!serverOpen)return;openedAt=serverOpen;clearInterval(timer);timer=setInterval(()=>$("timer").textContent=Math.max(0,(Date.now()-openedAt)/1000).toFixed(3),50);}
 function disable(){answered=true;$("submitBtn").disabled=true;document.querySelectorAll(".option").forEach(b=>b.disabled=true);}
-$("sendOtpBtn").onclick=sendOtp;$("verifyOtpBtn").onclick=verifyOtp;$("joinBtn").onclick=join;
+$("joinBtn").onclick=join;
 $("submitBtn").onclick=async()=>{
  if(answered||!selected)return alert("Select an answer first.");answered=true;$("submitBtn").disabled=true;
  const r=(await get(ref(db,`rooms/${room}`))).val()||{};if(r.state!=="open"||r.currentQuestion!==questionNo)return $("result").textContent="Answers are closed.";
  const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};if(p.blocked)return disable();
  const q=(await get(ref(db,`rooms/${room}/questions/q${questionNo}`))).val()||{};const elapsed=Math.max(0,Date.now()-Number(r.openedAt||Date.now()));
- await update(ref(db,`rooms/${room}/answers/q${questionNo}/${studentKey}`),{studentKey,name:p.name,studentId:p.studentId,city:p.city,answer:selected,correct:selected===q.correct,elapsedMs:elapsed,serverReceivedAt:serverTimestamp(),eligible:true});$("result").textContent="Answer submitted. Waiting for host.";
+ await update(ref(db,`rooms/${room}/answers/q${questionNo}/${studentKey}`),{studentKey,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,phone:p.phone,answer:selected,correct:selected===q.correct,elapsedMs:elapsed,serverReceivedAt:serverTimestamp(),eligible:true});$("result").textContent="Answer submitted. Waiting for host.";
 };
-setupRecaptcha();$("connection").textContent="Ready for phone verification";
+$("connection").textContent="Ready to join";

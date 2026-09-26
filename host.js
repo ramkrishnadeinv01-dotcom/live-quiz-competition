@@ -14,14 +14,14 @@ function roomRef(){return ref(db,`rooms/${room}`);}
 function qRef(n){return ref(db,`rooms/${room}/questions/q${n}`);}
 function renderParticipants(){
  const arr=Object.values(participantsCache);
- $("participants").innerHTML=arr.map(p=>`<tr><td>${esc(p.studentId)}</td><td>${esc(p.name)}</td><td>${esc(p.city)}</td><td>${Number(p.violationCount||0)}</td><td>${p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>'}</td></tr>`).join("");
+ $("participants").innerHTML=arr.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>'}</td></tr>`).join("");
  const blocked=arr.filter(x=>x.blocked).length,winners=arr.filter(x=>x.winner).length;
  $("onlineCount").textContent=arr.length;$("blockedCount").textContent=blocked;$("winnerCount").textContent=winners;
 }
 function renderAnswers(){
  const arr=Object.values(answersCache).sort((a,b)=>(a.serverReceivedAt??Infinity)-(b.serverReceivedAt??Infinity));
  $("answerCount").textContent=arr.length;
- $("answers").innerHTML=arr.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.answer)}</td><td>${a.correct?'✓':'✗'}</td><td>${a.elapsedMs==null?'—':(a.elapsedMs/1000).toFixed(3)+' s'}</td><td>${a.eligible===false?'<span class="badge red">NO</span>':'<span class="badge green">YES</span>'}</td></tr>`).join("");
+ $("answers").innerHTML=arr.map(a=>`<tr><td>${esc(a.name)}</td><td>${esc(a.designation)}</td><td>${esc(a.placeOfPosting)}</td><td>${esc(a.answer)}</td><td>${a.correct?'✓':'✗'}</td><td>${a.elapsedMs==null?'—':(a.elapsedMs/1000).toFixed(3)+' s'}</td><td>${a.eligible===false?'<span class="badge red">NO</span>':'<span class="badge green">YES</span>'}</td></tr>`).join("");
 }
 async function loadQ(n){
  qNo=Math.max(1,Math.min(Number($("qCount").value||10),n)); $("editorHeading").textContent=`Question ${qNo}`;
@@ -75,14 +75,14 @@ async function nextQuestion(){const next=qNo+1;if(next>Number($("qCount").value|
 function exportExcel(){
  if(!room)return alert("Create a room first.");
  const rows=[], winners=[], participants=Object.values(participantsCache);
- participants.forEach(p=>{if(p.winner)winners.push({Question:p.winnerQuestion,"Participant ID":p.studentId,Name:p.name,City:p.city,Prize:p.winnerPrize,Status:"PRIZE WON"});});
+ participants.forEach(p=>{if(p.winner)winners.push({Question:p.winnerQuestion,Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,Prize:p.winnerPrize,Status:"PRIZE WON"});});
  const allAnswers=[];
- Object.values(answersCache).forEach(a=>allAnswers.push({"Question":qNo,"Participant ID":a.studentId,Name:a.name,City:a.city,Answer:a.answer,Correct:a.correct?"Yes":"No","Time (sec)":a.elapsedMs==null?"":(a.elapsedMs/1000).toFixed(3),Eligible:a.eligible===false?"No":"Yes"}));
- const blocked=participants.filter(p=>p.blocked).map(p=>({"Participant ID":p.studentId,Name:p.name,City:p.city,"Winning Question":p.winnerQuestion||"",Prize:p.winnerPrize||0,"Status":"BLOCKED"}));
+ Object.values(answersCache).forEach(a=>allAnswers.push({"Question":qNo,Name:a.name,Designation:a.designation,"Place of Posting":a.placeOfPosting,Mobile:a.phone,Answer:a.answer,Correct:a.correct?"Yes":"No","Time (sec)":a.elapsedMs==null?"":(a.elapsedMs/1000).toFixed(3),Eligible:a.eligible===false?"No":"Yes"}));
+ const blocked=participants.filter(p=>p.blocked).map(p=>({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Winning Question":p.winnerQuestion||"",Prize:p.winnerPrize||0,"Status":"BLOCKED"}));
  const qres=Object.keys(questionsCache).map(k=>({Question:k.replace("q",""),Prize:questionsCache[k].prize||0}));
  const wb=XLSX.utils.book_new();
  function add(name,data){const ws=XLSX.utils.json_to_sheet(data.length?data:[{Info:"No data"}]);XLSX.utils.book_append_sheet(wb,ws,name);}
- add("Prize Winners",winners);add("All Participants",participants.map(p=>({"Participant ID":p.studentId,Name:p.name,City:p.city,"Prize Won":p.winnerPrize||"",Status:p.blocked?"BLOCKED":"ACTIVE"})));add("Answer Log",allAnswers);add("Question Results",qres);add("Blocked Participants",blocked);
+ add("Prize Winners",winners);add("All Participants",participants.map(p=>({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Prize Won":p.winnerPrize||"",Status:p.blocked?"BLOCKED":"ACTIVE"})));add("Answer Log",allAnswers);add("Question Results",qres);add("Blocked Participants",blocked);
  XLSX.writeFile(wb,`Quiz_Results_${room}.xlsx`);
 }
 $("signupBtn").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Account created. You are signed in.");}catch(e){msg(e.message)}};

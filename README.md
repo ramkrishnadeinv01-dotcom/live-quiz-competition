@@ -13,11 +13,12 @@ This package is connected to the Firebase project shown during setup:
 
 ## Before first use
 
-### 1. Enable Firebase Authentication
+### 1. Enable Firebase Authentication for the host
 Firebase Console → Build/Security → Authentication → Get started.
 Enable:
 - Email/Password (for host)
-- Anonymous (for students)
+
+Student SMS/OTP authentication is **not used** in this version, so Firebase phone-auth billing is not required for students.
 
 ### 2. Publish the rules
 Realtime Database → Rules → replace the rules with the contents of `database.rules.json` → Publish.
@@ -33,11 +34,12 @@ SHOW QUESTION → CLOSE ANSWERS → SHOW ANSWER & WINNER → NEXT QUESTION.
 ### 4. Students
 Give students the URL:
 `student.html`
-and the room code. They enter their name, unique student ID and city.
+and the room code. They enter their **Name, Designation, Place of Posting and Mobile Number**. No OTP is sent. The same normalized mobile number can participate only once in a quiz room.
 
 ## Rules implemented
 - Host controls question release.
-- One answer per student per question.
+- One answer per participant per question.
+- Participant identity is based on the normalized mobile number for that quiz room.
 - Only correct answers are eligible.
 - Fastest recorded server receipt is considered first.
 - Exact equal fastest server-receipt timestamps trigger random tie selection.
