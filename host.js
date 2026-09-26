@@ -27,7 +27,8 @@ async function unblockDisqualified(studentKey){
    disqualified:false,
    disqualificationReason:null,
    unblockedBy:uid,
-   unblockedAt:serverTimestamp()
+   unblockedAt:serverTimestamp(),
+   canRejoin:true
  });
 }
 function renderDisqualifiedParticipants(){

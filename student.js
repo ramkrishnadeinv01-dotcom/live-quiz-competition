@@ -26,10 +26,18 @@ async function join(){
  if(r.state==="finished")return msg("This quiz has already finished.");
  studentKey=phoneKey(phone);
  const pRef=ref(db,`rooms/${room}/participants/${studentKey}`);
- const result=await runTransaction(pRef,current=>current===null?{
-   studentKey,phone,name,designation,placeOfPosting,
-   blocked:false,winner:false,disqualified:false,violationCount:0,joinedAt:{".sv":"timestamp"}
- }:undefined);
+ const result=await runTransaction(pRef,current=>{
+   if(current===null){
+     return {studentKey,phone,name,designation,placeOfPosting,blocked:false,winner:false,disqualified:false,violationCount:0,joinedAt:{".sv":"timestamp"}};
+   }
+   // A host-unblocked disqualified participant may return to the same quiz.
+   // Ordinary repeat participation remains blocked by the one-mobile-number rule.
+   if(current.canRejoin===true && !current.blocked && !current.disqualified && !current.winner){
+     const next={...current,studentKey,phone,name,designation,placeOfPosting,canRejoin:false,lastRejoinedAt:{".sv":"timestamp"}};
+     return next;
+   }
+   return;
+ });
  if(!result.committed)return msg("This mobile number has already participated in this quiz. You cannot join again.");
  $("joinCard").classList.add("hidden");$("quizCard").classList.remove("hidden");
  $("title").textContent=r.title||"Live Quiz";$("room").textContent=room;
@@ -55,8 +63,10 @@ function startAntiCheat(){
 }
 function listen(){
  onValue(ref(db,`rooms/${room}`),async s=>{const r=s.val()||{};const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};
-  if(p.blocked){$("studentStatus").className="status blocked";$("studentStatus").textContent="🏆 You have won a prize and are blocked from the remaining questions.";disable();return;}
-  violationCount=p.violationCount||0;if(p.disqualified){$("studentStatus").className="status blocked";$("studentStatus").textContent="⛔ Disqualified due to an anti-cheating violation.";disable();return;}$("studentStatus").className="status "+(r.state==="open"?"live":"");
+  violationCount=p.violationCount||0;
+  if(p.disqualified){$("studentStatus").className="status blocked";$("studentStatus").textContent="⛔ Disqualified and blocked from the competition. Please contact the host if you need to be unblocked.";disable();return;}
+  if(p.blocked&&p.winner){$("studentStatus").className="status blocked";$("studentStatus").textContent="🏆 You have won a prize and are blocked from the remaining questions.";disable();return;}
+  if(p.blocked){$("studentStatus").className="status blocked";$("studentStatus").textContent="⛔ You are currently blocked from the competition.";disable();return;}$("studentStatus").className="status "+(r.state==="open"?"live":"");
   $("studentStatus").textContent=r.state==="open"?"Question is LIVE — answer now!":r.state==="closed"?"Answers are closed.":r.state==="revealed"?(r.winnerName?`Winner: ${r.winnerName}`:"No eligible winner"):"Waiting for the host to show the next question.";
   if(r.state==="open"&&r.currentQuestion){questionTimerSeconds=Math.max(5,Number(r.timerSeconds||30));loadQuestion(r.currentQuestion);startCountdown(r.openedAt,questionTimerSeconds);}
   if(r.state==="revealed"&&r.currentQuestion===questionNo){$("result").innerHTML=r.winnerKey===studentKey?'<div class="successbox">🏆 Congratulations! You are the winner.</div>':`Winner: <b>${esc(r.winnerName||"None")}</b>`;}
