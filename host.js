@@ -6,7 +6,6 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 const $=id=>document.getElementById(id);
 let uid=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
-let hostTimerInterval=null;
 let unsubRoom=null, unsubParticipants=null, unsubQuestions=null, answerListeners={};
 
 function msg(t,cls=""){ $("loginMsg").textContent=t; $("loginMsg").className=cls; }
@@ -17,27 +16,13 @@ function clearSubscriptions(){
   // Firebase onValue unsubscribe functions are not stored by older SDK code here; page refresh is the normal lifecycle.
   answerListeners={};
 }
-async function unblockDisqualified(studentKey){
- if(!room || !uid) return;
- const p=participantsCache[studentKey];
- if(!p || !p.disqualified) return;
- if(!confirm(`Unblock ${p.name || "this participant"}? They will become eligible to participate again. Their previous violation history will be retained.`)) return;
- await update(ref(db,`rooms/${room}/participants/${studentKey}`),{
-   disqualified:false,
-   disqualificationReason:null,
-   unblockedBy:uid,
-   unblockedAt:serverTimestamp()
- });
-}
 function renderParticipants(){
  const arr=Object.values(participantsCache);
- $("participants").innerHTML=arr.map(p=>{
-   const status=p.disqualified?'<span class="badge red">DISQUALIFIED</span>':p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>';
-   const action=p.disqualified?`<button class="unblockBtn success" data-student-key="${esc(p.studentKey)}">UNBLOCK</button>`:'';
-   return `<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${status}</td><td>${action}</td></tr>`;
- }).join("");
- document.querySelectorAll('.unblockBtn').forEach(btn=>btn.onclick=()=>unblockDisqualified(btn.dataset.studentKey));
- const blocked=arr.filter(x=>x.blocked||x.disqualified).length,winners=arr.filter(x=>x.winner).length;
+ $("participants").innerHTML=arr.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${p.disqualified?'<span class="badge red">DISQUALIFIED</span>':p.blocked?'<span class="badge red">BLOCKED</span>':'<span class="badge green">ACTIVE</span>'}</td></tr>`).join("");
+ const blockedWinners=arr.filter(x=>x.blocked&&x.winner&&!x.disqualified), disqualified=arr.filter(x=>x.disqualified&&!x.winner);
+ $("blockedWinners").innerHTML=blockedWinners.length?blockedWinners.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.phone)}</td><td>${esc(p.winnerQuestion||"")}</td><td>₹${Number(p.winnerPrize||0)}</td><td><span class="badge red">BLOCKED WINNER</span></td></tr>`).join(""):"<tr><td colspan=5>No blocked winners</td></tr>";
+ $("disqualifiedParticipants").innerHTML=disqualified.length?disqualified.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>${esc(p.disqualificationReason||"Anti-cheating violation")}</td><td><span class="badge red">DISQUALIFIED</span></td></tr>`).join(""):"<tr><td colspan=5>No disqualified participants</td></tr>";
+ const blocked=arr.filter(x=>x.blocked&&!x.disqualified).length,winners=arr.filter(x=>x.winner).length;
  $("onlineCount").textContent=arr.length;$("blockedCount").textContent=blocked;$("winnerCount").textContent=winners;
 }
 function renderAnswers(){
@@ -59,9 +44,7 @@ async function saveQuestion(){
 async function createRoom(){
  const code=Math.random().toString(36).slice(2,8).toUpperCase(); room=code;
  const title=$("quizTitle").value.trim()||"Live Quiz", count=Number($("qCount").value||10);
- const timerSeconds=Math.max(5,Math.min(3600,Number($("timerSeconds").value||30)));
- $("timerSeconds").value=timerSeconds;
- await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,qCount:count,timerSeconds});
+ await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,qCount:count});
  localStorage.setItem("liveQuizLastRoom",code);
  await openRoom(code);
 }
@@ -81,8 +64,6 @@ async function openRoom(code){
  if(!r || r.hostUid!==uid) return alert("Saved quiz room not found or not owned by this host.");
  room=code; localStorage.setItem("liveQuizLastRoom",code);
  $("quizTitle").value=r.title||"Live Quiz Competition"; $("qCount").value=Number(r.qCount||10);
- const savedTimer=Math.max(5,Math.min(3600,Number(r.timerSeconds||30)));
- $("timerSeconds").value=savedTimer; $("roomTimerSeconds").value=savedTimer;
  $("roomCode").textContent=code;$("roomInfo").classList.remove("hidden");$("quizControls").classList.remove("hidden");
  qNo=Number(r.currentQuestion||1)||1; if(qNo>Number($("qCount").value)) qNo=1;
  await loadAllQuestions(); await loadQ(qNo); subscribeRoom();
@@ -96,48 +77,14 @@ function subscribeRoom(){
  onValue(roomRef(),s=>{
    const r=s.val()||{}; $("roomState").innerHTML=`<span class="badge">${esc(r.state||"waiting")}</span>`;
    if(r.currentQuestion) $("liveQuestion").textContent=`Q${r.currentQuestion}: ${r.state}`;
-   $("timerSettingMsg").textContent=`${Number(r.timerSeconds||30)} seconds per question.`;
    if(r.winnerName) $("winnerBox").innerHTML=`🏆 <b>${esc(r.winnerName)}</b> — ${esc(r.winnerTimeText||"")} — Prize ₹${Number(r.winnerPrize||0)}`;
-   clearInterval(hostTimerInterval);
-   if(r.state==="open" && r.openedAt){
-     const duration=Math.max(5,Number(r.timerSeconds||30))*1000;
-     const tick=async()=>{
-       const remaining=Math.max(0,duration-(Date.now()-Number(r.openedAt)));
-       $("liveQuestion").textContent=`Q${r.currentQuestion}: LIVE — ${Math.ceil(remaining/1000)} sec remaining`;
-       if(remaining<=0){
-         clearInterval(hostTimerInterval);
-         const latest=(await get(roomRef())).val()||{};
-         if(latest.state==="open" && latest.currentQuestion===r.currentQuestion){
-           await update(roomRef(),{state:"closed",closedAt:serverTimestamp(),timerExpired:true});
-           $("controlMsg").textContent=`Time is over. Answers for Question ${r.currentQuestion} are closed automatically.`;
-         }
-       }
-     };
-     tick();
-     hostTimerInterval=setInterval(tick,250);
-   }
  });
  onValue(ref(db,`rooms/${room}/participants`),s=>{participantsCache=s.val()||{};renderParticipants();});
  onValue(ref(db,`rooms/${room}/answers/q${qNo}`),s=>{answersCache=s.val()||{};allAnswersCache[`q${qNo}`]=answersCache;renderAnswers();});
 }
-async function updateQuizTimer(){
- if(!room)return;
- const r=(await get(roomRef())).val()||{};
- if(r.currentQuestion && r.state!=="waiting"){
-   $("timerSettingMsg").textContent="Timer can only be changed before the first question is shown.";
-   return;
- }
- const seconds=Math.max(5,Math.min(3600,Number($("roomTimerSeconds").value||30)));
- await update(roomRef(),{timerSeconds:seconds});
- $("timerSeconds").value=seconds;
- $("roomTimerSeconds").value=seconds;
- $("timerSettingMsg").textContent=`Timer set to ${seconds} seconds per question.`;
-}
 async function showQuestion(){
  const q=(await get(qRef(qNo))).val(); if(!q)return alert("Save this question first.");
- const roomData=(await get(roomRef())).val()||{};
- const timerSeconds=Math.max(5,Number(roomData.timerSeconds||30));
- await update(roomRef(),{state:"open",currentQuestion:qNo,openedAt:serverTimestamp(),timerSeconds,closedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:q.prize});
+ await update(roomRef(),{state:"open",currentQuestion:qNo,openedAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:q.prize});
  $("controlMsg").textContent=`Question ${qNo} is now LIVE.`;
 }
 async function closeAnswers(){if(room)await update(roomRef(),{state:"closed",closedAt:serverTimestamp()});}
@@ -167,92 +114,21 @@ async function exportExcel(){
  if(!room)return alert("Create or resume a quiz room first.");
  if(!window.XLSX){alert("Excel export library could not be loaded. Please refresh the Host Panel and try again.");return;}
  await loadAllQuestions(); await refreshAllAnswerLogs();
- const participants=Object.values(participantsCache), winners=[], allAnswers=[], blocked=[];
- participants.forEach(p=>{if(p.winner)winners.push({Question:p.winnerQuestion,Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,Prize:p.winnerPrize,Status:"PRIZE WON"}); if(p.blocked||p.disqualified)blocked.push({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Winning Question":p.winnerQuestion||"",Prize:p.winnerPrize||0,Violations:p.violationCount||0,"Status":p.disqualified?"DISQUALIFIED":"BLOCKED"});});
+ const participants=Object.values(participantsCache), winners=[], allAnswers=[], blockedWinners=[], disqualified=[];
+ participants.forEach(p=>{
+   if(p.winner)winners.push({Question:p.winnerQuestion,Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,Prize:p.winnerPrize,Status:"PRIZE WON"});
+   if(p.blocked&&p.winner&&!p.disqualified)blockedWinners.push({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Winning Question":p.winnerQuestion||"",Prize:p.winnerPrize||0,Violations:p.violationCount||0,Status:"BLOCKED WINNER"});
+   if(p.disqualified&&!p.winner)disqualified.push({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,Violations:p.violationCount||0,Reason:p.disqualificationReason||"Anti-cheating violation",Status:"DISQUALIFIED"});
+ });
  Object.entries(allAnswersCache).forEach(([qkey,answers])=>Object.values(answers||{}).forEach(a=>allAnswers.push({"Question":qkey.replace(/^q/,""),Name:a.name,Designation:a.designation,"Place of Posting":a.placeOfPosting,Mobile:a.phone,Answer:a.answer,Correct:a.correct?"Yes":"No","Time (sec)":a.elapsedMs==null?"":(a.elapsedMs/1000).toFixed(3),Eligible:a.eligible===false?"No":"Yes"})));
  const qres=Object.entries(questionsCache).sort((a,b)=>Number(a[0].replace(/^q/,""))-Number(b[0].replace(/^q/,""))).map(([k,q])=>({Question:k.replace(/^q/,""),QuestionText:q.text||"",Prize:q.prize||0,CorrectAnswer:q.correct||""}));
  const wb=XLSX.utils.book_new();
  function add(name,data){const ws=XLSX.utils.json_to_sheet(data.length?data:[{Info:"No data"}]);XLSX.utils.book_append_sheet(wb,ws,name);}
- add("Prize Winners",winners); add("All Participants",participants.map(p=>({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Prize Won":p.winnerPrize||"",Violations:p.violationCount||0,Status:p.disqualified?"DISQUALIFIED":p.blocked?"BLOCKED":"ACTIVE"}))); add("Answer Log",allAnswers); add("Question Results",qres); add("Blocked Participants",blocked);
+ add("Prize Winners",winners); add("All Participants",participants.map(p=>({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Prize Won":p.winnerPrize||"",Violations:p.violationCount||0,Status:p.winner?"PRIZE WON":p.disqualified?"DISQUALIFIED":p.blocked?"BLOCKED":"ACTIVE"}))); add("Answer Log",allAnswers); add("Question Results",qres); add("Blocked Winners",blockedWinners); add("Disqualified Participants",disqualified);
  XLSX.writeFile(wb,`Quiz_Results_${room}.xlsx`);
 }
 $("signupBtn").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Account created. You are signed in.");}catch(e){msg(e.message)}};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
-$("importWordBtn").onclick=importWordQuestions;
-$("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
-$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
-
-
-// ---------------- Word (.docx) MCQ importer ----------------
-function wordNorm(s){return String(s??"").replace(/\u00a0/g," ").replace(/[ \t]+/g," ").trim();}
-async function readDocxParagraphs(buffer){
-  if(!window.JSZip) throw new Error("Word reader is not loaded. Please refresh the Host Panel and try again.");
-  const zip=await window.JSZip.loadAsync(buffer);
-  const entry=zip.file("word/document.xml");
-  if(!entry) throw new Error("This is not a valid .docx file.");
-  const xml=await entry.async("string");
-  const doc=new DOMParser().parseFromString(xml,"application/xml");
-  if(doc.getElementsByTagName("parsererror").length) throw new Error("The Word document could not be read.");
-  const paras=[...doc.getElementsByTagName("w:p")];
-  return paras.map(p=>[...p.getElementsByTagName("w:t")].map(t=>t.textContent||"").join("")).map(wordNorm).filter(Boolean);
-}
-function parseWordMCQ(lines){
-  const questions=new Map(), answers={}; let current=null, inKey=false;
-  for(let i=0;i<lines.length;i++){
-    const line=wordNorm(lines[i]);
-    if(!line) continue;
-    if(/^उत्तरमाला(?:\s*\(.*\))?$/i.test(line) || /^answer\s*key$/i.test(line)){inKey=true; current=null; continue;}
-    if(inKey) continue;
-    let m=line.match(/^(\d+)\s*[.)]\s*(.+)$/);
-    if(m){current={number:Number(m[1]),text:wordNorm(m[2]),options:{A:"",B:"",C:"",D:""}}; questions.set(current.number,current); continue;}
-    m=line.match(/^([ABCD])\s*[.)]\s*(.+)$/i);
-    if(m && current){current.options[m[1].toUpperCase()]=wordNorm(m[2]);}
-  }
-  // The supplied document stores the answer key as alternating paragraphs: 1, A, 16, C, 2, A, ...
-  const keyStart=lines.findIndex(x=>/^उत्तरमाला(?:\s*\(.*\))?$/i.test(wordNorm(x)) || /^answer\s*key$/i.test(wordNorm(x)));
-  if(keyStart>=0){
-    const vals=lines.slice(keyStart+1).map(wordNorm).filter(Boolean);
-    for(let i=0;i<vals.length;){
-      if(/^प्रश्न$/i.test(vals[i]) || /^उत्तर$/i.test(vals[i])){i++;continue;}
-      const n=vals[i].match(/^(\d+)$/); const a=vals[i+1]?.match(/^([ABCD])$/i);
-      if(n && a){answers[Number(n[1])]=a[1].toUpperCase(); i+=2; continue;}
-      const pair=vals[i].match(/^(\d+)\s*[.:\-]?\s*([ABCD])$/i);
-      if(pair){answers[Number(pair[1])]=pair[2].toUpperCase(); i++; continue;}
-      // Also accept compact cells/paragraphs such as "1 A 16 C".
-      const all=[...vals[i].matchAll(/(\d+)\s*([ABCD])\b/gi)];
-      if(all.length){all.forEach(x=>answers[Number(x[1])]=x[2].toUpperCase());}
-      i++;
-    }
-  }
-  const result=[...questions.values()].sort((a,b)=>a.number-b.number).filter(q=>q.text && q.options.A && q.options.B && q.options.C && q.options.D);
-  result.forEach(q=>q.correct=answers[q.number]||"");
-  return result;
-}
-async function importWordQuestions(){
-  const status=$("wordImportMsg");
-  try{
-    if(!room){status.textContent="Please create or resume a quiz room first."; return;}
-    const input=$("wordFileInput"), file=input?.files?.[0];
-    if(!file){status.textContent="Please choose a .docx Word file first."; return;}
-    if(!/\.docx$/i.test(file.name)){status.textContent="Please select a .docx Word file."; return;}
-    status.textContent=`Reading ${file.name}…`;
-    const parsed=parseWordMCQ(await readDocxParagraphs(await file.arrayBuffer()));
-    if(!parsed.length) throw new Error("No complete MCQs were found.");
-    const missing=parsed.filter(q=>!q.correct);
-    if(missing.length) throw new Error(`Answer key missing for question(s): ${missing.map(q=>q.number).join(", ")}`);
-    const invalid=parsed.filter(q=>!['A','B','C','D'].includes(q.correct));
-    if(invalid.length) throw new Error(`Invalid answer key for question(s): ${invalid.map(q=>q.number).join(", ")}`);
-    const ok=window.confirm(`Found ${parsed.length} questions in ${file.name}.\n\nImport them into room ${room}?`);
-    if(!ok){status.textContent="Import cancelled."; return;}
-    const defaultPrize=Number($("prize")?.value||0), updates={};
-    parsed.forEach((q,i)=>updates[`rooms/${room}/questions/q${i+1}`]={number:i+1,text:q.text,options:q.options,correct:q.correct,prize:defaultPrize,importedFrom:file.name,updatedAt:serverTimestamp()});
-    updates[`rooms/${room}/qCount`]=parsed.length;
-    await update(ref(db),updates);
-    $("qCount").value=parsed.length; qNo=1; await loadAllQuestions(); await loadQ(1);
-    status.textContent=`✓ Imported ${parsed.length} questions successfully. You can set each Prize (₹) separately.`;
-    $("controlMsg").textContent=`${parsed.length} questions imported from ${file.name}.`;
-  }catch(err){console.error(err); status.textContent=`Import failed: ${err?.message||err}`;}
-}
-
+$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
 onAuthStateChanged(auth,async user=>{uid=user?.uid||null;$("authStatus").textContent=user?"Host signed in":"Not signed in";$("loginCard").classList.toggle("hidden",!!user);$("hostApp").classList.toggle("hidden",!user);if(user){await loadExistingRooms();const last=localStorage.getItem("liveQuizLastRoom");if(last) {const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}}});

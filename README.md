@@ -55,10 +55,3 @@ Upload all files to a repository. Settings → Pages → Deploy from branch → 
 for the host and:
 `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/student.html`
 for students.
-
-
-## Host-controlled timer
-
-When creating a new quiz room, the Host can set **Time per Question (seconds)**. The default is 30 seconds. Before the first question is shown, the Host can also change the timer in the room settings and click **Update Timer**.
-
-When the Host clicks **SHOW QUESTION**, the timer starts. Participants see a countdown. When the time expires, the Host panel automatically closes the question and late submissions are rejected.

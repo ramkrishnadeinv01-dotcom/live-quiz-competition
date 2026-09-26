@@ -1,0 +1,5 @@
+Updated status separation:
+- Legitimate prize winners are BLOCKED WINNERS, not disqualified.
+- Disqualified list contains only anti-cheating participants.
+- Excel has separate Blocked Winners and Disqualified Participants sheets.
+- A post-win anti-cheating event is logged but does not convert an already legitimate winner into DISQUALIFIED.

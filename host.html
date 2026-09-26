@@ -15,29 +15,14 @@
       <div class="row">
         <div class="field"><label>Quiz Title</label><input id="quizTitle" value="Live Quiz Competition"></div>
         <div class="field"><label>Number of Questions</label><input id="qCount" type="number" min="1" value="10"></div>
-        <div class="field"><label>Time per Question (seconds)</label><input id="timerSeconds" type="number" min="5" max="3600" value="30"></div>
       </div>
       <div class="row" style="margin-top:12px"><button id="createRoomBtn">Create New Quiz Room</button><button id="resumeRoomBtn" class="success">Resume Existing Quiz</button><button id="logoutBtn" class="secondary">Sign Out</button></div>
       <div class="row" style="margin-top:12px"><div class="field"><label>Existing Quiz Room</label><select id="existingRooms"><option value="">Select a saved quiz room</option></select></div></div>
-      <div id="roomInfo" class="hidden" style="margin-top:15px">
-        <span>Room Code</span><div id="roomCode" class="roomcode"></div><div id="roomState"></div>
-        <div class="row" style="margin-top:10px">
-          <div class="field"><label>Quiz Timer (seconds)</label><input id="roomTimerSeconds" type="number" min="5" max="3600" value="30"></div>
-          <div class="field" style="justify-content:end"><button id="updateTimerBtn" class="secondary" type="button">Update Timer</button></div>
-        </div>
-        <p id="timerSettingMsg" class="muted">You can change the timer before the first question is shown.</p>
-      </div>
+      <div id="roomInfo" class="hidden" style="margin-top:15px"><span>Room Code</span><div id="roomCode" class="roomcode"></div><div id="roomState"></div></div>
     </div>
 
     <div id="quizControls" class="hidden grid">
       <div>
-        <div class="card" style="margin-bottom:12px">
-          <h2>Upload MCQ Word Document</h2>
-          <p class="notice">Upload a .docx containing numbered questions, options A–D, and a separate Answer Key. Prize amounts are NOT taken from the Word file.</p>
-          <input id="wordFileInput" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-          <button id="importWordBtn" type="button" style="margin-top:10px">Import Questions</button>
-          <p id="wordImportMsg"></p>
-        </div>
         <div class="card">
           <h2 id="editorHeading">Question 1</h2>
           <div class="field"><label>Question</label><textarea id="questionText"></textarea></div>
@@ -64,14 +49,17 @@
       <div>
         <div class="card"><h2>Live Statistics</h2><div class="statgrid"><div class="stat">Online<b id="onlineCount">0</b></div><div class="stat">Answers<b id="answerCount">0</b></div><div class="stat">Blocked<b id="blockedCount">0</b></div><div class="stat">Winners<b id="winnerCount">0</b></div></div></div>
         <div class="card"><h2>Winner / Tie Break</h2><div id="winnerBox" class="status">No winner selected.</div><button id="randomTieBtn" class="warning" disabled>🎲 RANDOM TIE-BREAK</button></div>
-        <div class="card"><h2>Participants</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Violations</th><th>Status</th><th>Host Action</th></tr></thead><tbody id="participants"></tbody></table></div></div>
+        <div class="card"><h2>Participants</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Violations</th><th>Status</th></tr></thead><tbody id="participants"></tbody></table></div></div>
+        <div class="split-panels">
+          <div class="card"><h2>🏆 Blocked Winners</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Mobile</th><th>Question</th><th>Prize</th><th>Status</th></tr></thead><tbody id="blockedWinners"></tbody></table></div></div>
+          <div class="card"><h2>🚫 Disqualified Participants</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Mobile</th><th>Violations</th><th>Reason</th><th>Status</th></tr></thead><tbody id="disqualifiedParticipants"></tbody></table></div></div>
+        </div>
         <div class="card"><h2>Current Answers</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Answer</th><th>Correct</th><th>Time</th><th>Eligible</th></tr></thead><tbody id="answers"></tbody></table></div></div>
-        <div class="card"><h2>Final Results</h2><button id="exportBtn" class="success">📊 DOWNLOAD EXCEL</button><p class="muted">Exports winners, participants, answer log, question results and blocked participants.</p></div>
+        <div class="card"><h2>Final Results</h2><button id="exportBtn" class="success">📊 DOWNLOAD EXCEL</button><p class="muted">Exports winners, all participants, answer log, question results, blocked winners and disqualified participants separately.</p></div>
       </div>
     </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="module" src="host.js"></script>
 </body></html>
