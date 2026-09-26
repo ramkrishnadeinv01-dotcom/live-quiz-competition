@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Host Panel</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header><div><h1>🏆 Live Quiz — Host Panel</h1><small>Hindi Question-Answer Platform</small></div><span id="authStatus" class="badge">Connecting…</span></header>
+<div class="container">
+  <div id="loginCard" class="card">
+    <h2>Host Login</h2><p class="notice">This panel is for the host only. Create/sign in with a Firebase Email/Password account.</p>
+    <div class="row"><div class="field"><label>Email</label><input id="email" type="email"></div><div class="field"><label>Password</label><input id="password" type="password"></div></div>
+    <div class="row" style="margin-top:12px"><button id="signupBtn">Create Host Account</button><button id="loginBtn" class="success">Sign In</button></div>
+    <p id="loginMsg"></p>
+  </div>
+
+  <div id="hostApp" class="hidden">
+    <div class="card">
+      <div class="row">
+        <div class="field"><label>Quiz Title</label><input id="quizTitle" value="Live Quiz Competition"></div>
+        <div class="field"><label>Number of Questions</label><input id="qCount" type="number" min="1" value="10"></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button id="createRoomBtn">Create New Quiz Room</button><button id="logoutBtn" class="secondary">Sign Out</button></div>
+      <div id="roomInfo" class="hidden" style="margin-top:15px"><span>Room Code</span><div id="roomCode" class="roomcode"></div><div id="roomState"></div></div>
+    </div>
+
+    <div id="quizControls" class="hidden grid">
+      <div>
+        <div class="card">
+          <h2 id="editorHeading">Question 1</h2>
+          <div class="field"><label>Question</label><textarea id="questionText"></textarea></div>
+          <div class="row" style="margin-top:10px">
+            <div class="field"><label>Option A</label><input id="optA"></div><div class="field"><label>Option B</label><input id="optB"></div>
+          </div><div class="row" style="margin-top:10px">
+            <div class="field"><label>Option C</label><input id="optC"></div><div class="field"><label>Option D</label><input id="optD"></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div class="field"><label>Correct Answer</label><select id="correct"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
+            <div class="field"><label>Prize (₹)</label><input id="prize" type="number" min="0" value="500"></div>
+          </div>
+          <div class="row" style="margin-top:12px"><button id="saveQBtn">Save Question</button><button id="prevQBtn" class="secondary">Previous</button><button id="nextEditBtn" class="secondary">Next Question</button></div>
+        </div>
+
+        <div class="card">
+          <h2>Live Question Control</h2>
+          <div id="liveQuestion" class="status">No question is open.</div>
+          <div class="row"><button id="showBtn" class="success">▶ SHOW QUESTION</button><button id="closeBtn" class="danger">■ CLOSE ANSWERS</button><button id="revealBtn" class="warning">🏆 SHOW ANSWER & WINNER</button><button id="nextBtn" class="secondary">⏭ NEXT QUESTION</button></div>
+          <p id="controlMsg"></p>
+        </div>
+      </div>
+
+      <div>
+        <div class="card"><h2>Live Statistics</h2><div class="statgrid"><div class="stat">Online<b id="onlineCount">0</b></div><div class="stat">Answers<b id="answerCount">0</b></div><div class="stat">Blocked<b id="blockedCount">0</b></div><div class="stat">Winners<b id="winnerCount">0</b></div></div></div>
+        <div class="card"><h2>Winner / Tie Break</h2><div id="winnerBox" class="status">No winner selected.</div><button id="randomTieBtn" class="warning" disabled>🎲 RANDOM TIE-BREAK</button></div>
+        <div class="card"><h2>Participants</h2><div class="tablewrap"><table><thead><tr><th>ID</th><th>Name</th><th>City</th><th>Status</th></tr></thead><tbody id="participants"></tbody></table></div></div>
+        <div class="card"><h2>Current Answers</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Answer</th><th>Correct</th><th>Time</th><th>Eligible</th></tr></thead><tbody id="answers"></tbody></table></div></div>
+        <div class="card"><h2>Final Results</h2><button id="exportBtn" class="success">📊 DOWNLOAD EXCEL</button><p class="muted">Exports winners, participants, answer log, question results and blocked participants.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module" src="host.js"></script>
+</body></html>

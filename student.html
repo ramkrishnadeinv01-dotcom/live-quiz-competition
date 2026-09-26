@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css"></head>
+<body id="studentBody">
+<header><div><h1>🎓 Live Quiz</h1><small>Student Panel</small></div><span id="connection" class="badge">Connecting…</span></header>
+<div class="container">
+  <div id="joinCard" class="card">
+    <h2>Join Quiz</h2>
+    <div class="notice"><b>Important:</b> One verified mobile number can participate only once in this quiz. OTP verification is required.</div>
+    <div class="row" style="margin-top:12px"><div class="field"><label>Room Code</label><input id="roomCodeInput" maxlength="6" placeholder="e.g. ABC123"></div><div class="field"><label>Mobile Number</label><input id="phoneNumber" type="tel" inputmode="tel" placeholder="+91XXXXXXXXXX"></div></div>
+    <div id="recaptcha-container" style="margin-top:12px"></div>
+    <div class="row" style="margin-top:12px"><button id="sendOtpBtn">SEND OTP</button></div>
+    <div id="otpArea" class="hidden" style="margin-top:12px"><div class="field"><label>OTP</label><input id="otpCode" inputmode="numeric" maxlength="6" placeholder="6-digit OTP"></div><button id="verifyOtpBtn" style="margin-top:10px">VERIFY OTP</button></div>
+    <div id="detailsArea" class="hidden" style="margin-top:14px"><div class="row"><div class="field"><label>Your Name</label><input id="studentName"></div><div class="field"><label>Student / Participant ID</label><input id="studentId"></div></div><div class="row" style="margin-top:10px"><div class="field"><label>City</label><input id="city"></div></div><button id="joinBtn" class="success" style="margin-top:12px">JOIN QUIZ</button></div>
+    <p id="joinMsg"></p>
+  </div>
+  <div id="quizCard" class="hidden">
+    <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><b id="title"></b><div>Room: <b id="room"></b></div></div><div class="timer" id="timer">00.000</div></div></div>
+    <div id="fullscreenNotice" class="notice">Full-screen mode is required during the competition. Leaving full screen or switching away from this page may be recorded as a violation.</div>
+    <div id="studentStatus" class="status">Waiting for host…</div>
+    <div id="violationStatus" class="status hidden"></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 id="qNo">Question</h2><h2 id="prize">₹0</h2></div><div id="question" class="question">Waiting for the host to show the next question.</div><div id="options"></div><button id="submitBtn" class="success" disabled>SUBMIT ANSWER</button><div id="result" style="margin-top:12px"></div></div>
+  </div>
+</div>
+<script type="module" src="student.js"></script>
+</body></html>

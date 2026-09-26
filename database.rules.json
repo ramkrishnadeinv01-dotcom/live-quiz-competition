@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "hosts": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "rooms": {
+      "$room": {
+        ".read": "auth != null",
+        ".write": "auth != null && (data.child('hostUid').val() === auth.uid || (!data.exists() && newData.child('hostUid').val() === auth.uid))",
+        "participants": {
+          "$student": {
+            ".read": "auth != null",
+            ".write": "auth != null && ((auth.uid === $student && !data.exists()) || root.child('rooms').child($room).child('hostUid').val() === auth.uid)"
+          }
+        },
+        "questions": {
+          "$q": {
+            ".read": "auth != null && (root.child('rooms').child($room).child('hostUid').val() === auth.uid || (root.child('rooms').child($room).child('state').val() === 'open' && root.child('rooms').child($room).child('currentQuestion').val() == $q))",
+            ".write": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid"
+          }
+        },
+        "answers": {
+          "$q": {
+            "$student": {
+              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+              ".write": "auth != null && auth.uid === $student && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()"
+            }
+          }
+        },
+        "violations": {
+          "$student": {
+            "$event": {
+              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+              ".write": "auth != null && auth.uid === $student && !data.exists()"
+            }
+          }
+        }
+      }
+    }
+  }
+}
