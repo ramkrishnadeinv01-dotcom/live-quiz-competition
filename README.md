@@ -1,47 +1,57 @@
-# Live Quiz Competition — Word MCQ Upload Version
+# Live Quiz Competition — Firebase + GitHub Pages
 
-This package keeps the existing Firebase + GitHub Pages quiz and adds a Host Panel feature to import MCQs from a `.docx` Word document.
+This package is connected to the Firebase project shown during setup:
+**Hindi Question-Answer Platform**
 
-## Word document format
+## Files
+- `host.html` — host control panel
+- `student.html` — student panel
+- `host.js` / `student.js` — realtime quiz logic
+- `firebase-config.js` — your Firebase web configuration
+- `database.rules.json` — starter rules
+- `styles.css` — responsive UI
 
-Use:
-1. Numbered question, e.g. `1. Question text`
-2. Four options:
-   - `A. Option A`
-   - `B. Option B`
-   - `C. Option C`
-   - `D. Option D`
-3. An `Answer Key` section with entries such as `1 A`, `2 B`, etc.
+## Before first use
 
-The importer does NOT read or create prize amounts from the Word document.
+### 1. Enable Firebase Authentication for the host
+Firebase Console → Build/Security → Authentication → Get started.
+Enable:
+- Email/Password (for host)
 
-## Import workflow
+Student SMS/OTP authentication is **not used** in this version, so Firebase phone-auth billing is not required for students.
 
-1. Host signs in.
-2. Create or resume a quiz room.
-3. Select the `.docx` file under **Upload MCQ Word Document**.
-4. Click **Import Questions**.
-5. Confirm the number of questions found.
-6. The questions are saved to the current Firebase room.
-7. The existing **Prize (₹)** field remains available for each question. The current prize field value is used as the initial prize for all imported questions, and the host can edit each question's prize before the quiz.
+### 2. Publish the rules
+Realtime Database → Rules → replace the rules with the contents of `database.rules.json` → Publish.
 
-## Included features
+IMPORTANT: These rules are a starting point. The host login is protected by Firebase Authentication, but for a high-stakes paid competition you should add stronger server-side winner adjudication (for example Cloud Functions/Admin SDK) before the event.
 
-- Participant Panel naming
-- No OTP / no SMS requirement
-- One mobile number per quiz
-- Host-controlled live questions
-- One prize per participant
-- Anti-cheating disqualification
-- Random tie handling
-- Resume saved quiz rooms
-- Excel export
-- Word `.docx` MCQ import
+### 3. Host
+Open `host.html` on your GitHub Pages site.
+Create a host account or sign in.
+Create a room, save all questions, then use:
+SHOW QUESTION → CLOSE ANSWERS → SHOW ANSWER & WINNER → NEXT QUESTION.
 
-## External libraries
+### 4. Students
+Give students the URL:
+`student.html`
+and the room code. They enter their **Name, Designation, Place of Posting and Mobile Number**. No OTP is sent. The same normalized mobile number can participate only once in a quiz room.
 
-The Host Panel loads:
-- SheetJS for Excel export
-- JSZip in the browser for reading the `.docx` ZIP/XML structure
+## Rules implemented
+- Host controls question release.
+- One answer per participant per question.
+- Participant identity is based on the normalized mobile number for that quiz room.
+- Only correct answers are eligible.
+- Fastest recorded server receipt is considered first.
+- Exact equal fastest server-receipt timestamps trigger random tie selection.
+- Once a participant wins a prize, they are blocked for the rest of that quiz.
+- Excel export is available from the host panel.
 
-Both are loaded from public CDNs when the Host Panel is opened.
+## Important timing note
+The database records a Firebase server timestamp when the answer is written. The displayed elapsed time is also calculated in the browser from the question's opening timestamp. For a prize event where disputes must be impossible, use a server-side adjudicator/Cloud Function so the authoritative elapsed time and tie resolution cannot be altered by a browser.
+
+## GitHub Pages
+Upload all files to a repository. Settings → Pages → Deploy from branch → main / root. Then use:
+`https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/host.html`
+for the host and:
+`https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/student.html`
+for students.
