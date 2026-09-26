@@ -6,6 +6,7 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 const $=id=>document.getElementById(id);
 let uid=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
+let hostTimerInterval=null;
 let unsubRoom=null, unsubParticipants=null, unsubQuestions=null, answerListeners={};
 
 function msg(t,cls=""){ $("loginMsg").textContent=t; $("loginMsg").className=cls; }
@@ -58,7 +59,9 @@ async function saveQuestion(){
 async function createRoom(){
  const code=Math.random().toString(36).slice(2,8).toUpperCase(); room=code;
  const title=$("quizTitle").value.trim()||"Live Quiz", count=Number($("qCount").value||10);
- await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,qCount:count});
+ const timerSeconds=Math.max(5,Math.min(3600,Number($("timerSeconds").value||30)));
+ $("timerSeconds").value=timerSeconds;
+ await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,qCount:count,timerSeconds});
  localStorage.setItem("liveQuizLastRoom",code);
  await openRoom(code);
 }
@@ -78,6 +81,8 @@ async function openRoom(code){
  if(!r || r.hostUid!==uid) return alert("Saved quiz room not found or not owned by this host.");
  room=code; localStorage.setItem("liveQuizLastRoom",code);
  $("quizTitle").value=r.title||"Live Quiz Competition"; $("qCount").value=Number(r.qCount||10);
+ const savedTimer=Math.max(5,Math.min(3600,Number(r.timerSeconds||30)));
+ $("timerSeconds").value=savedTimer; $("roomTimerSeconds").value=savedTimer;
  $("roomCode").textContent=code;$("roomInfo").classList.remove("hidden");$("quizControls").classList.remove("hidden");
  qNo=Number(r.currentQuestion||1)||1; if(qNo>Number($("qCount").value)) qNo=1;
  await loadAllQuestions(); await loadQ(qNo); subscribeRoom();
@@ -91,14 +96,48 @@ function subscribeRoom(){
  onValue(roomRef(),s=>{
    const r=s.val()||{}; $("roomState").innerHTML=`<span class="badge">${esc(r.state||"waiting")}</span>`;
    if(r.currentQuestion) $("liveQuestion").textContent=`Q${r.currentQuestion}: ${r.state}`;
+   $("timerSettingMsg").textContent=`${Number(r.timerSeconds||30)} seconds per question.`;
    if(r.winnerName) $("winnerBox").innerHTML=`🏆 <b>${esc(r.winnerName)}</b> — ${esc(r.winnerTimeText||"")} — Prize ₹${Number(r.winnerPrize||0)}`;
+   clearInterval(hostTimerInterval);
+   if(r.state==="open" && r.openedAt){
+     const duration=Math.max(5,Number(r.timerSeconds||30))*1000;
+     const tick=async()=>{
+       const remaining=Math.max(0,duration-(Date.now()-Number(r.openedAt)));
+       $("liveQuestion").textContent=`Q${r.currentQuestion}: LIVE — ${Math.ceil(remaining/1000)} sec remaining`;
+       if(remaining<=0){
+         clearInterval(hostTimerInterval);
+         const latest=(await get(roomRef())).val()||{};
+         if(latest.state==="open" && latest.currentQuestion===r.currentQuestion){
+           await update(roomRef(),{state:"closed",closedAt:serverTimestamp(),timerExpired:true});
+           $("controlMsg").textContent=`Time is over. Answers for Question ${r.currentQuestion} are closed automatically.`;
+         }
+       }
+     };
+     tick();
+     hostTimerInterval=setInterval(tick,250);
+   }
  });
  onValue(ref(db,`rooms/${room}/participants`),s=>{participantsCache=s.val()||{};renderParticipants();});
  onValue(ref(db,`rooms/${room}/answers/q${qNo}`),s=>{answersCache=s.val()||{};allAnswersCache[`q${qNo}`]=answersCache;renderAnswers();});
 }
+async function updateQuizTimer(){
+ if(!room)return;
+ const r=(await get(roomRef())).val()||{};
+ if(r.currentQuestion && r.state!=="waiting"){
+   $("timerSettingMsg").textContent="Timer can only be changed before the first question is shown.";
+   return;
+ }
+ const seconds=Math.max(5,Math.min(3600,Number($("roomTimerSeconds").value||30)));
+ await update(roomRef(),{timerSeconds:seconds});
+ $("timerSeconds").value=seconds;
+ $("roomTimerSeconds").value=seconds;
+ $("timerSettingMsg").textContent=`Timer set to ${seconds} seconds per question.`;
+}
 async function showQuestion(){
  const q=(await get(qRef(qNo))).val(); if(!q)return alert("Save this question first.");
- await update(roomRef(),{state:"open",currentQuestion:qNo,openedAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:q.prize});
+ const roomData=(await get(roomRef())).val()||{};
+ const timerSeconds=Math.max(5,Number(roomData.timerSeconds||30));
+ await update(roomRef(),{state:"open",currentQuestion:qNo,openedAt:serverTimestamp(),timerSeconds,closedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:q.prize});
  $("controlMsg").textContent=`Question ${qNo} is now LIVE.`;
 }
 async function closeAnswers(){if(room)await update(roomRef(),{state:"closed",closedAt:serverTimestamp()});}
@@ -142,7 +181,7 @@ $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("ema
 $("logoutBtn").onclick=()=>signOut(auth);
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
-$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
+$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
 
 
 // ---------------- Word (.docx) MCQ importer ----------------
