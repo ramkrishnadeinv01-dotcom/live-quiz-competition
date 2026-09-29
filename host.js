@@ -6,19 +6,74 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 const $=id=>document.getElementById(id);
 let uid=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
-let hostTimerInterval=null;
+let hostTimerInterval=null, competitionFrozen=false;
 let unsubRoom=null, unsubParticipants=null, unsubQuestions=null, answerListeners={};
 
 function msg(t,cls=""){ $("loginMsg").textContent=t; $("loginMsg").className=cls; }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function roomRef(){return ref(db,`rooms/${room}`);}
 function qRef(n){return ref(db,`rooms/${room}/questions/q${n}`);}
+function localRunDate(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function runLabel(run){
+  const d=run?.runStartedAt || run?.closedAt || run?.createdAt || 0;
+  const dt=d ? new Date(Number(d)) : null;
+  const date=run?.runDate || (dt ? `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}` : "Unknown date");
+  const time=dt && !Number.isNaN(dt.getTime()) ? ` — ${dt.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}` : "";
+  return `${date}${time}`;
+}
+async function archiveCurrentRun(r, force=false){
+  if(!room || !r) return null;
+  const runId=r.runId || `${r.runDate||localRunDate()}_${r.runStartedAt||Date.now()}`;
+  if(r.runArchived && !force) return runId;
+  const [ps,as,vs,qs]=await Promise.all([
+    get(ref(db,`rooms/${room}/participants`)),
+    get(ref(db,`rooms/${room}/answers`)),
+    get(ref(db,`rooms/${room}/violations`)),
+    get(ref(db,`rooms/${room}/questions`))
+  ]);
+  const archive={
+    runId, runDate:r.runDate||localRunDate(), runStartedAt:r.runStartedAt||r.createdAt||Date.now(),
+    closedAt:r.closedAt||Date.now(), title:r.title||"Live Quiz Competition", qCount:Number(r.qCount||10), timerSeconds:Number(r.timerSeconds||30),
+    participants:ps.val()||{}, answers:as.val()||{}, violations:vs.val()||{}, questions:qs.val()||{}
+  };
+  await set(ref(db,`rooms/${room}/runs/${runId}`),archive);
+  return runId;
+}
+async function populateRunSelector(){
+  const sel=$("resultRunSelect"); if(!sel || !room)return;
+  const snap=await get(ref(db,`rooms/${room}/runs`)); const runs=snap.val()||{};
+  sel.innerHTML='<option value="">Select a completed competition</option>';
+  Object.entries(runs).sort((a,b)=>(Number(b[1]?.closedAt)||0)-(Number(a[1]?.closedAt)||0)).forEach(([id,run])=>{
+    const opt=document.createElement("option"); opt.value=id; opt.textContent=runLabel(run); sel.appendChild(opt);
+  });
+}
+async function getSelectedRun(){
+  const id=$("resultRunSelect")?.value;
+  if(!room || !id)return null;
+  const s=await get(ref(db,`rooms/${room}/runs/${id}`)); return s.exists()?s.val():null;
+}
+function renderSelectedRun(run){
+  const box=$("selectedResultSummary"), tables=$("selectedResultTables");
+  if(!run){ if(box)box.textContent="Select a completed competition to view its frozen result."; if(tables)tables.classList.add("hidden"); return; }
+  const participants=Object.values(run.participants||{});
+  const winners=participants.filter(p=>p.winner);
+  const disq=participants.filter(p=>p.disqualified && !p.winner);
+  if(box)box.innerHTML=`<b>${esc(runLabel(run))}</b> — ${winners.length} prize winner(s), ${participants.length} participant(s), ${disq.length} disqualified participant(s). This result is frozen.`;
+  const wb=$("historyWinners"), db=$("historyDisqualified");
+  if(wb)wb.innerHTML=winners.length?winners.map(p=>`<tr><td>Q${esc(p.winnerQuestion||"")}</td><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>₹${Number(p.winnerPrize||0)}</td></tr>`).join(""):'<tr><td colspan="6">No prize winners.</td></tr>';
+  if(db)db.innerHTML=disq.length?disq.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td>DISQUALIFIED</td></tr>`).join(""):'<tr><td colspan="6">No disqualified participants.</td></tr>';
+  if(tables)tables.classList.remove("hidden");
+}
+async function viewSelectedResult(){ renderSelectedRun(await getSelectedRun()); }
 function clearSubscriptions(){
   // Firebase onValue unsubscribe functions are not stored by older SDK code here; page refresh is the normal lifecycle.
   answerListeners={};
 }
 async function unblockDisqualified(studentKey){
- if(!room || !uid) return;
+ if(!room || !uid || competitionFrozen) return;
  const p=participantsCache[studentKey];
  if(!p || !p.disqualified) return;
  if(!confirm(`Unblock ${p.name || "this participant"}? They will be allowed to participate again. Previous violation history will be retained.`)) return;
@@ -36,7 +91,7 @@ function renderDisqualifiedParticipants(){
  const body=$("disqualifiedParticipants");
  if(!body)return;
  if(!arr.length){body.innerHTML='<tr><td colspan="6">No disqualified participants.</td></tr>';return;}
- body.innerHTML=arr.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td><span class="badge red">BLOCKED / DISQUALIFIED</span> <button class="unblockBtn success" data-student-key="${esc(p.studentKey)}">UNBLOCK</button></td></tr>`).join("");
+ body.innerHTML=arr.map(p=>`<tr><td>${esc(p.name)}</td><td>${esc(p.designation)}</td><td>${esc(p.placeOfPosting)}</td><td>${esc(p.phone)}</td><td>${Number(p.violationCount||0)}</td><td><span class="badge red">BLOCKED / DISQUALIFIED</span> <button class="unblockBtn success" data-student-key="${esc(p.studentKey)}" ${competitionFrozen?"disabled":""}>UNBLOCK</button></td></tr>`).join("");
  document.querySelectorAll('.unblockBtn').forEach(btn=>btn.onclick=()=>unblockDisqualified(btn.dataset.studentKey));
 }
 function renderBlockedWinners(){
@@ -77,7 +132,7 @@ async function createRoom(){
  const title=$("quizTitle").value.trim()||"Live Quiz", count=Number($("qCount").value||10);
  const timerSeconds=Math.max(5,Math.min(3600,Number($("timerSeconds").value||30)));
  $("timerSeconds").value=timerSeconds;
- await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,competitionClosed:false,qCount:count,timerSeconds});
+ await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),runStartedAt:Date.now(),runDate:localRunDate(),runId:`${localRunDate()}_${Date.now()}`,runArchived:false,closedAt:null,revealed:false,winnerKey:null,competitionClosed:false,qCount:count,timerSeconds});
  localStorage.setItem("liveQuizLastRoom",code);
  await openRoom(code);
 }
@@ -96,6 +151,7 @@ async function openRoom(code){
  const snap=await get(ref(db,`rooms/${code}`)); const r=snap.val();
  if(!r || r.hostUid!==uid) return alert("Saved quiz room not found or not owned by this host.");
  room=code; localStorage.setItem("liveQuizLastRoom",code);
+ if(r.competitionClosed || r.state==="competition_closed"){ const rs=await get(ref(db,`rooms/${room}/runs`)); if(!rs.exists()) { await archiveCurrentRun(r,true); } await populateRunSelector(); }
  $("quizTitle").value=r.title||"Live Quiz Competition"; $("qCount").value=Number(r.qCount||10);
  const savedTimer=Math.max(5,Math.min(3600,Number(r.timerSeconds||30)));
  $("timerSeconds").value=savedTimer; $("roomTimerSeconds").value=savedTimer;
@@ -122,6 +178,7 @@ function subscribeRoom(){
  onValue(roomRef(),s=>{
    const r=s.val()||{}; $("roomState").innerHTML=`<span class="badge">${esc(r.state||"waiting")}</span>`;
    if(r.competitionClosed || r.state==="competition_closed"){
+     competitionFrozen=true;
      clearInterval(hostTimerInterval);
      $("hostCountdown").textContent="CLOSED";
      $("liveQuestion").textContent="Competition is CLOSED.";
@@ -129,8 +186,12 @@ function subscribeRoom(){
      $("controlMsg").textContent="Competition closed. New participants cannot join this room.";
      ["showBtn","closeBtn","revealBtn","randomTieBtn","nextBtn","saveQBtn","updateTimerBtn","importWordBtn","prevQBtn","nextEditBtn"].forEach(id=>{const el=$(id);if(el)el.disabled=true;});
      const cb=$("closeCompetitionBtn"); if(cb){cb.disabled=true;cb.textContent="🔒 COMPETITION CLOSED";}
+     const rb=$("restartCompetitionBtn"); if(rb){rb.disabled=false;rb.textContent="🔄 RESTART COMPETITION";}
+     populateRunSelector();
      return;
    }
+   competitionFrozen=false;
+   const rb=$("restartCompetitionBtn"); if(rb)rb.disabled=true;
    if(r.currentQuestion) $("liveQuestion").textContent=`Q${r.currentQuestion}: ${r.state}`;
    $("timerSettingMsg").textContent=`${Number(r.timerSeconds||30)} seconds per question.`;
    if(r.winnerName) $("winnerBox").innerHTML=`🏆 <b>${esc(r.winnerName)}</b> — ${esc(r.winnerTimeText||"")} — Prize ₹${Number(r.winnerPrize||0)}`;
@@ -206,15 +267,41 @@ async function closeCompetition(){
  if(!room)return;
  const r=(await get(roomRef())).val()||{};
  if(r.competitionClosed || r.state==="competition_closed")return;
- if(!confirm("Close this competition? After closing, no participant will be allowed to join this room. The participant screen will show: Competition Closed."))return;
- await update(roomRef(),{state:"competition_closed",competitionClosed:true,closedAt:serverTimestamp(),currentQuestion:0,openedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:null});
+ if(!confirm("Close this competition? Its complete result will be frozen and saved separately by date/time. No participant will be allowed to join this run again."))return;
+ await archiveCurrentRun({...r,closedAt:Date.now()},true);
+ await update(roomRef(),{state:"competition_closed",competitionClosed:true,runArchived:true,closedAt:serverTimestamp(),currentQuestion:0,openedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:null});
  clearInterval(hostTimerInterval);
  $("hostCountdown").textContent="CLOSED";
  $("liveQuestion").textContent="Competition is CLOSED.";
- $("winnerBox").textContent="Competition closed.";
- $("controlMsg").textContent="Competition closed successfully. New participants cannot join this room.";
+ $("winnerBox").textContent="Competition closed. Result frozen.";
+ $("controlMsg").textContent="Competition closed successfully. The result is frozen. Use RESTART COMPETITION to start another competition in the same room code.";
  ["showBtn","closeBtn","revealBtn","randomTieBtn","nextBtn","saveQBtn","updateTimerBtn","importWordBtn","prevQBtn","nextEditBtn"].forEach(id=>{const el=$(id);if(el)el.disabled=true;});
  const cb=$("closeCompetitionBtn"); if(cb){cb.disabled=true;cb.textContent="🔒 COMPETITION CLOSED";}
+ const rb=$("restartCompetitionBtn"); if(rb){rb.disabled=false;rb.textContent="🔄 RESTART COMPETITION";}
+ await populateRunSelector();
+}
+async function restartCompetition(){
+ if(!room)return;
+ competitionFrozen=false;
+ const r=(await get(roomRef())).val()||{};
+ if(!(r.competitionClosed || r.state==="competition_closed"))return alert("The current competition is still active. Close it first.");
+ if(!confirm("Restart the competition using the SAME room code? The previous result will remain frozen and available by date/time. A new competition run will start with fresh participants."))return;
+ const now=Date.now(), date=localRunDate(), runId=`${date}_${now}`;
+ await update(roomRef(),{
+   state:"waiting",competitionClosed:false,runArchived:false,runId,runDate:date,runStartedAt:now,
+   currentQuestion:0,openedAt:null,closedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:null,timerExpired:false
+ });
+ await set(ref(db,`rooms/${room}/participants`),null);
+ await set(ref(db,`rooms/${room}/answers`),null);
+ await set(ref(db,`rooms/${room}/violations`),null);
+ participantsCache={};answersCache={};allAnswersCache={};
+ qNo=1; await loadAllQuestions(); await loadQ(1); renderParticipants(); renderAnswers();
+ $("controlMsg").textContent=`New competition started in the same room ${room}. Previous results remain frozen.`;
+ const cb=$("closeCompetitionBtn"); if(cb){cb.disabled=false;cb.textContent="🔒 CLOSE COMPETITION";}
+ const rb=$("restartCompetitionBtn"); if(rb)rb.disabled=true;
+ ["showBtn","closeBtn","revealBtn","nextBtn","saveQBtn","updateTimerBtn","importWordBtn","prevQBtn","nextEditBtn"].forEach(id=>{const el=$(id);if(el)el.disabled=false;});
+ await populateRunSelector();
+ $("resultRunSelect").value=""; renderSelectedRun(null);
 }
 async function refreshAllAnswerLogs(){
  const s=await get(ref(db,`rooms/${room}/answers`)); allAnswersCache=s.val()||{};
@@ -222,26 +309,28 @@ async function refreshAllAnswerLogs(){
 async function exportExcel(){
  if(!room)return alert("Create or resume a quiz room first.");
  if(!window.XLSX){alert("Excel export library could not be loaded. Please refresh the Host Panel and try again.");return;}
- await loadAllQuestions(); await refreshAllAnswerLogs();
- const participants=Object.values(participantsCache), winners=[], allAnswers=[], blockedWinners=[], disqualified=[];
+ const run=await getSelectedRun();
+ if(!run){alert("Please select the competition date/time whose frozen result you want to download.");return;}
+ const participants=Object.values(run.participants||{}), winners=[], allAnswers=[], blockedWinners=[], disqualified=[];
  participants.forEach(p=>{
    if(p.winner) winners.push({Question:p.winnerQuestion,Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,Prize:p.winnerPrize,Status:"PRIZE WON"});
    if(p.blocked && p.winner && !p.disqualified) blockedWinners.push({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Winning Question":p.winnerQuestion||"",Prize:p.winnerPrize||0,Violations:p.violationCount||0,Status:"BLOCKED WINNER"});
    if(p.disqualified && !p.winner) disqualified.push({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,Violations:p.violationCount||0,"Last Violation":p.lastViolationType||"",Reason:p.disqualificationReason||"Anti-cheating violation",Status:"BLOCKED / DISQUALIFIED"});
  });
- Object.entries(allAnswersCache).forEach(([qkey,answers])=>Object.values(answers||{}).forEach(a=>allAnswers.push({"Question":qkey.replace(/^q/,""),Name:a.name,Designation:a.designation,"Place of Posting":a.placeOfPosting,Mobile:a.phone,Answer:a.answer,Correct:a.correct?"Yes":"No","Time (sec)":a.elapsedMs==null?"":(a.elapsedMs/1000).toFixed(3),Eligible:a.eligible===false?"No":"Yes"})));
- const qres=Object.entries(questionsCache).sort((a,b)=>Number(a[0].replace(/^q/,""))-Number(b[0].replace(/^q/,""))).map(([k,q])=>({Question:k.replace(/^q/,""),QuestionText:q.text||"",Prize:q.prize||0,CorrectAnswer:q.correct||""}));
+ Object.entries(run.answers||{}).forEach(([qkey,answers])=>Object.values(answers||{}).forEach(a=>allAnswers.push({"Question":qkey.replace(/^q/,""),Name:a.name,Designation:a.designation,"Place of Posting":a.placeOfPosting,Mobile:a.phone,Answer:a.answer,Correct:a.correct?"Yes":"No","Time (sec)":a.elapsedMs==null?"":(a.elapsedMs/1000).toFixed(3),Eligible:a.eligible===false?"No":"Yes"})));
+ const qres=Object.entries(run.questions||{}).sort((a,b)=>Number(a[0].replace(/^q/,""))-Number(b[0].replace(/^q/,""))).map(([k,q])=>({Question:k.replace(/^q/,""),QuestionText:q.text||"",Prize:q.prize||0,CorrectAnswer:q.correct||""}));
  const wb=XLSX.utils.book_new();
  function add(name,data){const ws=XLSX.utils.json_to_sheet(data.length?data:[{Info:"No data"}]);XLSX.utils.book_append_sheet(wb,ws,name);}
  add("Prize Winners",winners); add("All Participants",participants.map(p=>({Name:p.name,Designation:p.designation,"Place of Posting":p.placeOfPosting,Mobile:p.phone,"Prize Won":p.winnerPrize||"",Violations:p.violationCount||0,Status:p.winner&&p.blocked&&!p.disqualified?"PRIZE WON":p.disqualified?"DISQUALIFIED":p.blocked?"BLOCKED":"ACTIVE"}))); add("Answer Log",allAnswers); add("Question Results",qres); add("Blocked Winners",blockedWinners); add("Disqualified Participants",disqualified);
- XLSX.writeFile(wb,`Quiz_Results_${room}.xlsx`);
+ const safeDate=String(run.runDate||"result").replace(/[^0-9-]/g,"-");
+ XLSX.writeFile(wb,`Quiz_Results_${room}_${safeDate}.xlsx`);
 }
 $("signupBtn").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Account created. You are signed in.");}catch(e){msg(e.message)}};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
-$("closeCompetitionBtn").onclick=closeCompetition;$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
+$("closeCompetitionBtn").onclick=closeCompetition;$("restartCompetitionBtn").onclick=restartCompetition;$("viewResultBtn").onclick=viewSelectedResult;$("resultRunSelect").onchange=viewSelectedResult;$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
 
 
 // ---------------- Word (.docx) MCQ importer ----------------
