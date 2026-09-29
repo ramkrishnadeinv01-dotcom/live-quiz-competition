@@ -57,7 +57,7 @@
           <h2>⏱️ Live Question Control & Timer</h2>
           <div id="hostCountdown" class="host-countdown">00:00</div>
           <div id="liveQuestion" class="status">No question is open.</div>
-          <div class="row"><button id="showBtn" class="success">▶ SHOW QUESTION</button><button id="closeBtn" class="danger">■ CLOSE ANSWERS</button><button id="revealBtn" class="warning">🏆 SHOW ANSWER & WINNER</button><button id="nextBtn" class="secondary">⏭ NEXT QUESTION</button><button id="closeCompetitionBtn" class="danger">🔒 CLOSE COMPETITION</button></div>
+          <div class="row"><button id="showBtn" class="success">▶ SHOW QUESTION</button><button id="closeBtn" class="danger">■ CLOSE ANSWERS</button><button id="revealBtn" class="warning">🏆 SHOW ANSWER & WINNER</button><button id="nextBtn" class="secondary">⏭ NEXT QUESTION</button><button id="closeCompetitionBtn" class="danger">🔒 CLOSE COMPETITION</button><button id="restartCompetitionBtn" class="success" disabled>🔄 RESTART COMPETITION</button></div>
           <p id="controlMsg"></p>
         </div>
       </div>
@@ -85,12 +85,20 @@
         </div>
         <div class="card"><h2>Participants</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Violations</th><th>Status</th><th>Host Action</th></tr></thead><tbody id="participants"></tbody></table></div></div>
         <div class="card"><h2>Current Answers</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Answer</th><th>Correct</th><th>Time</th><th>Eligible</th></tr></thead><tbody id="answers"></tbody></table></div></div>
-        <div class="card"><h2>Final Results</h2><button id="exportBtn" class="success">📊 DOWNLOAD EXCEL</button><p class="muted">Excel contains separate sheets for Prize Winners, All Participants, Answer Log, Question Results, Blocked Winners and Disqualified Participants.</p></div>
+        <div class="card"><h2>📚 Competition History & Results</h2>
+          <p class="muted">Each time this room is closed, its results are frozen and saved separately. Select the competition date/time to view its frozen results or download its Excel file.</p>
+          <div class="row" style="margin-top:10px"><div class="field"><label>Competition Date / Run</label><select id="resultRunSelect"><option value="">Select a completed competition</option></select></div><div class="field" style="justify-content:end"><button id="viewResultBtn" class="secondary" type="button">👁 VIEW SELECTED RESULT</button><button id="exportBtn" class="success" type="button">📊 DOWNLOAD SELECTED EXCEL</button></div></div>
+          <div id="selectedResultSummary" class="status" style="margin-top:12px">Select a completed competition to view its frozen result.</div>
+          <div id="selectedResultTables" class="hidden" style="margin-top:12px">
+            <div class="tablewrap"><h3>🏆 Prize Winners</h3><table><thead><tr><th>Question</th><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Prize</th></tr></thead><tbody id="historyWinners"></tbody></table></div>
+            <div class="tablewrap" style="margin-top:12px"><h3>🚫 Disqualified Participants</h3><table><thead><tr><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Violations</th><th>Status</th></tr></thead><tbody id="historyDisqualified"></tbody></table></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script type="module" src="host.js?v=20260929-6"></script>
+<script type="module" src="host.js?v=20260929-7"></script>
 </body></html>
