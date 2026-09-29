@@ -285,7 +285,30 @@ async function openRoom(code){
  await loadAllQuestions(); await loadQ(qNo); subscribeRoom();
  $("controlMsg").textContent=`Quiz room ${code} loaded. Saved questions and results are available.`;
 }
+async function deleteQuizRoom(){
+  if(!uid || !isApproved()) return alert("Host permission is not active.");
+  const code=$("existingRooms")?.value || room;
+  if(!code) return alert("Please select a quiz room to delete.");
+  const snap=await get(ref(db,`rooms/${code}`));
+  const r=snap.val();
+  if(!r || r.hostUid!==uid) return alert("This quiz room is not owned by your host account.");
+  if(!r.competitionClosed && r.state!=="competition_closed") return alert("For safety, a quiz room can be deleted only after the competition has been closed.");
+  const hasRuns=!!r.runs && Object.keys(r.runs).length>0;
+  const warning=hasRuns
+    ? `Delete quiz room ${code}?\n\nThis room is closed and contains frozen competition history. Deleting the room will permanently delete the room, its participants, answers, questions and frozen results.\n\nDownload any required Excel result before deleting.\n\nThis action cannot be undone.`
+    : `Delete quiz room ${code}?\n\nThis will permanently delete the room and its stored quiz data.\n\nThis action cannot be undone.`;
+  if(!confirm(warning)) return;
+  if(!confirm(`Final confirmation: permanently delete Room ${code}?`)) return;
+  await remove(ref(db,`rooms/${code}`));
+  if(room===code){
+    room=null; competitionFrozen=false; localStorage.removeItem("liveQuizLastRoom");
+    $("roomInfo")?.classList.add("hidden"); $("quizControls")?.classList.add("hidden");
+  }
+  await loadExistingRooms();
+  $("controlMsg").textContent=`Quiz room ${code} was permanently deleted.`;
+}
 async function resumeRoom(){const code=$("existingRooms").value; if(!code)return alert("Please select a saved quiz room first."); await openRoom(code);}
+
 async function loadAllQuestions(){
  const s=await get(ref(db,`rooms/${room}/questions`)); questionsCache=s.val()||{};
 }
@@ -478,7 +501,7 @@ $("saveHostProfileBtn").onclick=saveHostProfile;
 
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
-$("closeCompetitionBtn").onclick=closeCompetition;$("restartCompetitionBtn").onclick=restartCompetition;$("viewResultBtn").onclick=viewSelectedResult;$("resultRunSelect").onchange=viewSelectedResult;$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
+$("deleteRoomBtn").onclick=deleteQuizRoom;$("closeCompetitionBtn").onclick=closeCompetition;$("restartCompetitionBtn").onclick=restartCompetition;$("viewResultBtn").onclick=viewSelectedResult;$("resultRunSelect").onchange=viewSelectedResult;$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
 
 
 // ---------------- Word (.docx) MCQ importer ----------------
