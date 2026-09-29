@@ -28,7 +28,16 @@
     <p id="loginMsg"></p>
   </div>
 
-  <div id="adminLauncher" class="card hidden admin-launcher-card">
+  <script>
+// Registration button fallback: ensure the registration form opens even if another UI handler fails.
+document.addEventListener("DOMContentLoaded",function(){
+  const b=document.getElementById("signupBtn");
+  const box=document.getElementById("registrationBox");
+  const submit=document.getElementById("registrationSubmitBtn");
+  if(b && box){ b.addEventListener("click",function(){ box.classList.remove("hidden"); b.classList.add("hidden"); if(submit) submit.classList.remove("hidden"); box.scrollIntoView({behavior:"smooth",block:"center"}); }); }
+});
+</script>
+<div id="adminLauncher" class="card hidden admin-launcher-card">
     <button id="openAdminApprovalBtn" class="admin-launcher" type="button">🛡️ <span>Host Approval</span><small>Administrator</small></button>
   </div>
 
@@ -159,5 +168,5 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script type="module" src="host.js?v=20260929-12"></script>
+<script type="module" src="host.js?v=20260930-13"></script>
 </body></html>

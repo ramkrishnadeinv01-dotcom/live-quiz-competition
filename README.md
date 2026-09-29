@@ -1,3 +1,5 @@
+v13 - registration button fallback and cache refresh
+
 # Live Quiz Competition — Competition Close Update
 
 This version adds a final **CLOSE COMPETITION** control.
