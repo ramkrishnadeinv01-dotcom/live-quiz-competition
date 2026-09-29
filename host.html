@@ -10,6 +10,18 @@
     <p id="loginMsg"></p>
   </div>
 
+  <div id="adminCard" class="card hidden">
+    <h2>🛡️ Administrator — Host Approval</h2>
+    <p class="notice">Only the Administrator can approve or revoke permission to conduct competitions.</p>
+    <div id="adminStatus" class="status">Loading host requests…</div>
+    <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Email</th><th>Status</th><th>Requested</th><th>UID</th><th>Action</th></tr></thead><tbody id="hostRequests"><tr><td colspan="5">No host requests.</td></tr></tbody></table></div>
+  </div>
+
+  <div id="hostAccessCard" class="card hidden">
+    <h2>🔐 Host Permission</h2>
+    <div id="hostAccessStatus" class="status"></div>
+  </div>
+
   <div id="hostApp" class="hidden">
     <div class="card">
       <div class="row">
@@ -100,5 +112,5 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script type="module" src="host.js?v=20260929-7"></script>
+<script type="module" src="host.js?v=20260929-8"></script>
 </body></html>
