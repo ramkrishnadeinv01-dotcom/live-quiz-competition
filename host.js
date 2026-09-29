@@ -56,6 +56,11 @@ function renderAccess(){
     if(updateBox)updateBox.classList.toggle("hidden",!!hostProfile?.status && profileComplete(hostProfile));
   }
 }
+function clearHostRegistrationFields(){
+  ["hostName","hostDesignation","hostPlace","hostPhone","hostPurposeDetails","updateHostName","updateHostDesignation","updateHostPlace","updateHostPhone","updateHostPurposeDetails"].forEach(id=>{const el=$(id);if(el)el.value="";});
+  ["hostPurpose","updateHostPurpose"].forEach(id=>{const el=$(id);if(el)el.value="";});
+}
+
 function openAdminModal(){
   if(!isAdmin())return;
   const m=$("adminModal");
@@ -464,8 +469,8 @@ $("registrationSubmitBtn").onclick=async()=>{try{
   msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host registration submitted. Please wait for Administrator approval.");
 }catch(e){msg(e.message||String(e));$("registrationSubmitBtn").disabled=false;}};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
-$("logoutBtn").onclick=()=>signOut(auth);
-$("pendingLogoutBtn").onclick=()=>signOut(auth);
+$("logoutBtn").onclick=async()=>{clearHostRegistrationFields();await signOut(auth);};
+$("pendingLogoutBtn").onclick=async()=>{clearHostRegistrationFields();await signOut(auth);};
 $("openAdminApprovalBtn").onclick=openAdminModal;
 $("closeAdminApprovalBtn").onclick=closeAdminModal;
 $("backToMainBtn").onclick=closeAdminModal;
@@ -551,7 +556,7 @@ onAuthStateChanged(auth,async user=>{
   currentUser=user||null; uid=user?.uid||null;
   $("authStatus").textContent=user?(isAdmin(user)?"Administrator signed in":"Signed in"):"Not signed in";
   $("loginCard").classList.toggle("hidden",!!user);
-  if(!user){$("hostApp").classList.add("hidden");$("adminLauncher").classList.add("hidden");closeAdminModal();$("hostAccessCard").classList.add("hidden");return;}
+  if(!user){clearHostRegistrationFields();$("registrationBox").classList.add("hidden");$("signupBtn").classList.remove("hidden");$("registrationSubmitBtn").classList.remove("hidden");$("registrationSubmitBtn").disabled=false;$("hostApp").classList.add("hidden");$("adminLauncher").classList.add("hidden");closeAdminModal();$("hostAccessCard").classList.add("hidden");return;}
   try{
     hostProfile=await ensureHostProfile(user);
     renderAccess();

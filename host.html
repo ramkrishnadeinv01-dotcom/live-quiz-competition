@@ -11,16 +11,16 @@
       <h3>📝 Complete Host Registration</h3>
       <p class="muted">All information marked with * is required. The account and host approval request will be created only after you submit this completed form.</p>
       <div class="row" style="margin-top:12px">
-        <div class="field"><label>Host Name *</label><input id="hostName" type="text" autocomplete="name" placeholder="Full name"></div>
-        <div class="field"><label>Designation *</label><input id="hostDesignation" type="text" placeholder="Designation"></div>
+        <div class="field"><label>Host Name *</label><input id="hostName" type="text" autocomplete="off" placeholder="Full name"></div>
+        <div class="field"><label>Designation *</label><input id="hostDesignation" type="text" autocomplete="off" placeholder="Designation"></div>
       </div>
       <div class="row" style="margin-top:12px">
-        <div class="field"><label>Place of Posting *</label><input id="hostPlace" type="text" placeholder="Office / Place of posting"></div>
-        <div class="field"><label>Phone Number *</label><input id="hostPhone" type="tel" inputmode="numeric" maxlength="15" placeholder="Mobile number"></div>
+        <div class="field"><label>Place of Posting *</label><input id="hostPlace" type="text" autocomplete="off" placeholder="Office / Place of posting"></div>
+        <div class="field"><label>Phone Number *</label><input id="hostPhone" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="Mobile number"></div>
       </div>
       <div class="row" style="margin-top:12px">
         <div class="field"><label>Purpose of Hosting *</label><select id="hostPurpose"><option value="">Select purpose</option><option>Official / Departmental Quiz</option><option>Educational / Academic Quiz</option><option>Training / Workshop Quiz</option><option>Competition / Event</option><option>Other</option></select></div>
-        <div class="field"><label>Purpose Details *</label><input id="hostPurposeDetails" type="text" placeholder="Briefly state the purpose"></div>
+        <div class="field"><label>Purpose Details *</label><input id="hostPurposeDetails" type="text" autocomplete="off" placeholder="Briefly state the purpose"></div>
       </div>
       <div class="row" style="margin-top:12px"><button id="registrationSubmitBtn" class="success" type="button">📝 Submit Registration &amp; Create Account</button></div>
     </div>
@@ -61,16 +61,16 @@ document.addEventListener("DOMContentLoaded",function(){
       <b>Complete / Update Host Registration</b>
       <p class="muted">Please provide the following information so the Administrator can review your host request.</p>
       <div class="row">
-        <div class="field"><label>Host Name *</label><input id="updateHostName" type="text"></div>
-        <div class="field"><label>Designation *</label><input id="updateHostDesignation" type="text"></div>
+        <div class="field"><label>Host Name *</label><input id="updateHostName" type="text" autocomplete="off"></div>
+        <div class="field"><label>Designation *</label><input id="updateHostDesignation" type="text" autocomplete="off"></div>
       </div>
       <div class="row" style="margin-top:10px">
-        <div class="field"><label>Place of Posting *</label><input id="updateHostPlace" type="text"></div>
-        <div class="field"><label>Phone Number *</label><input id="updateHostPhone" type="tel" inputmode="numeric" maxlength="15"></div>
+        <div class="field"><label>Place of Posting *</label><input id="updateHostPlace" type="text" autocomplete="off"></div>
+        <div class="field"><label>Phone Number *</label><input id="updateHostPhone" type="tel" inputmode="numeric" autocomplete="off" maxlength="15"></div>
       </div>
       <div class="row" style="margin-top:10px">
         <div class="field"><label>Purpose of Hosting *</label><select id="updateHostPurpose"><option value="">Select purpose</option><option>Official / Departmental Quiz</option><option>Educational / Academic Quiz</option><option>Training / Workshop Quiz</option><option>Competition / Event</option><option>Other</option></select></div>
-        <div class="field"><label>Purpose Details *</label><input id="updateHostPurposeDetails" type="text"></div>
+        <div class="field"><label>Purpose Details *</label><input id="updateHostPurposeDetails" type="text" autocomplete="off"></div>
       </div>
       <div class="row" style="margin-top:12px"><button id="saveHostProfileBtn" class="success" type="button">💾 Save Registration Details</button></div>
       <p id="hostProfileUpdateMsg"></p>
