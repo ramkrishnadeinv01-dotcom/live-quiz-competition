@@ -15,10 +15,7 @@ function isApproved(){return isAdmin() || hostProfile?.status==="approved";}
 async function ensureHostProfile(user){
   if(!user)return null;
   const h=await get(ref(db,`hosts/${user.uid}`));
-  if(h.exists()) return h.val();
-  const profile={email:(user.email||"").toLowerCase(),status:isAdmin(user)?"approved":"pending",requestedAt:serverTimestamp()};
-  await set(ref(db,`hosts/${user.uid}`),profile);
-  return {...profile,requestedAt:Date.now()};
+  return h.exists()?h.val():null;
 }
 function profileComplete(p){
   return !!(p && p.hostName && p.designation && p.placeOfPosting && p.phone && p.purpose && p.purposeDetails);
@@ -51,11 +48,12 @@ function renderAccess(){
   if(access)access.classList.remove("hidden");
   if(access){
     const st=$("hostAccessStatus");
-    if(hostProfile?.status==="pending") st.innerHTML="⏳ <b>Host permission is pending.</b><br>Your account has been created, but the Administrator must approve it before you can create or conduct a competition.";
+    if(!hostProfile) st.innerHTML="📝 <b>Host registration is incomplete.</b><br>Please complete your Host Registration details below. Your host request will be created only after you save the complete information.";
+    else if(hostProfile?.status==="pending") st.innerHTML="⏳ <b>Host permission is pending.</b><br>Your complete registration has been submitted. The Administrator must approve it before you can create or conduct a competition.";
     else if(hostProfile?.status==="rejected"||hostProfile?.status==="revoked") st.innerHTML="🚫 <b>Host permission is not active.</b><br>Please contact the Administrator.";
     else st.textContent="Host permission is active.";
     fillHostProfileForm();
-    if(updateBox)updateBox.classList.toggle("hidden",profileComplete(hostProfile));
+    if(updateBox)updateBox.classList.toggle("hidden",!!hostProfile?.status && profileComplete(hostProfile));
   }
 }
 function openAdminModal(){
@@ -119,9 +117,10 @@ async function saveHostProfile(){
   if(!hostName||!designation||!placeOfPosting||!phone||!purpose||!purposeDetails){if(out)out.textContent="Please fill in all required registration fields.";return;}
   if(!/^[0-9+()\- ]{7,15}$/.test(phone)){if(out)out.textContent="Please enter a valid phone number.";return;}
   try{
-    const data={email:(currentUser.email||"").toLowerCase(),hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:hostProfile?.status||"pending",requestedAt:hostProfile?.requestedAt||serverTimestamp(),updatedAt:serverTimestamp()};
+    const existing=hostProfile||{};
+    const data={email:(currentUser.email||"").toLowerCase(),hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:existing.status||"pending",requestedAt:existing.requestedAt||Date.now(),updatedAt:serverTimestamp()};
     await update(ref(db,`hosts/${currentUser.uid}`),data);
-    hostProfile={...hostProfile,...data,updatedAt:Date.now()};
+    hostProfile={...existing,...data,updatedAt:Date.now(),requestedAt:existing.requestedAt||Date.now()};
     if(out)out.textContent="✓ Registration details saved. The Administrator can now review the complete information.";
     renderAccess();
     if(isAdmin())await loadHostRequests();
@@ -445,22 +444,25 @@ async function exportExcel(){
  const safeDate=String(run.runDate||"result").replace(/[^0-9-]/g,"-");
  XLSX.writeFile(wb,`Quiz_Results_${room}_${safeDate}.xlsx`);
 }
-$("signupBtn").onclick=async()=>{try{
-  const email=$("email").value.trim().toLowerCase();
-  const password=$("password").value;
-  const hostName=$("hostName").value.trim();
-  const designation=$("hostDesignation").value.trim();
-  const placeOfPosting=$("hostPlace").value.trim();
-  const phone=$("hostPhone").value.trim();
-  const purpose=$("hostPurpose").value;
-  const purposeDetails=$("hostPurposeDetails").value.trim();
+$("signupBtn").onclick=()=>{
+  $("registrationBox").classList.remove("hidden");
+  $("signupBtn").classList.add("hidden");
+  $("registrationSubmitBtn").classList.remove("hidden");
+  $("registrationBox").scrollIntoView({behavior:"smooth",block:"center"});
+  msg("Please complete all Host Registration details first. Your Firebase account and host request will be created only after you submit the completed form.");
+};
+$("registrationSubmitBtn").onclick=async()=>{try{
+  const email=$("email").value.trim().toLowerCase(), password=$("password").value, hostName=$("hostName").value.trim(), designation=$("hostDesignation").value.trim(), placeOfPosting=$("hostPlace").value.trim(), phone=$("hostPhone").value.trim(), purpose=$("hostPurpose").value, purposeDetails=$("hostPurposeDetails").value.trim();
   if(!email||!password||!hostName||!designation||!placeOfPosting||!phone||!purpose||!purposeDetails){msg("Please fill in all required Host registration fields marked with *.");return;}
+  if(password.length<6){msg("Password must be at least 6 characters.");return;}
   if(!/^[0-9+()\- ]{7,15}$/.test(phone)){msg("Please enter a valid phone number.");return;}
+  $("registrationSubmitBtn").disabled=true;
   const cred=await createUserWithEmailAndPassword(auth,email,password);
-  await set(ref(db,`hosts/${cred.user.uid}`),{email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()});
-  hostProfile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:Date.now()};
-  msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host request submitted. Please wait for Administrator approval.");
-}catch(e){msg(e.message)}};
+  const profile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()};
+  await set(ref(db,`hosts/${cred.user.uid}`),profile);
+  hostProfile={...profile,requestedAt:Date.now()};
+  msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host registration submitted. Please wait for Administrator approval.");
+}catch(e){msg(e.message||String(e));$("registrationSubmitBtn").disabled=false;}};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
 $("pendingLogoutBtn").onclick=()=>signOut(auth);
