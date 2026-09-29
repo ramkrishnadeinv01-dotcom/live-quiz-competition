@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getDatabase, ref, set, update, get, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
@@ -20,20 +20,53 @@ async function ensureHostProfile(user){
   await set(ref(db,`hosts/${user.uid}`),profile);
   return {...profile,requestedAt:Date.now()};
 }
+function profileComplete(p){
+  return !!(p && p.hostName && p.designation && p.placeOfPosting && p.phone && p.purpose && p.purposeDetails);
+}
+function fillHostProfileForm(p=hostProfile){
+  if(!p)return;
+  if($("updateHostName"))$("updateHostName").value=p.hostName||"";
+  if($("updateHostDesignation"))$("updateHostDesignation").value=p.designation||"";
+  if($("updateHostPlace"))$("updateHostPlace").value=p.placeOfPosting||"";
+  if($("updateHostPhone"))$("updateHostPhone").value=p.phone||"";
+  if($("updateHostPurpose"))$("updateHostPurpose").value=p.purpose||"";
+  if($("updateHostPurposeDetails"))$("updateHostPurposeDetails").value=p.purposeDetails||"";
+}
 function renderAccess(){
-  const admin=$("adminCard"), access=$("hostAccessCard"), appBox=$("hostApp");
-  if(admin)admin.classList.toggle("hidden",!isAdmin());
-  if(access)access.classList.toggle("hidden",isAdmin()||!currentUser);
-  if(!currentUser){if(appBox)appBox.classList.add("hidden");return;}
-  if(isAdmin()){if(appBox)appBox.classList.remove("hidden");return;}
+  const launcher=$("adminLauncher"), access=$("hostAccessCard"), appBox=$("hostApp"), updateBox=$("hostProfileUpdate");
+  if(launcher)launcher.classList.toggle("hidden",!isAdmin());
+  if(!currentUser){
+    if(appBox)appBox.classList.add("hidden");
+    if(access)access.classList.add("hidden");
+    closeAdminModal();
+    return;
+  }
+  if(isAdmin()){
+    if(appBox)appBox.classList.remove("hidden");
+    if(access)access.classList.add("hidden");
+    return;
+  }
   const approved=isApproved();
   if(appBox)appBox.classList.toggle("hidden",!approved);
+  if(access)access.classList.remove("hidden");
   if(access){
     const st=$("hostAccessStatus");
     if(hostProfile?.status==="pending") st.innerHTML="⏳ <b>Host permission is pending.</b><br>Your account has been created, but the Administrator must approve it before you can create or conduct a competition.";
     else if(hostProfile?.status==="rejected"||hostProfile?.status==="revoked") st.innerHTML="🚫 <b>Host permission is not active.</b><br>Please contact the Administrator.";
     else st.textContent="Host permission is active.";
+    fillHostProfileForm();
+    if(updateBox)updateBox.classList.toggle("hidden",profileComplete(hostProfile));
   }
+}
+function openAdminModal(){
+  if(!isAdmin())return;
+  const m=$("adminModal");
+  if(m){m.classList.remove("hidden");m.setAttribute("aria-hidden","false");}
+  loadHostRequests();
+}
+function closeAdminModal(){
+  const m=$("adminModal");
+  if(m){m.classList.add("hidden");m.setAttribute("aria-hidden","true");}
 }
 async function loadHostRequests(){
   if(!isAdmin())return;
@@ -41,21 +74,29 @@ async function loadHostRequests(){
   try{
     const snap=await get(ref(db,"hosts")); const hosts=snap.val()||{}; const arr=Object.entries(hosts).map(([id,h])=>({uid:id,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));
     status.textContent=`${arr.filter(x=>x.status==="pending").length} pending request(s).`;
-    if(!arr.length){body.innerHTML='<tr><td colspan="10">No host requests.</td></tr>';return;}
+    if(!arr.length){body.innerHTML='<tr><td colspan="9">No host requests.</td></tr>';return;}
     body.innerHTML=arr.map(h=>{
       const st=String(h.status||"pending").toUpperCase();
       let action="";
       if(h.uid!==uid){
-        if(h.status==="pending") action=`<button class="success hostApproveBtn" data-uid="${esc(h.uid)}">APPROVE</button> <button class="danger hostRejectBtn" data-uid="${esc(h.uid)}">REJECT</button>`;
-        else if(h.status==="approved") action=`<button class="danger hostRevokeBtn" data-uid="${esc(h.uid)}">REVOKE</button>`;
-        else action=`<button class="success hostApproveBtn" data-uid="${esc(h.uid)}">APPROVE</button>`;
+        const opts=[];
+        if(h.status==="pending"){opts.push('<option value="approved">Approve</option>','<option value="rejected">Reject</option>');}
+        else if(h.status==="approved"){opts.push('<option value="revoked">Revoke</option>');}
+        else {opts.push('<option value="approved">Approve</option>','<option value="rejected">Reject</option>');}
+        opts.push('<option value="__delete__">Delete</option>');
+        action=`<select class="hostActionSelect" data-uid="${esc(h.uid)}"><option value="">Select Action</option>${opts.join("")}</select>`;
       }
       const when=h.requestedAt?new Date(Number(h.requestedAt)).toLocaleString():"";
-      return `<tr><td>${esc(h.email||"")}</td><td>${esc(h.hostName||"")}</td><td>${esc(h.designation||"")}</td><td>${esc(h.placeOfPosting||"")}</td><td>${esc(h.phone||"")}</td><td>${esc(h.purpose||"")}${h.purposeDetails?`<br><small>${esc(h.purposeDetails)}</small>`:""}</td><td><span class="badge ${h.status==="approved"?'green':'red'}">${esc(st)}</span></td><td>${esc(when)}</td><td style="font-size:11px">${esc(h.uid)}</td><td>${action||"—"}</td></tr>`;
+      const purpose=h.purpose?`${esc(h.purpose)}${h.purposeDetails?`<br><small>${esc(h.purposeDetails)}</small>`:""}`:"";
+      return `<tr><td>${esc(h.email||"")}</td><td>${esc(h.hostName||"")}</td><td>${esc(h.designation||"")}</td><td>${esc(h.placeOfPosting||"")}</td><td>${esc(h.phone||"")}</td><td>${purpose}</td><td><span class="badge ${h.status==="approved"?'green':h.status==="pending"?'yellow':'red'}">${esc(st)}</span></td><td>${esc(when)}</td><td>${action||"—"}</td></tr>`;
     }).join("");
-    document.querySelectorAll('.hostApproveBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"approved"));
-    document.querySelectorAll('.hostRejectBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"rejected"));
-    document.querySelectorAll('.hostRevokeBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"revoked"));
+    document.querySelectorAll('.hostActionSelect').forEach(sel=>sel.onchange=async()=>{
+      const action=sel.value, hostUid=sel.dataset.uid;
+      if(!action)return;
+      sel.value="";
+      if(action==="__delete__") await deleteHostRequest(hostUid);
+      else await setHostStatus(hostUid,action);
+    });
   }catch(e){console.error(e);status.textContent=`Unable to load host requests: ${e.message||e}`;}
 }
 async function setHostStatus(hostUid,status){
@@ -64,6 +105,27 @@ async function setHostStatus(hostUid,status){
   if(!confirm(`Are you sure you want to ${label} this host?`))return;
   await update(ref(db,`hosts/${hostUid}`),{status,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});
   await loadHostRequests();
+}
+async function deleteHostRequest(hostUid){
+  if(!isAdmin()||!hostUid||hostUid===uid)return;
+  if(!confirm("Delete this host request record? This removes the request from the Administrator portal but does not delete the Firebase login account."))return;
+  await remove(ref(db,`hosts/${hostUid}`));
+  await loadHostRequests();
+}
+async function saveHostProfile(){
+  if(!currentUser)return;
+  const hostName=$("updateHostName").value.trim(), designation=$("updateHostDesignation").value.trim(), placeOfPosting=$("updateHostPlace").value.trim(), phone=$("updateHostPhone").value.trim(), purpose=$("updateHostPurpose").value, purposeDetails=$("updateHostPurposeDetails").value.trim();
+  const out=$("hostProfileUpdateMsg");
+  if(!hostName||!designation||!placeOfPosting||!phone||!purpose||!purposeDetails){if(out)out.textContent="Please fill in all required registration fields.";return;}
+  if(!/^[0-9+()\- ]{7,15}$/.test(phone)){if(out)out.textContent="Please enter a valid phone number.";return;}
+  try{
+    const data={email:(currentUser.email||"").toLowerCase(),hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:hostProfile?.status||"pending",requestedAt:hostProfile?.requestedAt||serverTimestamp(),updatedAt:serverTimestamp()};
+    await update(ref(db,`hosts/${currentUser.uid}`),data);
+    hostProfile={...hostProfile,...data,updatedAt:Date.now()};
+    if(out)out.textContent="✓ Registration details saved. The Administrator can now review the complete information.";
+    renderAccess();
+    if(isAdmin())await loadHostRequests();
+  }catch(e){if(out)out.textContent=e.message||String(e);}
 }
 function msg(t,cls=""){ $("loginMsg").textContent=t; $("loginMsg").className=cls; }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
@@ -402,6 +464,11 @@ $("signupBtn").onclick=async()=>{try{
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
 $("pendingLogoutBtn").onclick=()=>signOut(auth);
+$("openAdminApprovalBtn").onclick=openAdminModal;
+$("closeAdminApprovalBtn").onclick=closeAdminModal;
+$("backToMainBtn").onclick=closeAdminModal;
+$("saveHostProfileBtn").onclick=saveHostProfile;
+
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
 $("closeCompetitionBtn").onclick=closeCompetition;$("restartCompetitionBtn").onclick=restartCompetition;$("viewResultBtn").onclick=viewSelectedResult;$("resultRunSelect").onchange=viewSelectedResult;$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
@@ -482,7 +549,7 @@ onAuthStateChanged(auth,async user=>{
   currentUser=user||null; uid=user?.uid||null;
   $("authStatus").textContent=user?(isAdmin(user)?"Administrator signed in":"Signed in"):"Not signed in";
   $("loginCard").classList.toggle("hidden",!!user);
-  if(!user){$("hostApp").classList.add("hidden");$("adminCard").classList.add("hidden");$("hostAccessCard").classList.add("hidden");return;}
+  if(!user){$("hostApp").classList.add("hidden");$("adminLauncher").classList.add("hidden");closeAdminModal();$("hostAccessCard").classList.add("hidden");return;}
   try{
     hostProfile=await ensureHostProfile(user);
     renderAccess();
