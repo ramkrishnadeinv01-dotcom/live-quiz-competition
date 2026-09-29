@@ -5,10 +5,66 @@ import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 const $=id=>document.getElementById(id);
-let uid=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
+const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
+let uid=null, currentUser=null, hostProfile=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
 let hostTimerInterval=null, competitionFrozen=false;
 let unsubRoom=null, unsubParticipants=null, unsubQuestions=null, answerListeners={};
 
+function isAdmin(user=currentUser){return String(user?.email||"").toLowerCase()===ADMIN_EMAIL.toLowerCase();}
+function isApproved(){return isAdmin() || hostProfile?.status==="approved";}
+async function ensureHostProfile(user){
+  if(!user)return null;
+  const h=await get(ref(db,`hosts/${user.uid}`));
+  if(h.exists()) return h.val();
+  const profile={email:(user.email||"").toLowerCase(),status:isAdmin(user)?"approved":"pending",requestedAt:serverTimestamp()};
+  await set(ref(db,`hosts/${user.uid}`),profile);
+  return {...profile,requestedAt:Date.now()};
+}
+function renderAccess(){
+  const admin=$("adminCard"), access=$("hostAccessCard"), appBox=$("hostApp");
+  if(admin)admin.classList.toggle("hidden",!isAdmin());
+  if(access)access.classList.toggle("hidden",isAdmin()||!currentUser);
+  if(!currentUser){if(appBox)appBox.classList.add("hidden");return;}
+  if(isAdmin()){if(appBox)appBox.classList.remove("hidden");return;}
+  const approved=isApproved();
+  if(appBox)appBox.classList.toggle("hidden",!approved);
+  if(access){
+    const st=$("hostAccessStatus");
+    if(hostProfile?.status==="pending") st.innerHTML="⏳ <b>Host permission is pending.</b><br>Your account has been created, but the Administrator must approve it before you can create or conduct a competition.";
+    else if(hostProfile?.status==="rejected"||hostProfile?.status==="revoked") st.innerHTML="🚫 <b>Host permission is not active.</b><br>Please contact the Administrator.";
+    else st.textContent="Host permission is active.";
+  }
+}
+async function loadHostRequests(){
+  if(!isAdmin())return;
+  const body=$("hostRequests"), status=$("adminStatus"); if(!body)return;
+  try{
+    const snap=await get(ref(db,"hosts")); const hosts=snap.val()||{}; const arr=Object.entries(hosts).map(([id,h])=>({uid:id,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));
+    status.textContent=`${arr.filter(x=>x.status==="pending").length} pending request(s).`;
+    if(!arr.length){body.innerHTML='<tr><td colspan="5">No host requests.</td></tr>';return;}
+    body.innerHTML=arr.map(h=>{
+      const st=String(h.status||"pending").toUpperCase();
+      let action="";
+      if(h.uid!==uid){
+        if(h.status==="pending") action=`<button class="success hostApproveBtn" data-uid="${esc(h.uid)}">APPROVE</button> <button class="danger hostRejectBtn" data-uid="${esc(h.uid)}">REJECT</button>`;
+        else if(h.status==="approved") action=`<button class="danger hostRevokeBtn" data-uid="${esc(h.uid)}">REVOKE</button>`;
+        else action=`<button class="success hostApproveBtn" data-uid="${esc(h.uid)}">APPROVE</button>`;
+      }
+      const when=h.requestedAt?new Date(Number(h.requestedAt)).toLocaleString():"";
+      return `<tr><td>${esc(h.email||"")}</td><td><span class="badge ${h.status==="approved"?'green':'red'}">${esc(st)}</span></td><td>${esc(when)}</td><td style="font-size:11px">${esc(h.uid)}</td><td>${action||"—"}</td></tr>`;
+    }).join("");
+    document.querySelectorAll('.hostApproveBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"approved"));
+    document.querySelectorAll('.hostRejectBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"rejected"));
+    document.querySelectorAll('.hostRevokeBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"revoked"));
+  }catch(e){console.error(e);status.textContent=`Unable to load host requests: ${e.message||e}`;}
+}
+async function setHostStatus(hostUid,status){
+  if(!isAdmin()||!hostUid)return;
+  const label=status==="approved"?"approve":status==="revoked"?"revoke":"reject";
+  if(!confirm(`Are you sure you want to ${label} this host?`))return;
+  await update(ref(db,`hosts/${hostUid}`),{status,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});
+  await loadHostRequests();
+}
 function msg(t,cls=""){ $("loginMsg").textContent=t; $("loginMsg").className=cls; }
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function roomRef(){return ref(db,`rooms/${room}`);}
@@ -128,6 +184,7 @@ async function saveQuestion(){
  await set(qRef(qNo),data); questionsCache[`q${qNo}`]=data; $("controlMsg").textContent=`Question ${qNo} saved.`;
 }
 async function createRoom(){
+ if(!isApproved()) return alert("Host permission is pending or inactive. Please obtain Administrator approval first.");
  const code=Math.random().toString(36).slice(2,8).toUpperCase(); room=code;
  const title=$("quizTitle").value.trim()||"Live Quiz", count=Number($("qCount").value||10);
  const timerSeconds=Math.max(5,Math.min(3600,Number($("timerSeconds").value||30)));
@@ -148,6 +205,7 @@ async function loadExistingRooms(){
  }catch(e){ console.error(e); }
 }
 async function openRoom(code){
+ if(!isApproved()) return alert("Host permission is not active. Please obtain Administrator approval first.");
  const snap=await get(ref(db,`rooms/${code}`)); const r=snap.val();
  if(!r || r.hostUid!==uid) return alert("Saved quiz room not found or not owned by this host.");
  room=code; localStorage.setItem("liveQuizLastRoom",code);
@@ -325,8 +383,14 @@ async function exportExcel(){
  const safeDate=String(run.runDate||"result").replace(/[^0-9-]/g,"-");
  XLSX.writeFile(wb,`Quiz_Results_${room}_${safeDate}.xlsx`);
 }
-$("signupBtn").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Account created. You are signed in.");}catch(e){msg(e.message)}};
-$("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value,$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
+$("signupBtn").onclick=async()=>{try{
+  const email=$("email").value.trim().toLowerCase();
+  const password=$("password").value;
+  const cred=await createUserWithEmailAndPassword(auth,email,password);
+  await set(ref(db,`hosts/${cred.user.uid}`),{email,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()});
+  msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host request submitted. Please wait for Administrator approval.");
+}catch(e){msg(e.message)}};
+$("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
@@ -404,4 +468,19 @@ async function importWordQuestions(){
   }catch(err){console.error(err); status.textContent=`Import failed: ${err?.message||err}`;}
 }
 
-onAuthStateChanged(auth,async user=>{uid=user?.uid||null;$("authStatus").textContent=user?"Host signed in":"Not signed in";$("loginCard").classList.toggle("hidden",!!user);$("hostApp").classList.toggle("hidden",!user);if(user){await loadExistingRooms();const last=localStorage.getItem("liveQuizLastRoom");if(last) {const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}}});
+onAuthStateChanged(auth,async user=>{
+  currentUser=user||null; uid=user?.uid||null;
+  $("authStatus").textContent=user?(isAdmin(user)?"Administrator signed in":"Signed in"):"Not signed in";
+  $("loginCard").classList.toggle("hidden",!!user);
+  if(!user){$("hostApp").classList.add("hidden");$("adminCard").classList.add("hidden");$("hostAccessCard").classList.add("hidden");return;}
+  try{
+    hostProfile=await ensureHostProfile(user);
+    renderAccess();
+    if(isAdmin(user)){await loadHostRequests();}
+    if(isApproved()){
+      await loadExistingRooms();
+      const last=localStorage.getItem("liveQuizLastRoom");
+      if(last){const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}
+    }
+  }catch(e){console.error(e);msg(`Access check failed: ${e.message||e}`);}
+});
