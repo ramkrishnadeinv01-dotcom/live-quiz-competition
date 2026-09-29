@@ -23,7 +23,7 @@ async function join(){
  const rs=await get(ref(db,`rooms/${room}`));
  if(!rs.exists())return msg("Room not found.");
  const r=rs.val();
- if(r.state==="finished")return msg("This quiz has already finished.");
+ if(r.competitionClosed || r.state==="competition_closed")return msg("🔒 This competition is closed. You cannot join this room now.","status blocked");
  studentKey=phoneKey(phone);
  const pRef=ref(db,`rooms/${room}/participants/${studentKey}`);
  const result=await runTransaction(pRef,current=>{
@@ -45,8 +45,20 @@ async function join(){
 }
 function requestFullScreen(){const el=document.documentElement;const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;if(fn)Promise.resolve(fn.call(el)).catch(()=>{});}
 async function recordViolation(type){
- const now=Date.now();if(now-lastViolationAt<1200||!room||!studentKey)return;lastViolationAt=now;violationCount++;
+ const now=Date.now();if(now-lastViolationAt<1200||!room||!studentKey)return;
+ // Once the host closes the competition, the entire competition is frozen.
+ // Leaving the page, changing tabs, losing focus or exiting fullscreen after closure
+ // must NOT create a new violation or change any participant record.
+ const roomSnap=await get(ref(db,`rooms/${room}`));
+ const roomData=roomSnap.val()||{};
+ if(roomData.competitionClosed || roomData.state==="competition_closed")return;
+ lastViolationAt=now;violationCount++;
  const p=await get(ref(db,`rooms/${room}/participants/${studentKey}`));if(!p.exists())return;
+ // Re-check closure immediately before writing, so a close occurring while the
+ // participant is leaving cannot create a late disqualification.
+ const latestRoom=await get(ref(db,`rooms/${room}`));
+ const latest=latestRoom.val()||{};
+ if(latest.competitionClosed || latest.state==="competition_closed")return;
  const audit={violationCount,lastViolationType:type,lastViolationAt:serverTimestamp()};
  // A legitimate prize winner remains a BLOCKED WINNER, not DISQUALIFIED. Keep the violation in the audit log.
  if(!(p.val()?.blocked && p.val()?.winner)) Object.assign(audit,{blocked:true,disqualified:true,disqualificationReason:"Anti-cheating violation"});
@@ -62,7 +74,17 @@ function startAntiCheat(){
  document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&["c","u","s","p","a"].includes(e.key.toLowerCase()))e.preventDefault();if(e.key==="F12")e.preventDefault();});
 }
 function listen(){
- onValue(ref(db,`rooms/${room}`),async s=>{const r=s.val()||{};const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};
+ onValue(ref(db,`rooms/${room}`),async s=>{const r=s.val()||{};
+  if(r.competitionClosed || r.state==="competition_closed"){
+   clearInterval(timer); answered=true; questionNo=0;
+   $("studentStatus").className="status blocked";
+   $("studentStatus").textContent="🔒 Competition Closed — This competition has been closed by the host. No further participation is allowed.";
+   $("qNo").textContent=""; $("prize").textContent=""; $("question").textContent="Competition Closed";
+   $("options").innerHTML=""; $("result").textContent=""; $("timer").textContent="00:00";
+   $("submitBtn").disabled=true;
+   return;
+  }
+  const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};
   violationCount=p.violationCount||0;
   if(p.disqualified){$("studentStatus").className="status blocked";$("studentStatus").textContent="⛔ Disqualified and blocked from the competition. Please contact the host if you need to be unblocked.";disable();return;}
   if(p.blocked&&p.winner){$("studentStatus").className="status blocked";$("studentStatus").textContent="🏆 You have won a prize and are blocked from the remaining questions.";disable();return;}
@@ -105,7 +127,7 @@ function disable(){answered=true;$("submitBtn").disabled=true;document.querySele
 $("joinBtn").onclick=join;
 $("submitBtn").onclick=async()=>{
  if(answered||!selected)return alert("Select an answer first.");answered=true;$("submitBtn").disabled=true;
- const r=(await get(ref(db,`rooms/${room}`))).val()||{};if(r.state!=="open"||r.currentQuestion!==questionNo)return $("result").textContent="Answers are closed.";
+ const r=(await get(ref(db,`rooms/${room}`))).val()||{};if(r.competitionClosed||r.state==="competition_closed")return $("result").textContent="🔒 Competition Closed.";if(r.state!=="open"||r.currentQuestion!==questionNo)return $("result").textContent="Answers are closed.";
  const p=(await get(ref(db,`rooms/${room}/participants/${studentKey}`))).val()||{};if(p.blocked||p.disqualified)return disable();
  const q=(await get(ref(db,`rooms/${room}/questions/q${questionNo}`))).val()||{};
  const elapsed=Math.max(0,Date.now()-Number(r.openedAt||Date.now()));

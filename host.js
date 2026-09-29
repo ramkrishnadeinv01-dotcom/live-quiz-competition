@@ -77,7 +77,7 @@ async function createRoom(){
  const title=$("quizTitle").value.trim()||"Live Quiz", count=Number($("qCount").value||10);
  const timerSeconds=Math.max(5,Math.min(3600,Number($("timerSeconds").value||30)));
  $("timerSeconds").value=timerSeconds;
- await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,qCount:count,timerSeconds});
+ await set(roomRef(),{title,hostUid:uid,state:"waiting",currentQuestion:0,createdAt:serverTimestamp(),closedAt:null,revealed:false,winnerKey:null,competitionClosed:false,qCount:count,timerSeconds});
  localStorage.setItem("liveQuizLastRoom",code);
  await openRoom(code);
 }
@@ -121,6 +121,16 @@ function updateHostCountdownDisplay(seconds, live=false){
 function subscribeRoom(){
  onValue(roomRef(),s=>{
    const r=s.val()||{}; $("roomState").innerHTML=`<span class="badge">${esc(r.state||"waiting")}</span>`;
+   if(r.competitionClosed || r.state==="competition_closed"){
+     clearInterval(hostTimerInterval);
+     $("hostCountdown").textContent="CLOSED";
+     $("liveQuestion").textContent="Competition is CLOSED.";
+     $("winnerBox").textContent="Competition closed.";
+     $("controlMsg").textContent="Competition closed. New participants cannot join this room.";
+     ["showBtn","closeBtn","revealBtn","randomTieBtn","nextBtn","saveQBtn","updateTimerBtn","importWordBtn","prevQBtn","nextEditBtn"].forEach(id=>{const el=$(id);if(el)el.disabled=true;});
+     const cb=$("closeCompetitionBtn"); if(cb){cb.disabled=true;cb.textContent="🔒 COMPETITION CLOSED";}
+     return;
+   }
    if(r.currentQuestion) $("liveQuestion").textContent=`Q${r.currentQuestion}: ${r.state}`;
    $("timerSettingMsg").textContent=`${Number(r.timerSeconds||30)} seconds per question.`;
    if(r.winnerName) $("winnerBox").innerHTML=`🏆 <b>${esc(r.winnerName)}</b> — ${esc(r.winnerTimeText||"")} — Prize ₹${Number(r.winnerPrize||0)}`;
@@ -192,6 +202,20 @@ async function nextQuestion(){
  await update(roomRef(),{state:"waiting",currentQuestion:0,openedAt:null,closedAt:null,revealed:false,winnerKey:null});
  qNo=next; await loadQ(next); onValue(ref(db,`rooms/${room}/answers/q${next}`),s=>{answersCache=s.val()||{};allAnswersCache[`q${next}`]=answersCache;renderAnswers();},{onlyOnce:false});
 }
+async function closeCompetition(){
+ if(!room)return;
+ const r=(await get(roomRef())).val()||{};
+ if(r.competitionClosed || r.state==="competition_closed")return;
+ if(!confirm("Close this competition? After closing, no participant will be allowed to join this room. The participant screen will show: Competition Closed."))return;
+ await update(roomRef(),{state:"competition_closed",competitionClosed:true,closedAt:serverTimestamp(),currentQuestion:0,openedAt:null,revealed:false,winnerKey:null,winnerName:null,winnerTimeText:null,winnerPrize:null});
+ clearInterval(hostTimerInterval);
+ $("hostCountdown").textContent="CLOSED";
+ $("liveQuestion").textContent="Competition is CLOSED.";
+ $("winnerBox").textContent="Competition closed.";
+ $("controlMsg").textContent="Competition closed successfully. New participants cannot join this room.";
+ ["showBtn","closeBtn","revealBtn","randomTieBtn","nextBtn","saveQBtn","updateTimerBtn","importWordBtn","prevQBtn","nextEditBtn"].forEach(id=>{const el=$(id);if(el)el.disabled=true;});
+ const cb=$("closeCompetitionBtn"); if(cb){cb.disabled=true;cb.textContent="🔒 COMPETITION CLOSED";}
+}
 async function refreshAllAnswerLogs(){
  const s=await get(ref(db,`rooms/${room}/answers`)); allAnswersCache=s.val()||{};
 }
@@ -217,7 +241,7 @@ $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("ema
 $("logoutBtn").onclick=()=>signOut(auth);
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
-$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
+$("closeCompetitionBtn").onclick=closeCompetition;$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;
 
 
 // ---------------- Word (.docx) MCQ importer ----------------
