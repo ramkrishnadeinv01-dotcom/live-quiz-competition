@@ -41,7 +41,7 @@ async function loadHostRequests(){
   try{
     const snap=await get(ref(db,"hosts")); const hosts=snap.val()||{}; const arr=Object.entries(hosts).map(([id,h])=>({uid:id,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));
     status.textContent=`${arr.filter(x=>x.status==="pending").length} pending request(s).`;
-    if(!arr.length){body.innerHTML='<tr><td colspan="5">No host requests.</td></tr>';return;}
+    if(!arr.length){body.innerHTML='<tr><td colspan="10">No host requests.</td></tr>';return;}
     body.innerHTML=arr.map(h=>{
       const st=String(h.status||"pending").toUpperCase();
       let action="";
@@ -51,7 +51,7 @@ async function loadHostRequests(){
         else action=`<button class="success hostApproveBtn" data-uid="${esc(h.uid)}">APPROVE</button>`;
       }
       const when=h.requestedAt?new Date(Number(h.requestedAt)).toLocaleString():"";
-      return `<tr><td>${esc(h.email||"")}</td><td><span class="badge ${h.status==="approved"?'green':'red'}">${esc(st)}</span></td><td>${esc(when)}</td><td style="font-size:11px">${esc(h.uid)}</td><td>${action||"—"}</td></tr>`;
+      return `<tr><td>${esc(h.email||"")}</td><td>${esc(h.hostName||"")}</td><td>${esc(h.designation||"")}</td><td>${esc(h.placeOfPosting||"")}</td><td>${esc(h.phone||"")}</td><td>${esc(h.purpose||"")}${h.purposeDetails?`<br><small>${esc(h.purposeDetails)}</small>`:""}</td><td><span class="badge ${h.status==="approved"?'green':'red'}">${esc(st)}</span></td><td>${esc(when)}</td><td style="font-size:11px">${esc(h.uid)}</td><td>${action||"—"}</td></tr>`;
     }).join("");
     document.querySelectorAll('.hostApproveBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"approved"));
     document.querySelectorAll('.hostRejectBtn').forEach(b=>b.onclick=()=>setHostStatus(b.dataset.uid,"rejected"));
@@ -386,12 +386,22 @@ async function exportExcel(){
 $("signupBtn").onclick=async()=>{try{
   const email=$("email").value.trim().toLowerCase();
   const password=$("password").value;
+  const hostName=$("hostName").value.trim();
+  const designation=$("hostDesignation").value.trim();
+  const placeOfPosting=$("hostPlace").value.trim();
+  const phone=$("hostPhone").value.trim();
+  const purpose=$("hostPurpose").value;
+  const purposeDetails=$("hostPurposeDetails").value.trim();
+  if(!email||!password||!hostName||!designation||!placeOfPosting||!phone||!purpose||!purposeDetails){msg("Please fill in all required Host registration fields marked with *.");return;}
+  if(!/^[0-9+()\- ]{7,15}$/.test(phone)){msg("Please enter a valid phone number.");return;}
   const cred=await createUserWithEmailAndPassword(auth,email,password);
-  await set(ref(db,`hosts/${cred.user.uid}`),{email,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()});
+  await set(ref(db,`hosts/${cred.user.uid}`),{email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()});
+  hostProfile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:Date.now()};
   msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host request submitted. Please wait for Administrator approval.");
 }catch(e){msg(e.message)}};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);msg("Signed in.");}catch(e){msg(e.message)}};
 $("logoutBtn").onclick=()=>signOut(auth);
+$("pendingLogoutBtn").onclick=()=>signOut(auth);
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
 $("closeCompetitionBtn").onclick=closeCompetition;$("restartCompetitionBtn").onclick=restartCompetition;$("viewResultBtn").onclick=viewSelectedResult;$("resultRunSelect").onchange=viewSelectedResult;$("createRoomBtn").onclick=createRoom;$("resumeRoomBtn").onclick=resumeRoom;$("updateTimerBtn").onclick=updateQuizTimer;$("saveQBtn").onclick=saveQuestion;$("showBtn").onclick=showQuestion;$("closeBtn").onclick=closeAnswers;$("revealBtn").onclick=()=>revealWinner(false);$("randomTieBtn").onclick=()=>revealWinner(true);$("nextBtn").onclick=nextQuestion;$("prevQBtn").onclick=()=>loadQ(qNo-1);$("nextEditBtn").onclick=()=>loadQ(qNo+1);$("exportBtn").onclick=exportExcel;

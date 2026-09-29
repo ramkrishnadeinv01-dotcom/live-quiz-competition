@@ -5,7 +5,20 @@
 <div class="container">
   <div id="loginCard" class="card">
     <h2>Host Login</h2><p class="notice">This panel is for the host only. Create/sign in with a Firebase Email/Password account.</p>
-    <div class="row"><div class="field"><label>Email</label><input id="email" type="email"></div><div class="field"><label>Password</label><input id="password" type="password"></div></div>
+    <div class="row"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><div class="field"><label>Password</label><input id="password" type="password" autocomplete="new-password"></div></div>
+    <div class="notice" style="margin-top:12px"><b>Host registration information</b><br>When creating a Host Account, the following details are required. The Administrator will see these details before approving the host.</div>
+    <div class="row" style="margin-top:12px">
+      <div class="field"><label>Host Name *</label><input id="hostName" type="text" autocomplete="name" placeholder="Full name"></div>
+      <div class="field"><label>Designation *</label><input id="hostDesignation" type="text" placeholder="Designation"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="field"><label>Place of Posting *</label><input id="hostPlace" type="text" placeholder="Office / Place of posting"></div>
+      <div class="field"><label>Phone Number *</label><input id="hostPhone" type="tel" inputmode="numeric" maxlength="15" placeholder="Mobile number"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="field"><label>Purpose of Hosting *</label><select id="hostPurpose"><option value="">Select purpose</option><option>Official / Departmental Quiz</option><option>Educational / Academic Quiz</option><option>Training / Workshop Quiz</option><option>Competition / Event</option><option>Other</option></select></div>
+      <div class="field"><label>Purpose Details *</label><input id="hostPurposeDetails" type="text" placeholder="Briefly state the purpose"></div>
+    </div>
     <div class="row" style="margin-top:12px"><button id="signupBtn">Create Host Account</button><button id="loginBtn" class="success">Sign In</button></div>
     <p id="loginMsg"></p>
   </div>
@@ -14,12 +27,13 @@
     <h2>🛡️ Administrator — Host Approval</h2>
     <p class="notice">Only the Administrator can approve or revoke permission to conduct competitions.</p>
     <div id="adminStatus" class="status">Loading host requests…</div>
-    <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Email</th><th>Status</th><th>Requested</th><th>UID</th><th>Action</th></tr></thead><tbody id="hostRequests"><tr><td colspan="5">No host requests.</td></tr></tbody></table></div>
+    <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Email</th><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Phone</th><th>Purpose</th><th>Status</th><th>Requested</th><th>UID</th><th>Action</th></tr></thead><tbody id="hostRequests"><tr><td colspan="10">No host requests.</td></tr></tbody></table></div>
   </div>
 
   <div id="hostAccessCard" class="card hidden">
     <h2>🔐 Host Permission</h2>
     <div id="hostAccessStatus" class="status"></div>
+    <div class="row" style="margin-top:12px"><button id="pendingLogoutBtn" class="secondary" type="button">🚪 Sign Out</button></div>
   </div>
 
   <div id="hostApp" class="hidden">
