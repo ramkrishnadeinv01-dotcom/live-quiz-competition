@@ -7,6 +7,8 @@ const $=id=>document.getElementById(id);
 let room="",studentKey="",selected="",questionNo=0,openedAt=0,answered=false,timer,violationCount=0,lastViolationAt=0;
 let questionTimerSeconds=30;
 const opts=["A","B","C","D"];
+const IST_TIME_ZONE="Asia/Kolkata";
+function formatIST(timestamp){if(!timestamp)return "";const d=new Date(Number(timestamp));if(Number.isNaN(d.getTime()))return "";return d.toLocaleString("en-IN",{timeZone:IST_TIME_ZONE,dateStyle:"medium",timeStyle:"short",hour12:true})+" IST";}
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
 function normalizePhone(v){v=v.trim().replace(/[\s()-]/g,"");if(/^\+91\d{10}$/.test(v))return v;if(/^91\d{10}$/.test(v))return "+"+v;if(/^\d{10}$/.test(v))return "+91"+v;return "";}
@@ -157,7 +159,47 @@ $("roomContinueBtn").onclick=()=>enterAssignment($("roomContinueBtn").dataset.ty
 $("assignmentTab").onclick=()=>{ $("assignmentTab").classList.add("active");$("resultTab").classList.remove("active");$("assignmentPanel").classList.remove("hidden");$("resultPanel").classList.add("hidden"); };
 $("resultTab").onclick=()=>{ $("resultTab").classList.add("active");$("assignmentTab").classList.remove("active");$("resultPanel").classList.remove("hidden");$("assignmentPanel").classList.add("hidden"); };
 $("participantSignOut").onclick=()=>{ sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");location.reload(); };
-$("viewResultBtn").onclick=async()=>{ const code=$("resultRoomCode").value.trim().toUpperCase();const p=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");if(!p)return; if(!/^[A-Z0-9]{6}$/.test(code)){ $("resultSummary").textContent="Enter a valid 6-character room code.";return;} const key=phoneKey(p.phone); const snap=await get(ref(db,`rooms/${code}`)); if(!snap.exists()){ $("resultSummary").textContent="Room not found.";return;} const r=snap.val()||{}; const ps=(r.participants||{})[key]; if(!ps){ $("resultSummary").textContent="No result found for this participant in this room.";return;} const answers=r.answers||{};let correct=0,total=0;Object.keys(answers).forEach(q=>{const a=answers[q]?.[key];if(a){total++;if(a.correct)correct++;}});$("resultSummary").className="status";$("resultSummary").innerHTML=`<b>${esc(p.name)}</b><br>Room: <b>${esc(code)}</b><br>Answered: <b>${total}</b><br>Correct: <b>${correct}</b><br>Status: <b>${ps.disqualified?"Disqualified":ps.winner?"Prize Winner":ps.blocked?"Blocked":"Participant"}</b>`; };
+$("viewResultBtn").onclick=async()=>{
+ const code=$("resultRoomCode").value.trim().toUpperCase();
+ const p=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
+ if(!p)return;
+ if(!/^[A-Z0-9]{6}$/.test(code)){ $("resultSummary").textContent="Enter a valid 6-character room code.";return; }
+ const key=phoneKey(p.phone);
+ const snap=await get(ref(db,`rooms/${code}`));
+ if(!snap.exists()){ $("resultSummary").textContent="Room not found.";return; }
+ const roomData=snap.val()||{};
+ function findParticipant(obj){
+   if(!obj)return null;
+   if(obj[key])return obj[key];
+   for(const [k,v] of Object.entries(obj)){
+     if(v && phoneKey(String(v.phone||""))===key)return v;
+   }
+   return null;
+ }
+ function makeSummary(ps,answers,label){
+   let correct=0,total=0;
+   Object.keys(answers||{}).forEach(q=>{const a=answers[q]?.[key] || Object.values(answers[q]||{}).find(x=>x && phoneKey(String(x.phone||""))===key);if(a){total++;if(a.correct)correct++;}});
+   const status=ps.disqualified?"Disqualified":ps.winner?`Prize Winner${ps.winnerPrize!=null?` — ₹${Number(ps.winnerPrize||0)}`:""}`:ps.blocked?"Blocked":"Participant";
+   return `<b>${esc(p.name)}</b><br>Room: <b>${esc(code)}</b><br>${label?`Competition: <b>${esc(label)}</b><br>`:""}Answered: <b>${total}</b><br>Correct: <b>${correct}</b><br>Status: <b>${status}</b>${ps.winner?`<br>Winning Question: <b>Q${esc(ps.winnerQuestion||"")}</b>`:""}`;
+ }
+ const current=findParticipant(roomData.participants);
+ if(current){ $("resultSummary").className="status"; $("resultSummary").innerHTML=makeSummary(current,roomData.answers||{},"Current competition"); return; }
+ const runs=roomData.runs||{};
+ const matches=[];
+ for(const [runId,run] of Object.entries(runs)){
+   const rp=findParticipant(run?.participants);
+   if(rp)matches.push({runId,run,rp});
+ }
+ matches.sort((a,b)=>(Number(b.run?.closedAt)||0)-(Number(a.run?.closedAt)||0));
+ if(matches.length){
+   const m=matches[0];
+   $("resultSummary").className="status";
+   $("resultSummary").innerHTML=makeSummary(m.rp,m.run?.answers||{},`${m.run?.runDate||""}${m.run?.runStartedAt?` — ${new Date(Number(m.run.runStartedAt)).toLocaleTimeString("en-IN", {timeZone:"Asia/Kolkata", hour:"2-digit", minute:"2-digit", hour12:true})} IST`:""}`);
+   return;
+ }
+ $("resultSummary").className="status";
+ $("resultSummary").textContent="No result found for this participant in this room.";
+};
 const saved=JSON.parse(sessionStorage.getItem("quizParticipant")||"null"); if(saved)showDashboard(saved);
 $("submitBtn").onclick=async()=>{
  if(answered||!selected)return alert("Select an answer first.");answered=true;$("submitBtn").disabled=true;
