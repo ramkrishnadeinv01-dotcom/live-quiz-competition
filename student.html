@@ -17,7 +17,7 @@
       <div class="field"><label>Place of Posting *</label><input id="placeOfPosting" autocomplete="off" placeholder="Enter place of posting"></div>
       <div class="field"><label>Mobile Number *</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="13" autocomplete="off" placeholder="10-digit mobile number"></div>
     </div>
-    <button id="participantContinueBtn" class="success" style="margin-top:14px">CONTINUE</button>
+    <button id="participantContinueBtn" class="success" style="margin-top:14px" type="button" onclick="quickParticipantContinue()">CONTINUE</button>
     <p id="joinMsg"></p>
   </div>
 
@@ -68,5 +68,29 @@
     <div class="card"><div class="row" style="justify-content:space-between"><h2 id="qNo">Question</h2><h2 id="prize">₹0</h2></div><div id="question" class="question">Waiting for the host to show the next question.</div><div id="options"></div><button id="submitBtn" class="success" disabled>SUBMIT ANSWER</button><div id="result" style="margin-top:12px"></div></div>
   </div>
 </div>
-<script type="module" src="student.js?v=20260930-2"></script>
+
+<script>
+function quickParticipantContinue(){
+  const name=document.getElementById('studentName').value.trim();
+  const designation=document.getElementById('designation').value.trim();
+  const place=document.getElementById('placeOfPosting').value.trim();
+  const raw=document.getElementById('phoneNumber').value.trim();
+  const msg=document.getElementById('joinMsg');
+  const digits=raw.replace(/\D/g,'');
+  if(!name||!designation||!place||digits.length<10){
+    msg.textContent='Please fill Name, Designation, Place of Posting and a valid 10-digit Mobile Number.';
+    msg.className='status blocked';
+    return;
+  }
+  const phone=digits.length===10?'+91'+digits:(digits.length===12&&digits.startsWith('91')?'+'+digits:raw);
+  const participant={name,designation,placeOfPosting:place,phone};
+  sessionStorage.setItem('quizParticipant',JSON.stringify(participant));
+  document.getElementById('joinCard').classList.add('hidden');
+  document.getElementById('dashboardCard').classList.remove('hidden');
+  document.getElementById('quizCard').classList.add('hidden');
+  document.getElementById('participantWelcome').textContent=`Welcome, ${name} • ${designation} • ${place}`;
+  document.getElementById('connection').textContent='Ready';
+}
+</script>
+<script type="module" src="student.js?v=20260930-3"></script>
 </body></html>
