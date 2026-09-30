@@ -64,8 +64,6 @@ async function joinExistingQuiz(code,p){
  $("dashboardCard").classList.add("hidden");$("quizCard").classList.remove("hidden");
  $("title").textContent=r.title||"Live Quiz";$("room").textContent=room;$("connection").textContent="Connected";startAntiCheat();requestFullScreen();listen();
 }
-function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
-
 function requestFullScreen(){const el=document.documentElement;const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;if(fn)Promise.resolve(fn.call(el)).catch(()=>{});}
 async function recordViolation(type){
  const now=Date.now();if(now-lastViolationAt<1200||!room||!studentKey)return;
