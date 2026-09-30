@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -511,6 +511,17 @@ $("registrationSubmitBtn").onclick=async()=>{try{
   msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host registration submitted. Please wait for Administrator approval.");
 }catch(e){msg(e.message||String(e));$("registrationSubmitBtn").disabled=false;}};
 $("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(e){msg(e.message)}};
+$("forgotPasswordBtn").onclick=async()=>{try{
+  const email=$("email").value.trim().toLowerCase();
+  if(!email){msg("Please enter your registered email address in the Email box first.");$("email").focus();return;}
+  await sendPasswordResetEmail(auth,email);
+  msg("✓ Password reset link has been sent to your registered email address. Please check your Inbox and Spam/Junk folder.","success");
+}catch(e){
+  const code=e?.code||"";
+  if(code==="auth/user-not-found") msg("No Host account was found for this email address.");
+  else if(code==="auth/invalid-email") msg("Please enter a valid email address.");
+  else msg(e?.message||String(e));
+}};
 $("logoutBtn").onclick=async()=>{clearHostRegistrationFields();await signOut(auth);};
 $("pendingLogoutBtn").onclick=async()=>{clearHostRegistrationFields();await signOut(auth);};
 $("openAdminApprovalBtn").onclick=openAdminModal;
