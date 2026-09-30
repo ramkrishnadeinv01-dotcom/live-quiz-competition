@@ -179,7 +179,7 @@ $("viewResultBtn").onclick=async()=>{
  function makeSummary(ps,answers,label){
    let correct=0,total=0;
    Object.keys(answers||{}).forEach(q=>{const a=answers[q]?.[key] || Object.values(answers[q]||{}).find(x=>x && phoneKey(String(x.phone||""))===key);if(a){total++;if(a.correct)correct++;}});
-   const status=ps.disqualified?"Disqualified":ps.winner?`Prize Winner${ps.winnerPrize!=null?` — ₹${Number(ps.winnerPrize||0)}`:""}`:ps.blocked?"Blocked":"Participant";
+   const status=ps.disqualified?"Disqualified":ps.winner?`CONGRATULATION ! YOU HAVE WON THE PRIZE FOR QUESTION NUMBER ${esc(ps.winnerQuestion||"")}.`:ps.blocked?"Blocked":"Participant";
    return `<b>${esc(p.name)}</b><br>Room: <b>${esc(code)}</b><br>${label?`Competition: <b>${esc(label)}</b><br>`:""}Answered: <b>${total}</b><br>Correct: <b>${correct}</b><br>Status: <b>${status}</b>${ps.winner?`<br>Winning Question: <b>Q${esc(ps.winnerQuestion||"")}</b>`:""}`;
  }
  const current=findParticipant(roomData.participants);
