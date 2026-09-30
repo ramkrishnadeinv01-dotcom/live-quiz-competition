@@ -4,9 +4,9 @@
 <header><div><h1>🏆 Live Quiz — Host Panel</h1><small>Hindi Question-Answer Platform</small></div><span id="authStatus" class="badge">Connecting…</span></header>
 <div class="container">
   <div id="loginCard" class="card">
-    <h2>Host Login</h2><p class="notice">This panel is for the host only. Create/sign in with a Firebase Email/Password account.</p>
+    <h2>Host Login</h2><p class="notice">This panel is for the host only. Create/sign in with an Email/Password account.</p>
     <div class="row"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><div class="field"><label>Password</label><input id="password" type="password" autocomplete="new-password"></div></div>
-    <div class="notice" style="margin-top:12px"><b>Host registration</b><br>For a new Host Account, click <b>Create Host Account</b> below. You will be required to complete all Host details <b>before the Firebase account and host request are created</b>.</div>
+    <div class="notice" style="margin-top:12px"><b>Host registration</b><br>For a new Host Account, click <b>Create Host Account</b> below. You will be required to complete all Host details <b>before the host account and host request are created</b>.</div>
     <div id="registrationBox" class="status hidden" style="margin-top:12px">
       <h3>📝 Complete Host Registration</h3>
       <p class="muted">All information marked with * is required. The account and host approval request will be created only after you submit this completed form.</p>
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded",function(){
         <div><h2>🛡️ Host Approval</h2><p class="muted">Approve, reject, revoke or delete host requests.</p></div>
         <button id="closeAdminApprovalBtn" class="secondary" type="button">✕ Close</button>
       </div>
-      <div class="notice">Only the Administrator can approve or revoke permission to conduct competitions. <b>Delete</b> removes the host request record from the database; it does not delete the Firebase login account.</div>
+      <div class="notice">Only the Administrator can approve or revoke permission to conduct competitions. <b>Delete</b> removes the host request record from the database; it does not delete the login account.</div>
       <div id="adminStatus" class="status">Loading host requests…</div>
       <div class="tablewrap admin-table-wrap" style="margin-top:12px"><table><thead><tr><th>Email</th><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Phone</th><th>Purpose</th><th>Status</th><th>Requested</th><th>Action</th></tr></thead><tbody id="hostRequests"><tr><td colspan="9">No host requests.</td></tr></tbody></table></div>
       <div class="admin-modal-foot"><button id="backToMainBtn" class="success" type="button">↩ Back to Main Menu</button></div>
@@ -168,5 +168,5 @@ document.addEventListener("DOMContentLoaded",function(){
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script type="module" src="host.js?v=20260930-13"></script>
+<script type="module" src="host.js?v=20260930-17"></script>
 </body></html>

@@ -111,7 +111,7 @@ async function setHostStatus(hostUid,status){
 }
 async function deleteHostRequest(hostUid){
   if(!isAdmin()||!hostUid||hostUid===uid)return;
-  if(!confirm("Delete this host request record? This removes the request from the Administrator portal but does not delete the Firebase login account."))return;
+  if(!confirm("Delete this host request record? This removes the request from the Administrator portal but does not delete the login account."))return;
   await remove(ref(db,`hosts/${hostUid}`));
   await loadHostRequests();
 }
@@ -263,10 +263,10 @@ async function loadExistingRooms(){
  const sel=$("existingRooms"); sel.innerHTML='<option value="">Select a saved quiz room</option>';
  try{
    const snap=await get(ref(db,"rooms")); const rooms=snap.val()||{}; let found=0;
-   Object.entries(rooms).filter(([,r])=>r && r.hostUid===uid).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).forEach(([code,r])=>{
+   Object.entries(rooms).filter(([,r])=>r && (r.hostUid===uid || isAdmin())).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).forEach(([code,r])=>{
      found++; const opt=document.createElement("option"); opt.value=code; opt.textContent=`${code} — ${r.title||"Live Quiz"}`; sel.appendChild(opt);
    });
-   const last=localStorage.getItem("liveQuizLastRoom"); if(last && rooms[last]?.hostUid===uid) sel.value=last;
+   const last=localStorage.getItem("liveQuizLastRoom"); if(last && rooms[last] && (rooms[last].hostUid===uid || isAdmin())) sel.value=last;
    if(!found) $("controlMsg").textContent="No saved quiz rooms found yet.";
  }catch(e){ console.error(e); }
 }
@@ -287,25 +287,44 @@ async function openRoom(code){
 }
 async function deleteQuizRoom(){
   if(!uid || !isApproved()) return alert("Host permission is not active.");
-  const code=$("existingRooms")?.value || room;
-  if(!code) return alert("Please select a quiz room to delete.");
+  const sel=$("existingRooms");
+  const code=sel?.value || room;
+  if(!code){
+    return alert("Please select a quiz room from the Existing Quiz Room list first.");
+  }
   const snap=await get(ref(db,`rooms/${code}`));
   const r=snap.val();
-  if(!r || r.hostUid!==uid) return alert("This quiz room is not owned by your host account.");
-  if(!r.competitionClosed && r.state!=="competition_closed") return alert("For safety, a quiz room can be deleted only after the competition has been closed.");
+  if(!r) return alert(`Quiz room ${code} was not found. Please refresh the room list.`);
+  if(!isAdmin() && r.hostUid!==uid) return alert("This quiz room is not owned by your host account.");
+  const closed=!!r.competitionClosed || r.state==="competition_closed";
+  if(!closed){
+    alert(`Room ${code} is currently ACTIVE (${r.state||"waiting"}).\n\nFor safety, close the competition first. Then use Delete Quiz Room again.`);
+    return;
+  }
   const hasRuns=!!r.runs && Object.keys(r.runs).length>0;
   const warning=hasRuns
-    ? `Delete quiz room ${code}?\n\nThis room is closed and contains frozen competition history. Deleting the room will permanently delete the room, its participants, answers, questions and frozen results.\n\nDownload any required Excel result before deleting.\n\nThis action cannot be undone.`
-    : `Delete quiz room ${code}?\n\nThis will permanently delete the room and its stored quiz data.\n\nThis action cannot be undone.`;
+    ? `DELETE QUIZ ROOM ${code}?\n\nThis closed room contains frozen competition history.\n\nDeleting it will permanently remove the room, questions, participants, answers, violations and the frozen result history stored inside this room.\n\nPlease download the required Excel result BEFORE deleting.\n\nThis action cannot be undone.`
+    : `DELETE QUIZ ROOM ${code}?\n\nThis will permanently remove the closed room and its stored quiz data.\n\nThis action cannot be undone.`;
   if(!confirm(warning)) return;
-  if(!confirm(`Final confirmation: permanently delete Room ${code}?`)) return;
-  await remove(ref(db,`rooms/${code}`));
-  if(room===code){
-    room=null; competitionFrozen=false; localStorage.removeItem("liveQuizLastRoom");
-    $("roomInfo")?.classList.add("hidden"); $("quizControls")?.classList.add("hidden");
+  if(!confirm(`FINAL CONFIRMATION\n\nPermanently delete Room ${code}?\n\nClick OK only if you are completely sure.`)) return;
+  try{
+    if(room===code){
+      if(unsubRoom)try{unsubRoom();}catch(e){}
+      if(unsubParticipants)try{unsubParticipants();}catch(e){}
+      clearInterval(hostTimerInterval);
+    }
+    await remove(ref(db,`rooms/${code}`));
+    if(room===code){
+      room=null; competitionFrozen=false; localStorage.removeItem("liveQuizLastRoom");
+      $("roomInfo")?.classList.add("hidden"); $("quizControls")?.classList.add("hidden");
+    }
+    await loadExistingRooms();
+    $("controlMsg").textContent=`Quiz room ${code} was permanently deleted.`;
+    alert(`Room ${code} has been deleted successfully.`);
+  }catch(e){
+    console.error(e);
+    alert(`Unable to delete Room ${code}.\n\n${e.message||e}`);
   }
-  await loadExistingRooms();
-  $("controlMsg").textContent=`Quiz room ${code} was permanently deleted.`;
 }
 async function resumeRoom(){const code=$("existingRooms").value; if(!code)return alert("Please select a saved quiz room first."); await openRoom(code);}
 
@@ -477,7 +496,7 @@ $("signupBtn").onclick=()=>{
   $("signupBtn").classList.add("hidden");
   $("registrationSubmitBtn").classList.remove("hidden");
   $("registrationBox").scrollIntoView({behavior:"smooth",block:"center"});
-  msg("Please complete all Host Registration details first. Your Firebase account and host request will be created only after you submit the completed form.");
+  msg("Please complete all Host Registration details first. Your host account and host request will be created only after you submit the completed form.");
 };
 $("registrationSubmitBtn").onclick=async()=>{try{
   const email=$("email").value.trim().toLowerCase(), password=$("password").value, hostName=$("hostName").value.trim(), designation=$("hostDesignation").value.trim(), placeOfPosting=$("hostPlace").value.trim(), phone=$("hostPhone").value.trim(), purpose=$("hostPurpose").value, purposeDetails=$("hostPurposeDetails").value.trim();
