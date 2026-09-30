@@ -168,6 +168,23 @@ $("viewResultBtn").onclick=async()=>{
  const snap=await get(ref(db,`rooms/${code}`));
  if(!snap.exists()){ $("resultSummary").textContent="Room not found.";return; }
  const roomData=snap.val()||{};
+ if(roomData.mcqQuestions && roomData.mcqAnswers){
+   const mcqAnswers=roomData.mcqAnswers||{};
+   let rec=mcqAnswers[key]||null;
+   if(!rec){for(const v of Object.values(mcqAnswers)){if(v && phoneKey(String(v.phone||""))===key){rec=v;break;}}}
+   if(!rec){$("resultSummary").className="status";$("resultSummary").textContent="No MCQ result found for this participant in this room.";return;}
+   const qObj=roomData.mcqQuestions||{};
+   const qs=Object.keys(qObj).sort((a,b)=>Number((a.match(/\d+/)||[0])[0])-Number((b.match(/\d+/)||[0])[0])).map(k=>({id:k,...qObj[k]}));
+   let correct=0,wrong=0,unanswered=0;
+   const details=qs.map((q,i)=>{const a=String((rec.answers||{})[q.id]||"").toUpperCase();let r="Unanswered";if(a){if(a===String(q.correct||"").toUpperCase()){correct++;r="Correct"}else{wrong++;r="Wrong"}}else unanswered++;return {no:i+1,q,answer:a,result:r};});
+   const pct=qs.length?correct*100/qs.length:0;
+   const safe=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+   const ansText=(q,o)=>o?`${o}. ${q.options?.[o]||""}`:"Not answered";
+   window.downloadParticipantMcqPdf=async()=>{const src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";if(!window.jspdf)await new Promise((res,rej)=>{const z=document.createElement("script");z.src=src;z.onload=res;z.onerror=rej;document.head.appendChild(z)});const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});let y=16;const line=t=>{const ls=doc.splitTextToSize(String(t),180);for(const l of ls){if(y>280){doc.addPage();y=16}doc.text(l,15,y);y+=6}};doc.setFont("helvetica","bold");line("MCQ EXAMINATION — PARTICIPANT RESULT");doc.setFont("helvetica","normal");line(`Room Code: ${code}`);line(`Exam: ${roomData.mcqTitle||"MCQ Examination"}`);line(`Name: ${rec.name}`);line(`Designation: ${rec.designation}`);line(`Place of Posting: ${rec.placeOfPosting}`);line(`Mobile: ${rec.phone}`);line(`Correct: ${correct} | Wrong: ${wrong} | Unanswered: ${unanswered}`);line(`Marks: ${correct}/${qs.length} | Percentage: ${pct.toFixed(2)}%`);if(rec.submittedAt)line(`Submitted: ${new Date(Number(rec.submittedAt)).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})} IST`);y+=3;details.forEach(d=>{doc.setFont("helvetica","bold");line(`Q${d.no}. ${d.q.text}`);doc.setFont("helvetica","normal");line(`Your Answer: ${ansText(d.q,d.answer)}`);line(`Correct Answer: ${ansText(d.q,d.q.correct)}`);line(`Result: ${d.result}`);y+=2});doc.save(`MCQ_${code}_Result.pdf`)};
+   $("resultSummary").className="status";
+   $("resultSummary").innerHTML=`<b>${safe(rec.name||p.name)}</b><br>Exam: <b>${safe(roomData.mcqTitle||"MCQ Examination")}</b><br>Room: <b>${code}</b><br>Correct: <b>${correct}</b> &nbsp; Wrong: <b>${wrong}</b> &nbsp; Unanswered: <b>${unanswered}</b><br>Total Marks: <b>${correct}/${qs.length}</b> &nbsp; Percentage: <b>${pct.toFixed(2)}%</b><br><button class="success" type="button" style="margin-top:10px" onclick="downloadParticipantMcqPdf()">📄 DOWNLOAD MY RESULT – PDF</button>`;
+   return;
+ }
  function findParticipant(obj){
    if(!obj)return null;
    if(obj[key])return obj[key];
