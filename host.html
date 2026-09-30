@@ -86,6 +86,7 @@ document.addEventListener("DOMContentLoaded",function(){
         <div class="field"><label>Time per Question (seconds)</label><input id="timerSeconds" type="number" min="5" max="3600" value="30"></div>
       </div>
       <div class="row" style="margin-top:12px"><button id="createRoomBtn">Create New Quiz Room</button><button id="resumeRoomBtn" class="success">Resume Existing Quiz</button><button id="logoutBtn" class="secondary">Sign Out</button></div>
+      <div class="card" style="margin-top:14px"><h3>📝 Other Exam Types</h3><p class="muted">These are separate from the Live Quiz room setup.</p><div class="row"><button type="button" class="success" onclick="location.href='host-mcq.html'">📝 MCQ Exam Setup</button><button type="button" class="secondary" onclick="location.href='host-general.html'">✍️ General Question Exam Setup</button></div></div>
       <div class="row" style="margin-top:12px"><div class="field"><label>Existing Quiz Room</label><select id="existingRooms"><option value="">Select a saved quiz room</option></select></div><div class="field" style="justify-content:end"><button id="deleteRoomBtn" class="danger" type="button">🗑️ Delete Quiz Room</button></div></div>
       <div id="roomInfo" class="hidden" style="margin-top:15px">
         <span>Room Code</span><div id="roomCode" class="roomcode"></div><div id="roomState"></div>
