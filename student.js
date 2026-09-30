@@ -147,7 +147,10 @@ function startCountdown(serverOpen,seconds){
  timer=setInterval(tick,100);
 }
 function disable(){answered=true;$("submitBtn").disabled=true;document.querySelectorAll(".option").forEach(b=>b.disabled=true);}
-$("participantContinueBtn").onclick=saveParticipantSession;
+document.addEventListener("DOMContentLoaded",()=>{
+ const btn=$("participantContinueBtn");
+ if(btn) btn.addEventListener("click",saveParticipantSession);
+});
 $("quizAssignment").onclick=()=>openRoomModal("quiz");
 $("mcqAssignment").onclick=()=>openRoomModal("mcq");
 $("generalAssignment").onclick=()=>openRoomModal("general");
