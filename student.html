@@ -1,26 +1,65 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css"><style>
+.dashboard-tabs{display:flex;gap:8px;margin-bottom:18px}.tab{border:1px solid #ccd5e1;background:#eef3f8;padding:12px 20px;border-radius:10px;font-weight:700}.tab.active{background:#1769e0;color:#fff}.assignment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.assignment-card{text-align:left;padding:20px;border:1px solid #d9e1ea;border-radius:14px;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:8px}.assignment-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}.assignment-card span{font-size:30px}.assignment-card b{font-size:18px}.assignment-card small{color:#64748b}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}.modal-card{background:#fff;width:min(520px,100%);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modal-card input{width:100%;box-sizing:border-box;margin-top:8px;padding:13px;border:1px solid #ccd5e1;border-radius:8px;font-size:18px}.modal-card .row{display:flex;gap:10px}.modal-card button{margin-top:0}
+</style></head>
 <body id="studentBody">
 <header><div><h1>🎓 Live Quiz</h1><small>Participant Panel</small></div><span id="connection" class="badge">Connecting…</span></header>
 <div class="container">
   <div id="joinCard" class="card">
-    <h2>Join Quiz</h2>
-    <div class="notice"><b>Important:</b> OTP/SMS verification is not required. Enter your details carefully. One mobile number can participate only once in this quiz.</div>
+    <h2>Participant Login</h2>
+    <div class="notice"><b>Please enter your details first.</b> After continuing, you will see the Assignment and Result menu. Room Code will be requested only when you choose an assignment.</div>
     <div class="row" style="margin-top:12px">
-      <div class="field"><label>Room Code</label><input id="roomCodeInput" maxlength="6" placeholder="e.g. ABC123"></div>
-      <div class="field"><label>Mobile Number</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="13" placeholder="10-digit mobile number"></div>
+      <div class="field"><label>Your Name *</label><input id="studentName" autocomplete="off" placeholder="Enter full name"></div>
+      <div class="field"><label>Designation *</label><input id="designation" autocomplete="off" placeholder="e.g. Statistical Officer"></div>
     </div>
     <div class="row" style="margin-top:12px">
-      <div class="field"><label>Your Name</label><input id="studentName" placeholder="Enter full name"></div>
-      <div class="field"><label>Designation</label><input id="designation" placeholder="e.g. Statistical Officer"></div>
+      <div class="field"><label>Place of Posting *</label><input id="placeOfPosting" autocomplete="off" placeholder="Enter place of posting"></div>
+      <div class="field"><label>Mobile Number *</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="13" autocomplete="off" placeholder="10-digit mobile number"></div>
     </div>
-    <div class="row" style="margin-top:12px">
-      <div class="field"><label>Place of Posting</label><input id="placeOfPosting" placeholder="Enter place of posting"></div>
-    </div>
-    <button id="joinBtn" class="success" style="margin-top:14px">JOIN QUIZ</button>
+    <button id="participantContinueBtn" class="success" style="margin-top:14px">CONTINUE</button>
     <p id="joinMsg"></p>
   </div>
+
+  <div id="dashboardCard" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div><h2 style="margin:0">Participant Dashboard</h2><div class="muted" id="participantWelcome"></div></div>
+        <button id="participantSignOut" class="danger">SIGN OUT</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="dashboard-tabs">
+        <button id="assignmentTab" class="tab active">📚 Assignment</button>
+        <button id="resultTab" class="tab">📊 Result</button>
+      </div>
+      <div id="assignmentPanel">
+        <h2>Assignments</h2>
+        <div class="assignment-grid">
+          <button class="assignment-card" id="quizAssignment"><span>🎯</span><b>Quiz</b><small>Enter the room code to join the live quiz.</small></button>
+          <button class="assignment-card" id="mcqAssignment"><span>📝</span><b>Exam — MCQ Based</b><small>Enter the room code for the MCQ examination.</small></button>
+          <button class="assignment-card" id="generalAssignment"><span>✍️</span><b>General Question Based Exam</b><small>Enter the room code for the general-question examination.</small></button>
+        </div>
+      </div>
+      <div id="resultPanel" class="hidden">
+        <h2>Results</h2>
+        <p class="muted">Enter the room code to view your available result.</p>
+        <div class="row"><div class="field"><label>Room Code</label><input id="resultRoomCode" maxlength="6" placeholder="e.g. ABC123"></div><div style="display:flex;align-items:end"><button id="viewResultBtn" class="success">VIEW RESULT</button></div></div>
+        <div id="resultSummary" class="status" style="margin-top:12px">No result selected.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="roomModal" class="modal hidden">
+    <div class="modal-card">
+      <h2 id="roomModalTitle">Enter Room Code</h2>
+      <p id="roomModalText">Please insert the room code.</p>
+      <input id="assignmentRoomCode" maxlength="6" autocomplete="off" placeholder="6-character room code">
+      <p id="roomModalMsg" class="status"></p>
+      <div class="row" style="justify-content:flex-end;margin-top:12px"><button id="roomCancelBtn">CANCEL</button><button id="roomContinueBtn" class="success">CONTINUE</button></div>
+    </div>
+  </div>
+
   <div id="quizCard" class="hidden">
     <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><div><b id="title"></b><div>Room: <b id="room"></b></div></div><div><div class="muted" style="text-align:right">⏱️ Time Remaining</div><div class="timer" id="timer">00:00</div></div></div></div>
     <div id="fullscreenNotice" class="notice">Full-screen mode is required during the competition. Leaving full screen or switching away from this page may be recorded as a violation.</div>
@@ -29,5 +68,5 @@
     <div class="card"><div class="row" style="justify-content:space-between"><h2 id="qNo">Question</h2><h2 id="prize">₹0</h2></div><div id="question" class="question">Waiting for the host to show the next question.</div><div id="options"></div><button id="submitBtn" class="success" disabled>SUBMIT ANSWER</button><div id="result" style="margin-top:12px"></div></div>
   </div>
 </div>
-<script type="module" src="student.js?v=20260926-4"></script>
+<script type="module" src="student.js?v=20260930-1"></script>
 </body></html>

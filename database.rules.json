@@ -38,6 +38,28 @@
               ".write": "auth != null && auth.uid === $student && !data.exists()"
             }
           }
+        },
+        "mcqQuestions": {
+          "$q": {
+            ".read": "auth != null"
+          }
+        },
+        "mcqAnswers": {
+          "$student": {
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".write": "auth != null && auth.uid === $student && !data.exists()"
+          }
+        },
+        "generalQuestions": {
+          "$q": {
+            ".read": "auth != null"
+          }
+        },
+        "generalAnswers": {
+          "$student": {
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".write": "auth != null && auth.uid === $student && !data.exists()"
+          }
         }
       }
     }

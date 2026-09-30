@@ -11,38 +11,61 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
 function normalizePhone(v){v=v.trim().replace(/[\s()-]/g,"");if(/^\+91\d{10}$/.test(v))return v;if(/^91\d{10}$/.test(v))return "+"+v;if(/^\d{10}$/.test(v))return "+91"+v;return "";}
 function phoneKey(phone){return phone.replace(/\D/g,"");}
-async function join(){
- room=$("roomCodeInput").value.trim().toUpperCase();
+function saveParticipantSession(){
  const phone=normalizePhone($("phoneNumber").value);
  const name=$("studentName").value.trim();
  const designation=$("designation").value.trim();
  const placeOfPosting=$("placeOfPosting").value.trim();
- if(!room||!/^[A-Z0-9]{6}$/.test(room))return msg("Enter the 6-character room code.");
  if(!phone)return msg("Enter a valid 10-digit Indian mobile number.");
- if(!name||!designation||!placeOfPosting)return msg("Please fill Name, Designation and Place of Posting.");
- const rs=await get(ref(db,`rooms/${room}`));
- if(!rs.exists())return msg("Room not found.");
- const r=rs.val();
- if(r.competitionClosed || r.state==="competition_closed")return msg("🔒 This competition is closed. You cannot join this room now.","status blocked");
+ if(!name||!designation||!placeOfPosting)return msg("Please fill Name, Designation, Place of Posting and Mobile Number.");
+ sessionStorage.setItem("quizParticipant",JSON.stringify({name,designation,placeOfPosting,phone}));
+ showDashboard({name,designation,placeOfPosting,phone});
+}
+function showDashboard(p){
+ $("joinCard").classList.add("hidden");$("dashboardCard").classList.remove("hidden");$("quizCard").classList.add("hidden");
+ $("participantWelcome").textContent=`Welcome, ${p.name} • ${p.designation} • ${p.placeOfPosting}`;
+ $("connection").textContent="Ready";
+}
+function openRoomModal(type){
+ $("roomModal").classList.remove("hidden");
+ $("assignmentRoomCode").value="";$("roomModalMsg").textContent="";
+ const title=type==="quiz"?"Join Quiz":type==="mcq"?"Exam — MCQ Based":"General Question Based Exam";
+ $("roomModalTitle").textContent=title;$("roomModalText").textContent=`Please insert the room code for ${title.toLowerCase()}.`;
+ $("roomContinueBtn").dataset.type=type;$("assignmentRoomCode").focus();
+}
+function closeRoomModal(){$("roomModal").classList.add("hidden");}
+async function enterAssignment(type){
+ const code=$("assignmentRoomCode").value.trim().toUpperCase();
+ if(!/^[A-Z0-9]{6}$/.test(code)){ $("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="Enter a valid 6-character room code.";return; }
+ const rs=await get(ref(db,`rooms/${code}`));
+ if(!rs.exists()){ $("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="Room not found.";return; }
+ const r=rs.val()||{};
+ if(r.competitionClosed||r.state==="competition_closed"){
+   if(type==="quiz"){ $("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="This quiz competition is closed.";return; }
+ }
+ const p=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
+ if(!p){closeRoomModal();return;}
+ if(type==="mcq"){sessionStorage.setItem("mcqRoom",code);window.location.href=`mcq.html?room=${encodeURIComponent(code)}`;return;}
+ if(type==="general"){sessionStorage.setItem("generalRoom",code);window.location.href=`general.html?room=${encodeURIComponent(code)}`;return;}
+ closeRoomModal(); await joinExistingQuiz(code,p);
+}
+async function joinExistingQuiz(code,p){
+ room=code; const phone=p.phone;
  studentKey=phoneKey(phone);
+ const rs=await get(ref(db,`rooms/${room}`)); if(!rs.exists())return alert("Room not found."); const r=rs.val()||{};
+ if(r.competitionClosed||r.state==="competition_closed")return alert("This competition is closed. You cannot join this room now.");
  const pRef=ref(db,`rooms/${room}/participants/${studentKey}`);
  const result=await runTransaction(pRef,current=>{
-   if(current===null){
-     return {studentKey,phone,name,designation,placeOfPosting,blocked:false,winner:false,disqualified:false,violationCount:0,joinedAt:{".sv":"timestamp"}};
-   }
-   // A host-unblocked disqualified participant may return to the same quiz.
-   // Ordinary repeat participation remains blocked by the one-mobile-number rule.
-   if(current.canRejoin===true && !current.blocked && !current.disqualified && !current.winner){
-     const next={...current,studentKey,phone,name,designation,placeOfPosting,canRejoin:false,lastRejoinedAt:{".sv":"timestamp"}};
-     return next;
-   }
+   if(current===null)return {studentKey,phone,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,blocked:false,winner:false,disqualified:false,violationCount:0,joinedAt:{".sv":"timestamp"}};
+   if(current.canRejoin===true&&!current.blocked&&!current.disqualified&&!current.winner)return {...current,studentKey,phone,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,canRejoin:false,lastRejoinedAt:{".sv":"timestamp"}};
    return;
  });
- if(!result.committed)return msg("This mobile number has already participated in this quiz. You cannot join again.");
- $("joinCard").classList.add("hidden");$("quizCard").classList.remove("hidden");
- $("title").textContent=r.title||"Live Quiz";$("room").textContent=room;
- $("connection").textContent="Connected";startAntiCheat();requestFullScreen();listen();
+ if(!result.committed){alert("This mobile number has already participated in this quiz. You cannot join again.");return;}
+ $("dashboardCard").classList.add("hidden");$("quizCard").classList.remove("hidden");
+ $("title").textContent=r.title||"Live Quiz";$("room").textContent=room;$("connection").textContent="Connected";startAntiCheat();requestFullScreen();listen();
 }
+function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
+
 function requestFullScreen(){const el=document.documentElement;const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;if(fn)Promise.resolve(fn.call(el)).catch(()=>{});}
 async function recordViolation(type){
  const now=Date.now();if(now-lastViolationAt<1200||!room||!studentKey)return;
@@ -124,7 +147,17 @@ function startCountdown(serverOpen,seconds){
  timer=setInterval(tick,100);
 }
 function disable(){answered=true;$("submitBtn").disabled=true;document.querySelectorAll(".option").forEach(b=>b.disabled=true);}
-$("joinBtn").onclick=join;
+$("participantContinueBtn").onclick=saveParticipantSession;
+$("quizAssignment").onclick=()=>openRoomModal("quiz");
+$("mcqAssignment").onclick=()=>openRoomModal("mcq");
+$("generalAssignment").onclick=()=>openRoomModal("general");
+$("roomCancelBtn").onclick=closeRoomModal;
+$("roomContinueBtn").onclick=()=>enterAssignment($("roomContinueBtn").dataset.type);
+$("assignmentTab").onclick=()=>{ $("assignmentTab").classList.add("active");$("resultTab").classList.remove("active");$("assignmentPanel").classList.remove("hidden");$("resultPanel").classList.add("hidden"); };
+$("resultTab").onclick=()=>{ $("resultTab").classList.add("active");$("assignmentTab").classList.remove("active");$("resultPanel").classList.remove("hidden");$("assignmentPanel").classList.add("hidden"); };
+$("participantSignOut").onclick=()=>{ sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");location.reload(); };
+$("viewResultBtn").onclick=async()=>{ const code=$("resultRoomCode").value.trim().toUpperCase();const p=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");if(!p)return; if(!/^[A-Z0-9]{6}$/.test(code)){ $("resultSummary").textContent="Enter a valid 6-character room code.";return;} const key=phoneKey(p.phone); const snap=await get(ref(db,`rooms/${code}`)); if(!snap.exists()){ $("resultSummary").textContent="Room not found.";return;} const r=snap.val()||{}; const ps=(r.participants||{})[key]; if(!ps){ $("resultSummary").textContent="No result found for this participant in this room.";return;} const answers=r.answers||{};let correct=0,total=0;Object.keys(answers).forEach(q=>{const a=answers[q]?.[key];if(a){total++;if(a.correct)correct++;}});$("resultSummary").className="status";$("resultSummary").innerHTML=`<b>${esc(p.name)}</b><br>Room: <b>${esc(code)}</b><br>Answered: <b>${total}</b><br>Correct: <b>${correct}</b><br>Status: <b>${ps.disqualified?"Disqualified":ps.winner?"Prize Winner":ps.blocked?"Blocked":"Participant"}</b>`; };
+const saved=JSON.parse(sessionStorage.getItem("quizParticipant")||"null"); if(saved)showDashboard(saved);
 $("submitBtn").onclick=async()=>{
  if(answered||!selected)return alert("Select an answer first.");answered=true;$("submitBtn").disabled=true;
  const r=(await get(ref(db,`rooms/${room}`))).val()||{};if(r.competitionClosed||r.state==="competition_closed")return $("result").textContent="🔒 Competition Closed.";if(r.state!=="open"||r.currentQuestion!==questionNo)return $("result").textContent="Answers are closed.";
