@@ -48,3 +48,6 @@ V53 FIX: Other Exam Result Excel upload now accepts "Student Name" (as used by t
 
 ## v56 Administrator Panel
 Added dedicated administrator.html / administrator.js for host approval. Administrator email: ramkrishnadevin.01@gmail.com. Also fixed an Administrator email typo in host.js and added a direct Administrator Page launcher on Host Portal.
+
+
+V57 fix: Administrator Page launcher is always visible on Host Portal Home. Clicking it opens the dedicated Administrator page, which itself enforces the administrator email check. This allows the administrator to access the approval page even when the Host Portal is currently signed in as a normal host.
