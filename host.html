@@ -85,8 +85,92 @@
 </div>
 
 
+<div class="hidden" id="hostApp">
+<div class="card" style="border-top:5px solid #1769e0">
+<h2>🏆 Live Quiz Competition</h2>
+<p class="muted">Create a new quiz room or resume a saved room. The Live Quiz controls below remain inside the same authenticated Host Portal, so you will not be asked to log in again.</p>
+<div class="row" style="margin-top:12px">
+<div class="field"><label>Quiz Title</label><input id="quizTitle" value="Live Quiz Competition" placeholder="Quiz title"/></div>
+<div class="field"><label>Number of Questions</label><input id="qCount" min="1" max="100" type="number" value="30"/></div>
+<div class="field"><label>Timer per Question (seconds)</label><input id="timerSeconds" min="5" max="3600" type="number" value="30"/></div>
+</div>
+<div class="row" style="margin-top:12px"><button class="success" id="createRoomBtn" type="button">➕ CREATE NEW QUIZ ROOM</button><button class="secondary" id="resumeRoomBtn" type="button">▶ RESUME SELECTED ROOM</button><button class="danger" id="deleteRoomBtn" type="button">🗑 DELETE CLOSED ROOM</button></div>
+<div class="row" style="margin-top:12px">
+<div class="field"><label>Saved Quiz Rooms</label><select id="existingRooms"><option value="">Select a saved quiz room</option></select></div>
+<div class="field"><label>Current Room</label><div class="status" id="roomInfo"><b>Room Code:</b> <span id="roomCode">—</span> &nbsp; <b>Status:</b> <span id="roomState"><span class="badge">not opened</span></span></div></div>
+</div>
+<div class="row" style="margin-top:12px"><div class="field"><label>Room Timer</label><input id="roomTimerSeconds" min="5" max="3600" type="number" value="30"/></div><div class="field" style="justify-content:end"><button class="secondary" id="updateTimerBtn" type="button">⏱ UPDATE TIMER</button><p id="timerSettingMsg" class="muted" style="margin:6px 0 0"></p></div></div>
+</div>
+<div class="card"><h3>🏠 Host Portal</h3><p class="muted">Return to the main Host Control Centre to choose another examination module.</p><div class="row"><button class="secondary" id="backHostHomeBtn2" type="button">← Back to Host Home</button></div></div>
+<div class="hidden grid" id="quizControls">
+<div>
+<div class="card" style="margin-bottom:12px">
+<h2>📄 Upload Questions from Word Document</h2>
+<p class="notice">Upload a .docx containing numbered questions, options A–D, and a separate Answer Key. Prize amounts are NOT taken from the Word file.</p>
+<input accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" id="wordFileInput" type="file"/>
+<button id="importWordBtn" style="margin-top:10px" type="button">Import Questions</button>
+<p id="wordImportMsg"></p>
+</div>
+<div class="card">
+<h2 id="editorHeading">Question 1</h2>
+<div class="field"><label>Question</label><textarea id="questionText"></textarea></div>
+<div class="row" style="margin-top:10px">
+<div class="field"><label>Option A</label><input id="optA"/></div><div class="field"><label>Option B</label><input id="optB"/></div>
+</div><div class="row" style="margin-top:10px">
+<div class="field"><label>Option C</label><input id="optC"/></div><div class="field"><label>Option D</label><input id="optD"/></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="field"><label>Correct Answer</label><select id="correct"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
+<div class="field"><label>Prize (₹)</label><input id="prize" min="0" type="number" value="500"/></div>
+</div>
+<div class="row" style="margin-top:12px"><button id="saveQBtn">Save Question</button><button class="secondary" id="prevQBtn">Previous</button><button class="secondary" id="nextEditBtn">Next Question</button></div>
+</div>
+<div class="card">
+<h2>⏱️ Live Question Control &amp; Timer</h2>
+<div class="host-countdown" id="hostCountdown">00:00</div>
+<div class="status" id="liveQuestion">No question is open.</div>
+<div class="row"><button class="success" id="showBtn">▶ SHOW QUESTION</button><button class="danger" id="closeBtn">■ CLOSE ANSWERS</button><button class="warning" id="revealBtn">🏆 SHOW ANSWER &amp; WINNER</button><button class="secondary" id="nextBtn">⏭ NEXT QUESTION</button><button class="danger" id="closeCompetitionBtn">🔒 CLOSE COMPETITION</button><button class="success" disabled="" id="restartCompetitionBtn">🔄 RESTART COMPETITION</button></div>
+<p id="controlMsg"></p>
+</div>
+</div>
+<div>
+<div class="card"><h2>Live Statistics</h2><div class="statgrid"><div class="stat">Online<b id="onlineCount">0</b></div><div class="stat">Answers<b id="answerCount">0</b></div><div class="stat">Blocked<b id="blockedCount">0</b></div><div class="stat">Winners<b id="winnerCount">0</b></div></div></div>
+<div class="card"><h2>Winner / Tie Break</h2><div class="status" id="winnerBox">No winner selected.</div><button class="warning" disabled="" id="randomTieBtn">🎲 RANDOM TIE-BREAK</button></div>
+<div class="card">
+<h2>🏆 Blocked Winners</h2>
+<p class="muted">Legitimate prize winners remain blocked from all remaining questions. They are not treated as disqualified.</p>
+<div class="tablewrap" style="max-height:260px">
+<table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Prize</th><th>Status</th></tr></thead>
+<tbody id="blockedWinners"><tr><td colspan="6">No blocked winners yet.</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="card">
+<h2>🚫 Disqualified Participants</h2>
+<p class="muted">Anti-cheating violations block the participant from the competition. The host may unblock a participant when necessary; previous violation history is retained.</p>
+<div class="tablewrap" style="max-height:260px">
+<table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Violations</th><th>Host Action</th></tr></thead>
+<tbody id="disqualifiedParticipants"><tr><td colspan="6">No disqualified participants.</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="card"><h2>Participants</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Violations</th><th>Status</th><th>Host Action</th></tr></thead><tbody id="participants"></tbody></table></div></div>
+<div class="card"><h2>Current Answers</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Answer</th><th>Correct</th><th>Time</th><th>Eligible</th></tr></thead><tbody id="answers"></tbody></table></div></div>
+<div class="card"><h2>📚 Competition History &amp; Results</h2>
+<p class="muted">Each time this room is closed, its results are frozen and saved separately. Select the competition date/time to view its frozen results or download its Excel file.</p>
+<div class="row" style="margin-top:10px"><div class="field"><label>Competition Date / Run</label><select id="resultRunSelect"><option value="">Select a completed competition</option></select></div><div class="field" style="justify-content:end"><button class="secondary" id="viewResultBtn" type="button">👁 VIEW SELECTED RESULT</button><button class="success" id="exportBtn" type="button">📊 DOWNLOAD SELECTED EXCEL</button></div></div>
+<div class="status" id="selectedResultSummary" style="margin-top:12px">Select a completed competition to view its frozen result.</div>
+<div class="hidden" id="selectedResultTables" style="margin-top:12px">
+<div class="tablewrap"><h3>🏆 Prize Winners</h3><table><thead><tr><th>Question</th><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Prize</th></tr></thead><tbody id="historyWinners"></tbody></table></div>
+<div class="tablewrap" style="margin-top:12px"><h3>🚫 Disqualified Participants</h3><table><thead><tr><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Violations</th><th>Status</th></tr></thead><tbody id="historyDisqualified"></tbody></table></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="host.js?v=20261008-48" type="module"></script>
-<script src="host-home.js?v=20261008-48" type="module"></script></body></html>
+<script src="host.js?v=20261008-50" type="module"></script>
+<script src="host-home.js?v=20261008-50" type="module"></script></body></html>

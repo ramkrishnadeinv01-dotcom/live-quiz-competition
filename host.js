@@ -48,12 +48,12 @@ function renderAccess(){
     return;
   }
   if(isAdmin()){
-    if(appBox)appBox.classList.remove("hidden");
+    if(appBox)appBox.classList.toggle("hidden",location.hash!=="#liveQuiz");
     if(access)access.classList.add("hidden");
     return;
   }
   const approved=isApproved();
-  if(appBox)appBox.classList.toggle("hidden",!approved);
+  if(appBox)appBox.classList.toggle("hidden",!(approved && location.hash==="#liveQuiz"));
   if(access)access.classList.remove("hidden");
   if(access){
     const st=$("hostAccessStatus");
@@ -532,7 +532,7 @@ $("forgotPasswordBtn").onclick=async()=>{try{
   else if(code==="auth/invalid-email") msg("Please enter a valid email address.");
   else msg(e?.message||String(e));
 }};
-$("logoutBtn").onclick=async()=>{clearHostRegistrationFields();await signOut(auth);};
+$("logoutBtn")?.addEventListener("click",async()=>{clearHostRegistrationFields();await signOut(auth);});
 $("pendingLogoutBtn").onclick=async()=>{clearHostRegistrationFields();await signOut(auth);};
 $("openAdminApprovalBtn").onclick=openAdminModal;
 $("closeAdminApprovalBtn").onclick=closeAdminModal;
@@ -615,6 +615,10 @@ async function importWordQuestions(){
   }catch(err){console.error(err); status.textContent=`Import failed: ${err?.message||err}`;}
 }
 
+function syncLiveQuizRoute(){const live=location.hash==="#liveQuiz";const appBox=$("hostApp");const menu=$("hostMenu");if(appBox&&currentUser&&isApproved())appBox.classList.toggle("hidden",!live);if(menu&&currentUser&&isApproved())menu.classList.toggle("hidden",live);}
+window.addEventListener("hashchange",syncLiveQuizRoute);
+$("backHostHomeBtn2")?.addEventListener("click",()=>{location.hash="";syncLiveQuizRoute();window.scrollTo({top:0,behavior:"smooth"});});
+
 let authResolvedOnce=false;
 onAuthStateChanged(auth,async user=>{
   // Let Firebase restore the persisted session naturally. Never change persistence here.
@@ -631,6 +635,7 @@ onAuthStateChanged(auth,async user=>{
   try{
     hostProfile=await ensureHostProfile(user);
     renderAccess();
+    syncLiveQuizRoute();
     if(isAdmin(user)){await loadHostRequests();}
     if(isApproved()){
       await loadExistingRooms();
