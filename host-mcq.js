@@ -26,24 +26,8 @@ async function startManual(){if(!room)return;const s=await get(ref(db,`rooms/${r
 async function schedule(){if(!room)return alert("Select or create a room first.");const date=$("date").value,time=$("time").value,dur=Number($("duration").value||30);if(!date||!time||dur<1)return alert("Enter date, time and duration.");const start=new Date(`${date}T${time}:00+05:30`).getTime();if(start<=Date.now())return alert("Choose a future IST date and time.");const s=await get(ref(db,`rooms/${room}`));const r=s.val()||{};if(["SCHEDULED","LIVE","CLOSED"].includes(statusText(r))&&statusText(r)!=="SCHEDULED")return alert("This room cannot be scheduled in its current status.");const end=start+dur*60000;await update(ref(db,`rooms/${room}`),{examStatus:"SCHEDULED",startMode:"automatic",scheduledStartAt:start,scheduledEndAt:end,durationSeconds:dur*60});renderControl({...r,examStatus:"SCHEDULED",scheduledStartAt:start,durationSeconds:dur*60});msg(`Exam scheduled for ${fmt(start)}.`,"live");}
 async function cancelSchedule(){if(!room)return;const s=await get(ref(db,`rooms/${room}`));if(!s.exists())return;await update(ref(db,`rooms/${room}`),{examStatus:"NOT STARTED",startMode:"manual",scheduledStartAt:null,scheduledEndAt:null,durationSeconds:null});renderControl({...s.val(),examStatus:"NOT STARTED"});msg("Automatic schedule cancelled.","live");}
 async function closeExam(){if(!room)return;await update(ref(db,`rooms/${room}`),{examStatus:"CLOSED",closedAt:Date.now()});const s=await get(ref(db,`rooms/${room}`));renderControl(s.val());msg("MCQ exam closed. Results are now frozen.","live");}
-async function restartExam(){
- if(!room)return alert("Please select or create an MCQ exam room first.");
- const snap=await get(ref(db,`rooms/${room}`)); if(!snap.exists())return alert("Room not found.");
- const r=snap.val()||{}; const st=statusText(r);
- if(!r.mcqQuestions||!Object.keys(r.mcqQuestions).length)return alert("Please save the MCQ questions before restarting the exam.");
- if(!confirm(`Restart MCQ exam ${room}?\n\nThe current run will be archived and a fresh run will start from NOT STARTED. Participants must join again.`))return;
- if(!confirm("FINAL CONFIRMATION: Archive the current results and reset this room for a new exam run?"))return;
- const oldAnswers=r.mcqAnswers||{};
- const archiveId=String(r.runId||Date.now());
- if(Object.keys(oldAnswers).length||st!=="NOT STARTED"){
-   await set(ref(db,`rooms/${room}/mcqHistory/${archiveId}`),{examTitle:r.mcqTitle||r.title||"MCQ Examination",archivedAt:Date.now(),previousStatus:st,startedAt:r.startedAt||null,closedAt:r.closedAt||null,answers:oldAnswers});
- }
- await update(ref(db,`rooms/${room}`),{mcqAnswers:null,examStatus:"NOT STARTED",startMode:"manual",startedAt:null,closedAt:null,scheduledStartAt:null,scheduledEndAt:null,durationSeconds:null,runId:String(Date.now())});
- const fresh=await get(ref(db,`rooms/${room}`)); renderControl(fresh.val()); msg(`Exam ${room} has been restarted. Old results were archived and the new run is NOT STARTED.` ,"live");
- if(typeof startMonitor==="function")startMonitor();
-}
 async function poll(){if(!room)return;const s=await get(ref(db,`rooms/${room}`));if(!s.exists())return;const r=s.val(),now=Date.now();if(statusText(r)==="SCHEDULED"&&Number(r.scheduledStartAt)<=now){await update(ref(db,`rooms/${room}`),{examStatus:"LIVE",startedAt:Number(r.scheduledStartAt)});r.examStatus="LIVE";r.startedAt=Number(r.scheduledStartAt);}if(statusText(r)==="LIVE"&&r.scheduledEndAt&&Number(r.scheduledEndAt)<=now){await update(ref(db,`rooms/${room}`),{examStatus:"CLOSED",closedAt:Number(r.scheduledEndAt)});r.examStatus="CLOSED";}renderControl(r);}
-$("createBtn").onclick=create;$("saveBtn").onclick=save;$("count").onchange=renderQuestions;$("refreshBtn").onclick=refreshRooms;$("loadBtn").onclick=loadRoom;$("backBtn").onclick=()=>location.href="host.html";$("manualStartBtn").onclick=startManual;$("scheduleBtn").onclick=schedule;$("cancelScheduleBtn").onclick=cancelSchedule;$("closeExamBtn").onclick=closeExam;$("restartExamBtn").onclick=restartExam;$("manualMode").onchange=setModeUI;$("autoMode").onchange=setModeUI;setModeUI();setInterval(poll,5000);
+$("createBtn").onclick=create;$("saveBtn").onclick=save;$("count").onchange=renderQuestions;$("refreshBtn").onclick=refreshRooms;$("loadBtn").onclick=loadRoom;$("backBtn").onclick=()=>location.href="host.html";$("manualStartBtn").onclick=startManual;$("scheduleBtn").onclick=schedule;$("cancelScheduleBtn").onclick=cancelSchedule;$("closeExamBtn").onclick=closeExam;$("manualMode").onchange=setModeUI;$("autoMode").onchange=setModeUI;setModeUI();setInterval(poll,5000);
 onAuthStateChanged(auth,async u=>{uid=u?.uid||null;$("authStatus").textContent=u?`Signed in: ${u.email}`:"Not signed in";if(!u||!(await access(u))){msg("Host approval is required before managing MCQ exams.","blocked");$("createBtn").disabled=true;$("refreshBtn").disabled=true;$("loadBtn").disabled=true;}else{await refreshRooms();msg("Approved host. Select an existing room or create a new MCQ exam.","live");}});
 
 
