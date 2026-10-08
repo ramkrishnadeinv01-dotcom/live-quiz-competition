@@ -3,7 +3,7 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { getDatabase, ref, get, set, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app); const $=id=>document.getElementById(id);
-const ADMIN_EMAIL="ramkrishnadevin.01@gmail.com"; let user=null,profile=null,parsedRows=[],allowed=false;
+const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com"; let user=null,profile=null,parsedRows=[],allowed=false;
 function isAdmin(){return String(user?.email||"").toLowerCase()===ADMIN_EMAIL.toLowerCase();}
 function normalizePhone(v){let s=String(v??"").trim().replace(/\D/g,"");if(s.length===10)return "+91"+s;if(s.length===12&&s.startsWith("91"))return "+"+s;return String(v??"").trim();}
 function phoneDigits(v){return normalizePhone(v).replace(/\D/g,"");}

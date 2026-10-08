@@ -4,7 +4,7 @@ import { getDatabase, ref, get, set, update, remove, onValue } from "https://www
 import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
-const $=id=>document.getElementById(id), ADMIN="ramkrishnadevinv.01@gmail.com";
+const $=id=>document.getElementById(id), ADMIN="ramkrishnadeinv.01@gmail.com";
 let uid=null, room="", questions=[];
 const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;"," ":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}

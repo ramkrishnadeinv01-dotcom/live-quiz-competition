@@ -8,7 +8,7 @@ async function ensureAuthPersistence(){
   catch(e) { try { await setPersistence(auth,indexedDBLocalPersistence); return "indexeddb"; } catch(e2) { console.warn("Auth persistence unavailable", e2); return "memory"; } }
 }
 const $=id=>document.getElementById(id);
-const ADMIN_EMAIL="ramkrishnadevin.01@gmail.com";
+const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 let uid=null,currentUser=null,hostProfile=null;
 function isAdmin(user=currentUser){return String(user?.email||"").toLowerCase()===ADMIN_EMAIL.toLowerCase();}
 function isApproved(){return isAdmin()||hostProfile?.status==="approved";}
