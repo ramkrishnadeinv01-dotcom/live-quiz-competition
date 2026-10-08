@@ -4,7 +4,11 @@ import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } 
 import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
-await setPersistence(auth,indexedDBLocalPersistence);
+async function ensureAuthPersistence(){
+  try { await setPersistence(auth,browserLocalPersistence); return "local"; }
+  catch(e) { try { await setPersistence(auth,indexedDBLocalPersistence); return "indexeddb"; } catch(e2) { console.warn("Auth persistence unavailable", e2); return "memory"; } }
+}
+await ensureAuthPersistence();
 if (typeof auth.authStateReady === "function") await auth.authStateReady();
 const $=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
@@ -506,14 +510,14 @@ $("registrationSubmitBtn").onclick=async()=>{try{
   if(password.length<6){msg("Password must be at least 6 characters.");return;}
   if(!/^[0-9+()\- ]{7,15}$/.test(phone)){msg("Please enter a valid phone number.");return;}
   $("registrationSubmitBtn").disabled=true;
-  await setPersistence(auth,indexedDBLocalPersistence);
+  await ensureAuthPersistence();
   const cred=await createUserWithEmailAndPassword(auth,email,password);
   const profile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()};
   await set(ref(db,`hosts/${cred.user.uid}`),profile);
   hostProfile={...profile,requestedAt:Date.now()};
   msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host registration submitted. Please wait for Administrator approval.");
 }catch(e){msg(e.message||String(e));$("registrationSubmitBtn").disabled=false;}};
-$("loginBtn").onclick=async()=>{try{await setPersistence(auth,indexedDBLocalPersistence);await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(e){msg(e.message)}};
+$("loginBtn").onclick=async()=>{try{await ensureAuthPersistence();await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(e){msg(e.message)}};
 $("forgotPasswordBtn").onclick=async()=>{try{
   const email=$("email").value.trim().toLowerCase();
   if(!email){msg("Please enter your registered email address in the Email box first.");$("email").focus();return;}
