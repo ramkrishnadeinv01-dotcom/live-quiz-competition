@@ -18,3 +18,6 @@ All existing timer, Word upload, winner/blocking, disqualification/unblock and E
 
 ## Competition Close / Freeze
 After the host clicks CLOSE COMPETITION, the room enters competition_closed state. Participant anti-cheat events (leaving the page, tab switch, blur, fullscreen exit) are ignored after closure, so no participant can become newly disqualified after the competition has ended. Participant records, winners and disqualification lists remain frozen from client-side actions.
+
+
+V44: Host Portal redesigned with an elegant home/control centre. Live Quiz Competition moved to host-live-quiz.html; MCQ and General Exam Setup remain on their existing pages. Core Live Quiz functionality remains unchanged.
