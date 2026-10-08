@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administrator — Host Approval</title><link rel="stylesheet" href="styles.css"><style>
+.admin-wrap{max-width:1500px;margin:0 auto}.admin-hero{background:linear-gradient(135deg,#111827,#1e3a8a,#2563eb);color:#fff;border-radius:20px;padding:28px;margin-bottom:18px}.admin-grid{display:grid;grid-template-columns:1fr 2fr;gap:18px}.admin-stat{font-size:34px;font-weight:900}.admin-table{overflow:auto}.admin-table table{min-width:1100px}.action-select{min-width:130px}.back-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}@media(max-width:900px){.admin-grid{grid-template-columns:1fr}}
+</style></head><body>
+<header><div><h1>🛡️ Administrator Panel</h1><small>Host Approval &amp; Access Management</small></div><span class="badge" id="authStatus">Connecting…</span></header>
+<div class="container admin-wrap">
+<div class="card" id="adminLoginCard"><h2>Administrator Login</h2><p class="notice">Only the configured Administrator account can access this page.</p><div class="row"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password"></div></div><div class="back-row"><button class="success" id="loginBtn">Sign In as Administrator</button><button class="secondary" id="forgotBtn">Forgot Password?</button><button class="secondary" id="backBtn">← Host Portal</button></div><p id="loginMsg"></p></div>
+<div class="hidden" id="adminApp">
+<div class="admin-hero"><h2>Administrator Control Centre</h2><p>Approve, reject, revoke or delete Host requests. Only approved Hosts can conduct examinations.</p></div>
+<div class="admin-grid"><div class="card"><h3>Host Requests</h3><div class="admin-stat" id="pendingCount">0</div><p class="muted">Pending request(s)</p><button class="secondary" id="refreshBtn">↻ Refresh</button><button class="danger" id="logoutBtn" style="margin-left:8px">🚪 Sign Out</button></div>
+<div class="card"><h3>Access Rules</h3><p>🟢 <b>Approved</b> — Host can conduct examinations.</p><p>🟡 <b>Pending</b> — Waiting for Administrator approval.</p><p>🔴 <b>Rejected / Revoked</b> — Host cannot conduct examinations.</p><p>🗑️ <b>Delete</b> removes the host request record; it does not delete the Firebase login account.</p></div></div>
+<div class="card admin-table" style="margin-top:18px"><h2>Host Requests</h2><div class="status" id="status">Loading…</div><table><thead><tr><th>Email</th><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Phone</th><th>Purpose</th><th>Status</th><th>Requested</th><th>Action</th></tr></thead><tbody id="hostRequests"><tr><td colspan="9">Loading…</td></tr></tbody></table></div>
+<div class="back-row"><button class="secondary" id="backBtn2">← Back to Host Portal</button></div>
+</div></div>
+<script src="administrator.js?v=20261008-56" type="module"></script></body></html>

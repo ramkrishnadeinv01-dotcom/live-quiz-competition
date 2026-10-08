@@ -45,3 +45,6 @@ V53 FIX: Other Exam Result Excel upload now accepts "Student Name" (as used by t
 - Existing row-level DELETE buttons retained.
 - Deletion removes the publication metadata and all candidate result records belonging to that publication.
 - Firebase security remains restricted to approved hosts and administrator.
+
+## v56 Administrator Panel
+Added dedicated administrator.html / administrator.js for host approval. Administrator email: ramkrishnadevin.01@gmail.com. Also fixed an Administrator email typo in host.js and added a direct Administrator Page launcher on Host Portal.
