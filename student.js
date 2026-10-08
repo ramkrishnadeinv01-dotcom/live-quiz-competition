@@ -180,9 +180,92 @@ $("viewResultBtn").onclick=async()=>{
    const pct=qs.length?correct*100/qs.length:0;
    const safe=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
    const ansText=(q,o)=>o?`${o}. ${q.options?.[o]||""}`:"Not answered";
-   window.downloadParticipantMcqPdf=async()=>{const src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";if(!window.jspdf)await new Promise((res,rej)=>{const z=document.createElement("script");z.src=src;z.onload=res;z.onerror=rej;document.head.appendChild(z)});const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});let y=16;const line=t=>{const ls=doc.splitTextToSize(String(t),180);for(const l of ls){if(y>280){doc.addPage();y=16}doc.text(l,15,y);y+=6}};doc.setFont("helvetica","bold");line("MCQ EXAMINATION — PARTICIPANT RESULT");doc.setFont("helvetica","normal");line(`Room Code: ${code}`);line(`Exam: ${roomData.mcqTitle||"MCQ Examination"}`);line(`Name: ${rec.name}`);line(`Designation: ${rec.designation}`);line(`Place of Posting: ${rec.placeOfPosting}`);line(`Mobile: ${rec.phone}`);line(`Correct: ${correct} | Wrong: ${wrong} | Unanswered: ${unanswered}`);line(`Marks: ${correct}/${qs.length} | Percentage: ${pct.toFixed(2)}%`);if(rec.submittedAt)line(`Submitted: ${new Date(Number(rec.submittedAt)).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"})} IST`);y+=3;details.forEach(d=>{doc.setFont("helvetica","bold");line(`Q${d.no}. ${d.q.text}`);doc.setFont("helvetica","normal");line(`Your Answer: ${ansText(d.q,d.answer)}`);line(`Correct Answer: ${ansText(d.q,d.q.correct)}`);line(`Result: ${d.result}`);y+=2});doc.save(`MCQ_${code}_Result.pdf`)};
+   // Build participant rank from all submitted MCQ records in this room.
+   const allMcqRecords=Object.values(mcqAnswers||{}).filter(v=>v&&typeof v==="object");
+   const ranked=allMcqRecords.map(v=>{
+     const aa=v.answers||{}; let c=0;
+     qs.forEach(q=>{if(String(aa[q.id]||"").toUpperCase()===String(q.correct||"").toUpperCase())c++;});
+     return {v,correct:c,submittedAt:Number(v.submittedAt||Number.MAX_SAFE_INTEGER)};
+   }).sort((a,b)=>b.correct-a.correct || a.submittedAt-b.submittedAt);
+   let rank=ranked.findIndex(x=>phoneKey(String(x.v.phone||""))===key);
+   rank=rank>=0?rank+1:"—";
+
+   window.downloadParticipantMcqPdf=async()=>{
+     const src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+     if(!window.jspdf)await new Promise((res,rej)=>{const z=document.createElement("script");z.src=src;z.onload=res;z.onerror=rej;document.head.appendChild(z)});
+     const {jsPDF}=window.jspdf;
+     const doc=new jsPDF({unit:"mm",format:"a4"});
+     const W=210,M=14,RIGHT=W-M;
+     let y=15;
+     const navy=[22,53,92],blue=[37,99,235],green=[22,163,74],red=[220,38,38],gold=[245,158,11],light=[241,245,249],dark=[30,41,59],muted=[71,85,105];
+     const safeText=v=>String(v??"");
+     const pageHeader=()=>{
+       doc.setFillColor(...navy);doc.rect(0,0,W,30,"F");
+       doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(18);
+       doc.text("MCQ EXAMINATION",M,12);
+       doc.setFontSize(9);doc.setFont("helvetica","normal");doc.text("PARTICIPANT RESULT",M,19);
+       doc.setFontSize(8);doc.text(`Room: ${code}`,RIGHT,12,{align:"right"});
+       doc.text("Official Result",RIGHT,19,{align:"right"});
+       y=38;doc.setTextColor(...dark);
+     };
+     const ensure=need=>{if(y+need>281){doc.addPage();pageHeader();}};
+     const text=(t,size=9,bold=false,color=dark,max=180)=>{
+       doc.setFont("helvetica",bold?"bold":"normal");doc.setFontSize(size);doc.setTextColor(...color);
+       const lines=doc.splitTextToSize(safeText(t),max);
+       ensure(lines.length*(size*0.42+2.2)+2);
+       doc.text(lines,M,y);y+=lines.length*(size*0.42+2.2);
+     };
+     const card=(x,yy,w,h,label,value,color)=>{
+       doc.setFillColor(248,250,252);doc.roundedRect(x,yy,w,h,3,3,"F");
+       doc.setFillColor(...color);doc.roundedRect(x,yy,3,h,1.5,1.5,"F");
+       doc.setTextColor(...muted);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text(label,x+7,yy+7);
+       doc.setTextColor(...dark);doc.setFont("helvetica","bold");doc.setFontSize(14);doc.text(String(value),x+7,yy+15);
+     };
+     const resultBadge=(x,yy,label,color)=>{
+       doc.setFillColor(...color);doc.roundedRect(x,yy,31,7,3.5,3.5,"F");
+       doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(7);doc.text(label,x+15.5,yy+4.7,{align:"center"});
+     };
+     pageHeader();
+     doc.setTextColor(...dark);doc.setFont("helvetica","bold");doc.setFontSize(14);doc.text(roomData.mcqTitle||"MCQ Examination",M,y);y+=7;
+     text(`Participant: ${rec.name||p.name}`,10,true,navy); 
+     text(`${rec.designation||""}  •  ${rec.placeOfPosting||""}`,8,false,muted);
+     text(`Mobile: ${rec.phone||""}  •  Submitted: ${rec.submittedAt?new Date(Number(rec.submittedAt)).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour12:true}):"—"} IST`,8,false,muted);
+     y+=4;
+     const gap=4,cw=(W-2*M-3*gap)/4;
+     card(M,y,cw,21,"CORRECT",correct,green);card(M+cw+gap,y,cw,21,"WRONG",wrong,red);card(M+2*(cw+gap),y,cw,21,"UNANSWERED",unanswered,blue);card(M+3*(cw+gap),y,cw,21,"PERCENTAGE",pct.toFixed(1)+"%",gold);
+     y+=27;
+     doc.setFillColor(...navy);doc.roundedRect(M,y,W-2*M,27,4,4,"F");
+     doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(8);doc.text("FINAL RANK",M+8,y+9);
+     doc.setFontSize(21);doc.text(`#${rank}`,M+8,y+20);
+     doc.setFontSize(9);doc.text(`SCORE  ${correct}/${qs.length}`,RIGHT-8,y+10,{align:"right"});
+     doc.setFontSize(8);doc.setFont("helvetica","normal");doc.text(`Percentage  ${pct.toFixed(2)}%`,RIGHT-8,y+18,{align:"right"});
+     y+=34;
+     text("QUESTION-WISE PERFORMANCE",11,true,navy);y+=2;
+     details.forEach(d=>{
+       const qLines=doc.splitTextToSize(`Q${d.no}. ${d.q.text}`,170);
+       const a1=ansText(d.q,d.answer),a2=ansText(d.q,d.q.correct);
+       const boxH=Math.max(28,qLines.length*4.2+20);
+       ensure(boxH+4);
+       const boxY=y;doc.setFillColor(...light);doc.roundedRect(M,boxY,W-2*M,boxH,3,3,"F");
+       doc.setFillColor(...(d.result==="Correct"?green:d.result==="Wrong"?red:blue));doc.roundedRect(M,boxY,3,boxH,1.5,1.5,"F");
+       doc.setTextColor(...dark);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(qLines,M+7,boxY+7);
+       let yy=boxY+7+qLines.length*4.2;
+       doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...muted);
+       doc.text(`Your Answer: ${a1}`,M+7,yy);yy+=5;
+       doc.text(`Correct Answer: ${a2}`,M+7,yy);
+       resultBadge(RIGHT-38,boxY+6,d.result,d.result==="Correct"?green:d.result==="Wrong"?red:blue);
+       y=boxY+boxH+4;
+     });
+     doc.setDrawColor(203,213,225);doc.line(M,286,RIGHT,286);
+     doc.setTextColor(...muted);doc.setFont("helvetica","normal");doc.setFontSize(7);
+     doc.text("Generated electronically • National/Institutional Examination Result",M,291);
+     doc.text(`Page ${doc.internal.getNumberOfPages()}`,RIGHT,291,{align:"right"});
+     const totalPages=doc.internal.getNumberOfPages();
+     for(let i=1;i<=totalPages;i++){doc.setPage(i);doc.setTextColor(...muted);doc.setFontSize(7);doc.text(`Page ${i} of ${totalPages}`,RIGHT,291,{align:"right"});}
+     doc.save(`MCQ_${code}_Result.pdf`);
+   };
    $("resultSummary").className="status";
-   $("resultSummary").innerHTML=`<b>${safe(rec.name||p.name)}</b><br>Exam: <b>${safe(roomData.mcqTitle||"MCQ Examination")}</b><br>Room: <b>${code}</b><br>Correct: <b>${correct}</b> &nbsp; Wrong: <b>${wrong}</b> &nbsp; Unanswered: <b>${unanswered}</b><br>Total Marks: <b>${correct}/${qs.length}</b> &nbsp; Percentage: <b>${pct.toFixed(2)}%</b><br><button class="success" type="button" style="margin-top:10px" onclick="downloadParticipantMcqPdf()">📄 DOWNLOAD MY RESULT – PDF</button>`;
+   $("resultSummary").innerHTML=`<div style="font-size:22px;font-weight:800;color:#16355c;margin-bottom:8px">🏆 FINAL RANK: #${rank}</div><b>${safe(rec.name||p.name)}</b><br>Exam: <b>${safe(roomData.mcqTitle||"MCQ Examination")}</b><br>Room: <b>${code}</b><br>Correct: <b>${correct}</b> &nbsp; Wrong: <b>${wrong}</b> &nbsp; Unanswered: <b>${unanswered}</b><br>Total Marks: <b>${correct}/${qs.length}</b> &nbsp; Percentage: <b>${pct.toFixed(2)}%</b><br><button class="success" type="button" style="margin-top:10px" onclick="downloadParticipantMcqPdf()">📄 DOWNLOAD MY RESULT – PDF</button>`;
    return;
  }
  function findParticipant(obj){
