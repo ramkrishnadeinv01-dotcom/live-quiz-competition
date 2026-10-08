@@ -8,8 +8,11 @@ async function ensureAuthPersistence(){
   try { await setPersistence(auth,browserLocalPersistence); return "local"; }
   catch(e) { try { await setPersistence(auth,indexedDBLocalPersistence); return "indexeddb"; } catch(e2) { console.warn("Auth persistence unavailable", e2); return "memory"; } }
 }
-await ensureAuthPersistence();
-if (typeof auth.authStateReady === "function") await auth.authStateReady();
+// IMPORTANT: Do not call setPersistence() during page startup. Firebase must first restore
+// the existing signed-in session created on the Host Home page. Calling setPersistence
+// immediately on this page can race with that restoration. Persistence is configured only
+// immediately before an explicit new sign-in/registration action.
+
 const $=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 let uid=null, currentUser=null, hostProfile=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
@@ -612,14 +615,15 @@ async function importWordQuestions(){
   }catch(err){console.error(err); status.textContent=`Import failed: ${err?.message||err}`;}
 }
 
+let authResolvedOnce=false;
 onAuthStateChanged(auth,async user=>{
-  // Firebase may restore local auth asynchronously on a new page. Do not show the login form
-  // until the restoration attempt has completed and give IndexedDB persistence a short retry.
-  if(!user && typeof auth.authStateReady === "function"){ try{ await auth.authStateReady(); user=auth.currentUser||null; }catch(e){} }
-  if(!user){
-    for(let i=0;i<5 && !auth.currentUser;i++){ await new Promise(r=>setTimeout(r,300)); }
+  // Let Firebase restore the persisted session naturally. Never change persistence here.
+  // Give the SDK a short grace period before showing the login card on a fresh navigation.
+  if(!user && !authResolvedOnce){
+    for(let i=0;i<20 && !auth.currentUser;i++){ await new Promise(r=>setTimeout(r,250)); }
     user=auth.currentUser||null;
   }
+  authResolvedOnce=true;
   currentUser=user||null; uid=user?.uid||null;
   $("authStatus").textContent=user?(isAdmin(user)?"Administrator signed in":"Signed in"):"Not signed in";
   $("loginCard").classList.toggle("hidden",!!user);
