@@ -1,29 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Quiz Competition</title>
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    body { min-height: 100vh; display:flex; align-items:center; justify-content:center; }
-    .landing { max-width:760px; width:92%; text-align:center; padding:40px 24px; }
-    .landing h1 { margin-bottom:12px; }
-    .landing p { margin-bottom:28px; }
-    .actions { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
-    .actions a { text-decoration:none; display:inline-block; padding:14px 28px; border-radius:10px; font-weight:700; }
-    .admin-home-btn { background:#6b21a8 !important; color:#fff !important; }
-  </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Examination & Quiz Portal</title><link rel="stylesheet" href="styles.css?v=20261008-64">
 </head>
-<body>
-  <main class="landing">
-    <h1>Live Quiz Competition</h1>
-    <p>Welcome to the live online quiz platform. Choose your panel to continue.</p>
-    <div class="actions">
-      <a class="btn" href="host.html">Host Panel</a>
-      <a class="btn" href="student.html">Participant Panel</a>
-      <a class="btn admin-home-btn" href="administrator.html">Administrator</a>
-    </div>
-  </main>
-</body>
-</html>
+<body class="landing-body">
+<main class="prof-landing">
+  <div class="landing-shell">
+    <section class="landing-hero">
+      <span class="landing-badge">SECURE ONLINE EXAMINATION PLATFORM</span>
+      <h1>Online Quiz & Examination Portal</h1>
+      <p>Conduct live quizzes, MCQ examinations and general-question examinations, and publish results from one professional platform.</p>
+    </section>
+    <section class="panel-grid" aria-label="Portal panels">
+      <article class="panel-card host"><div class="icon">🏆</div><h2>Host Panel</h2><p>Create and manage examination rooms, control live questions, monitor participants and manage examination results.</p><a href="host.html">Open Host Panel →</a></article>
+      <article class="panel-card participant"><div class="icon">🎓</div><h2>Participant Panel</h2><p>Join assigned examinations, submit answers securely and check examination results using your registered details.</p><a href="student.html">Open Participant Panel →</a></article>
+      <article class="panel-card admin"><div class="icon">🛡️</div><h2>Administrator</h2><p>Central administration for Host approval, examination rooms, published results and platform-level management.</p><a href="administrator.html">Open Administrator →</a></article>
+    </section>
+    <div class="landing-footer">Professional Examination Management System • Secure access • Central administration</div>
+  </div>
+</main>
+</body></html>
