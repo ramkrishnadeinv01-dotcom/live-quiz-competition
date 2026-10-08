@@ -37,3 +37,11 @@ Version 45: fixed Host Portal authentication persistence so Live Quiz Competitio
 
 
 V53 FIX: Other Exam Result Excel upload now accepts "Student Name" (as used by the official template) and correctly treats "Overall Rank"/"Overall Grade" as overall fields rather than subject fields.
+
+
+## v55 — Other Exam Result Deletion
+- Added prominent Host Portal access to manage/delete Other Exam result publications.
+- Added a dedicated Delete Published Result section with publication selector.
+- Existing row-level DELETE buttons retained.
+- Deletion removes the publication metadata and all candidate result records belonging to that publication.
+- Firebase security remains restricted to approved hosts and administrator.
