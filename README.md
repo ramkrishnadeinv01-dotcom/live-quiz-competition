@@ -51,3 +51,6 @@ Added dedicated administrator.html / administrator.js for host approval. Adminis
 
 
 V57 fix: Administrator Page launcher is always visible on Host Portal Home. Clicking it opens the dedicated Administrator page, which itself enforces the administrator email check. This allows the administrator to access the approval page even when the Host Portal is currently signed in as a normal host.
+
+
+V70 fixes: participant MCQ submission permission handling; approved-host room listing; robust MCQ create/save errors; restored direct athlete-wise live MCQ result access from Host Panel.

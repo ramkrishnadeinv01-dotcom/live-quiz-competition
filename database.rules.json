@@ -17,20 +17,65 @@
             ".write": "auth != null && !data.exists()"
           }
         },
-        "questions": { "$q": { ".read": "auth != null && (root.child('rooms').child($room).child('hostUid').val() === auth.uid || (root.child('rooms').child($room).child('state').val() === 'open' && root.child('rooms').child($room).child('currentQuestion').val() == $q))", ".write": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid" } },
-        "answers": { "$q": { "$student": { ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid", ".write": "auth != null && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()" } } },
-        "violations": { "$student": { "$event": { ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid", ".write": "auth != null && !data.exists()" } } },
-        "mcqQuestions": { "$q": { ".read": "auth != null" } },
-        "mcqAnswers": { "$student": { ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid", ".write": "auth != null && !data.exists()" } },
-        "generalQuestions": { "$q": { ".read": "auth != null" } },
-        "generalAnswers": { "$student": { ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid", ".write": "auth != null && !data.exists()" } },
-        "mcqLive": { "$student": { ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid", ".write": "auth != null" } }
+        "questions": {
+          "$q": {
+            ".read": "auth != null && (root.child('rooms').child($room).child('hostUid').val() === auth.uid || (root.child('rooms').child($room).child('state').val() === 'open' && root.child('rooms').child($room).child('currentQuestion').val() == $q))",
+            ".write": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid"
+          }
+        },
+        "answers": {
+          "$q": {
+            "$student": {
+              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+              ".write": "auth != null && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()"
+            }
+          }
+        },
+        "violations": {
+          "$student": {
+            "$event": {
+              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+              ".write": "auth != null && !data.exists()"
+            }
+          }
+        },
+        "mcqQuestions": {
+          "$q": {
+            ".read": "auth != null"
+          }
+        },
+        "mcqAnswers": {
+          "$student": {
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".write": "auth != null && (!data.exists() || data.child('runId').val() !== newData.child('runId').val() || data.child('authUid').val() === auth.uid)"
+          }
+        },
+        "generalQuestions": {
+          "$q": {
+            ".read": "auth != null"
+          }
+        },
+        "generalAnswers": {
+          "$student": {
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".write": "auth != null && !data.exists()"
+          }
+        },
+        "mcqLive": {
+          "$student": {
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".write": "auth != null"
+          }
+        }
       },
-      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
+      ".read": "auth != null && (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com' || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
       ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
     },
     "otherExamResults": {
-      "$phoneHash": { ".read": "true", ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')" }
+      "$phoneHash": {
+        ".read": "true",
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+      }
     },
     "otherExamPublications": {
       ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",

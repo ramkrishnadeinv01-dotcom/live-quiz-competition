@@ -660,3 +660,5 @@ function bindHostPortalButtons(){
   Object.entries(actions).forEach(([id,fn])=>{const el=$(id);if(el)el.onclick=fn;});
 }
 bindHostPortalButtons();
+
+$("openMcqLiveResultsBtn")?.addEventListener("click",()=>{const code=prompt("Enter the 6-character MCQ Room Code:");if(code&&/^[A-Z0-9]{6}$/i.test(code.trim()))location.href=`host-mcq.html?room=${encodeURIComponent(code.trim().toUpperCase())}`;});

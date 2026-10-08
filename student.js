@@ -334,6 +334,22 @@ $("viewResultBtn").onclick=async()=>{
  $("resultSummary").textContent="No result found for this participant in this room.";
 };
 const saved=JSON.parse(sessionStorage.getItem("quizParticipant")||"null"); if(saved)showDashboard(saved);
+const autoResultParams=new URLSearchParams(location.search);
+const autoResultRoom=String(autoResultParams.get("resultRoom")||"").trim().toUpperCase();
+const autoResultPhone=String(autoResultParams.get("resultPhone")||"").trim();
+if(autoResultRoom&&autoResultPhone){
+  if(!saved){
+    const temp={name:"Participant",designation:"",placeOfPosting:"",phone:autoResultPhone};
+    sessionStorage.setItem("quizParticipant",JSON.stringify(temp));
+    showDashboard(temp);
+  }
+  setTimeout(()=>{
+    $("resultTab").click();
+    $("resultRoomCode").value=autoResultRoom;
+    $("resultPhoneNumber").value=autoResultPhone;
+    $("viewResultBtn").click();
+  },150);
+}
 $("submitBtn").onclick=async()=>{
  if(answered||!selected)return alert("Select an answer first.");answered=true;$("submitBtn").disabled=true;
  const r=(await get(ref(db,`rooms/${room}`))).val()||{};if(r.competitionClosed||r.state==="competition_closed")return $("result").textContent="🔒 Competition Closed.";if(r.state!=="open"||r.currentQuestion!==questionNo)return $("result").textContent="Answers are closed.";

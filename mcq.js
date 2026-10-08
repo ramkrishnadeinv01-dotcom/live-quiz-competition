@@ -8,7 +8,7 @@ const authReady=signInAnonymously(auth).catch(e=>{console.error("MCQ anonymous a
 const params=new URLSearchParams(location.search);
 const room=(params.get("room")||sessionStorage.getItem("mcqRoom")||"").toUpperCase();
 const participant=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
-let questions=[],idx=0,selected="",answers={},timer=null,endAt=0,startedAt=0,roomUnsub=null,runId="";
+let questions=[],idx=0,selected="",answers={},timer=null,endAt=0,startedAt=0,roomUnsub=null,runId="",finalized=false,submitting=false;
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const statusOf=r=>String(r?.examStatus||"NOT STARTED").toUpperCase();
 const keyForParticipant=()=>String(participant?.phone||"").replace(/\D/g,"");
@@ -86,26 +86,61 @@ async function persistLive(submitted=false){
   const payload={name:participant.name||"",designation:participant.designation||"",placeOfPosting:participant.placeOfPosting||"",phone:participant.phone||"",examName:participant.name||"",examDesignation:participant.designation||"",examPlaceOfPosting:participant.placeOfPosting||"",rollNo:participant.phone||"",answers,currentQuestion:Math.min(idx+1,questions.length),answeredCount:c.answered,correctCount:c.correct,wrongCount:c.wrong,timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),status:submitted?"SUBMITTED":"LIVE",updatedAt:serverTimestamp(),runId};
   try{await update(ref(db,`rooms/${room}/mcqLive/${keyForParticipant()}`),payload);}catch(e){console.warn("Live progress update failed",e);}
 }
-async function finish(auto=false){
-  clearInterval(timer);timer=null;$("nextBtn").disabled=true;
-  const key=keyForParticipant();if(!key)return showError("Participant mobile number is missing.");
+async function finish(auto=false,confirmed=false){
+  if(finalized||submitting)return;
+  if(!auto&&!confirmed){showSubmitConfirm();return;}
+  submitting=true;
+  clearInterval(timer);timer=null;$('"'"'nextBtn'"'"').disabled=true;
+  const key=keyForParticipant();if(!key){submitting=false;return showError("Participant mobile number is missing.");}
   const c=countResults();
-  const payload={name:participant.name,designation:participant.designation,placeOfPosting:participant.placeOfPosting,phone:participant.phone,examName:participant.name,examDesignation:participant.designation,examPlaceOfPosting:participant.placeOfPosting,rollNo:participant.phone,answers,startedAt,submittedAt:serverTimestamp(),timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),autoSubmitted:!!auto,runId};
+  const payload={authUid:auth.currentUser?.uid||"",name:participant.name,designation:participant.designation,placeOfPosting:participant.placeOfPosting,phone:participant.phone,examName:participant.name,examDesignation:participant.designation,examPlaceOfPosting:participant.placeOfPosting,rollNo:participant.phone,answers,startedAt,submittedAt:serverTimestamp(),timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),autoSubmitted:!!auto,runId};
   try{
     await update(ref(db,`rooms/${room}/mcqAnswers/${key}`),payload);
     await update(ref(db,`rooms/${room}/mcqLive/${key}`),{...payload,currentQuestion:questions.length,answeredCount:c.answered,correctCount:c.correct,wrongCount:c.wrong,status:"SUBMITTED",updatedAt:serverTimestamp(),runId});
-    $("status").className="status live";$("status").textContent=`Exam submitted. Correct answers: ${c.correct} / ${questions.length}.`;
-    $("message").innerHTML=`<div class="successbox">Your MCQ examination has been submitted.</div>`;$("options").innerHTML="";$("finishBtnWrap")?.classList.add("hidden");
-  }catch(e){$("status").className="status blocked";$("status").textContent=`Submission failed: ${e?.message||e}`;$("nextBtn").disabled=false;}
+    $("status").className="status live";$("status").textContent=`Exam submitted successfully. Correct answers: ${c.correct} / ${questions.length}.`;
+    $("message").innerHTML=`<div class="successbox">Your MCQ examination has been submitted successfully.</div>`;
+    $("options").innerHTML="";$("finishBtnWrap")?.classList.add("hidden");
+    showExamComplete();
+  }catch(e){
+    submitting=false;
+    $("status").className="status blocked";$("status").textContent=`Submission failed: ${e?.message||e}`;
+    $("nextBtn").disabled=false;
+  }
 }
 async function activateRoom(r){
+  if(finalized)return;
   if(statusOf(r)!=="LIVE"){showWaiting(r);return;}
   if(!loadQuestions(r))return;
   $("status").className="status live";$("status").textContent="EXAM LIVE — You may answer the current questions.";
-  startExamClock(r);
   if(runId!==String(r.runId||"")){idx=0;selected="";answers={};}
+  startExamClock(r);
   renderQuestion();
 }
+function setExamFrozen(){
+  finalized=true; submitting=false; clearInterval(timer); timer=null;
+  try{roomUnsub?.();}catch(e){}
+  document.querySelectorAll("button,input,select,textarea").forEach(el=>{el.disabled=true;});
+  document.querySelectorAll(".mcq-option").forEach(el=>{el.style.pointerEvents="none";});
+}
+function showSubmitConfirm(){
+  if(finalized||submitting)return;
+  if(document.getElementById("submitConfirmModal"))return;
+  const wrap=document.createElement("div");wrap.id="submitConfirmModal";wrap.className="submit-modal-backdrop";
+  wrap.innerHTML=`<div class="submit-modal" role="dialog" aria-modal="true"><h2>Submit Examination?</h2><p>Are you really sure you want to submit your examination? After final submission, you will <b>not be able to change any answer</b>.</p><div class="row"><button type="button" id="submitNo" class="secondary">NO</button><button type="button" id="submitYes" class="success">YES, FINAL SUBMIT</button></div></div>`;
+  document.body.appendChild(wrap);
+  $("submitNo").onclick=()=>wrap.remove();
+  $("submitYes").onclick=async()=>{wrap.remove();await finish(false,true);};
+}
+function showExamComplete(){
+  setExamFrozen();
+  const old=document.getElementById("examComplete");if(old)old.remove();
+  const wrap=document.createElement("div");wrap.id="examComplete";wrap.className="exam-complete";
+  const phone=encodeURIComponent(String(participant?.phone||""));
+  const rc=encodeURIComponent(room);
+  wrap.innerHTML=`<div class="exam-complete-card"><div style="font-size:56px">✅</div><h1>EXAM OVER</h1><p>Your examination has been <b>successfully submitted</b>.<br>Your screen is now frozen and your answers cannot be changed.</p><p>Please check your result after submission.</p><a class="success" href="student.html?resultRoom=${rc}&resultPhone=${phone}">📊 CHECK RESULT</a></div>`;
+  document.body.appendChild(wrap);
+}
+
 async function init(){
   const signedIn=await authReady;
   if(!signedIn){return showError("Participant sign-in is unavailable. Please enable Anonymous sign-in in Firebase Authentication.");}
@@ -121,6 +156,7 @@ async function init(){
     roomUnsub=onValue(ref(db,`rooms/${room}`),async s=>{const live=s.val();if(!live)return showError("Room is no longer available.");$("roomCode").textContent=room;$("examTitle").textContent=live.mcqTitle||"MCQ Examination";await activateRoom(live);});
   }catch(e){showError(`Unable to load examination: ${e?.message||e}`);}
 }
-$("nextBtn").onclick=async()=>{if(idx<questions.length-1){idx++;await persistLive(false);renderQuestion();}else await finish(false);};
+$("nextBtn").onclick=async()=>{if(finalized||submitting)return;if(idx<questions.length-1){idx++;await persistLive(false);renderQuestion();}else showSubmitConfirm();};
+$("finishBtn")?.addEventListener("click",showSubmitConfirm);
 $("backBtn").onclick=()=>location.href="student.html";
 init();
