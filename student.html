@@ -43,8 +43,12 @@
       </div>
       <div id="resultPanel" class="hidden">
         <h2>Results</h2>
-        <p class="muted">Enter the room code to view your available result.</p>
-        <div class="row"><div class="field"><label>Room Code</label><input id="resultRoomCode" maxlength="6" placeholder="e.g. ABC123"></div><div style="display:flex;align-items:end"><button id="viewResultBtn" class="success">VIEW RESULT</button></div></div>
+        <p class="muted">To check your result, enter your <b>Roll No. / Phone Number</b>. Name, Designation and Place of Posting are not required for result lookup.</p>
+        <div class="row" style="margin-top:12px">
+          <div class="field"><label>Roll No. / Phone Number *</label><input id="resultPhoneNumber" type="tel" inputmode="tel" maxlength="13" autocomplete="off" placeholder="Enter phone number used in exam"></div>
+          <div class="field"><label>Room Code</label><input id="resultRoomCode" maxlength="6" autocomplete="off" placeholder="e.g. ABC123"></div>
+          <div style="display:flex;align-items:end"><button id="viewResultBtn" class="success">VIEW RESULT</button></div>
+        </div>
         <div id="resultSummary" class="status" style="margin-top:12px">No result selected.</div>
       </div>
     </div>

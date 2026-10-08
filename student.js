@@ -59,7 +59,7 @@ async function joinExistingQuiz(code,p){
  const pRef=ref(db,`rooms/${room}/participants/${studentKey}`);
  const result=await runTransaction(pRef,current=>{
    if(current===null)return {studentKey,phone,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,blocked:false,winner:false,disqualified:false,violationCount:0,joinedAt:{".sv":"timestamp"}};
-   if(current.canRejoin===true&&!current.blocked&&!current.disqualified&&!current.winner)return {...current,studentKey,phone,name:p.name,designation:p.designation,placeOfPosting:p.placeOfPosting,canRejoin:false,lastRejoinedAt:{".sv":"timestamp"}};
+   if(current.canRejoin===true&&!current.blocked&&!current.disqualified&&!current.winner)return {...current,studentKey,phone:current.phone||phone,name:current.name||p.name,designation:current.designation||p.designation,placeOfPosting:current.placeOfPosting||p.placeOfPosting,canRejoin:false,lastRejoinedAt:{".sv":"timestamp"}};
    return;
  });
  if(!result.committed){alert("This mobile number has already participated in this quiz. You cannot join again.");return;}
@@ -161,10 +161,11 @@ $("resultTab").onclick=()=>{ $("resultTab").classList.add("active");$("assignmen
 $("participantSignOut").onclick=()=>{ sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");location.reload(); };
 $("viewResultBtn").onclick=async()=>{
  const code=$("resultRoomCode").value.trim().toUpperCase();
+ const resultPhone=$("resultPhoneNumber").value.trim();
  const p=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
- if(!p)return;
  if(!/^[A-Z0-9]{6}$/.test(code)){ $("resultSummary").textContent="Enter a valid 6-character room code.";return; }
- const key=phoneKey(p.phone);
+ const key=phoneKey(resultPhone);
+ if(key.length<10){ $("resultSummary").textContent="Enter the 10-digit phone number used during the examination.";return; }
  const snap=await get(ref(db,`rooms/${code}`));
  if(!snap.exists()){ $("resultSummary").textContent="Room not found.";return; }
  const roomData=snap.val()||{};
@@ -227,9 +228,13 @@ $("viewResultBtn").onclick=async()=>{
      };
      pageHeader();
      doc.setTextColor(...dark);doc.setFont("helvetica","bold");doc.setFontSize(14);doc.text(roomData.mcqTitle||"MCQ Examination",M,y);y+=7;
-     text(`Participant: ${rec.name||p.name}`,10,true,navy); 
-     text(`${rec.designation||""}  •  ${rec.placeOfPosting||""}`,8,false,muted);
-     text(`Mobile: ${rec.phone||""}  •  Submitted: ${rec.submittedAt?new Date(Number(rec.submittedAt)).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour12:true}):"—"} IST`,8,false,muted);
+     const examName=rec.examName||rec.name||"Participant";
+     const examDesignation=rec.examDesignation||rec.designation||"";
+     const examPlace=rec.examPlaceOfPosting||rec.placeOfPosting||"";
+     const examRoll=rec.rollNo||rec.phone||resultPhone;
+     text(`Participant Name: ${examName}`,10,true,navy); 
+     text(`${examDesignation||""}  •  ${examPlace||""}`,8,false,muted);
+     text(`Roll No.: ${examRoll||""}  •  Submitted: ${rec.submittedAt?new Date(Number(rec.submittedAt)).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",hour12:true}):"—"} IST`,8,false,muted);
      y+=4;
      const gap=4,cw=(W-2*M-3*gap)/4;
      card(M,y,cw,21,"CORRECT",correct,green);card(M+cw+gap,y,cw,21,"WRONG",wrong,red);card(M+2*(cw+gap),y,cw,21,"UNANSWERED",unanswered,blue);card(M+3*(cw+gap),y,cw,21,"PERCENTAGE",pct.toFixed(1)+"%",gold);
@@ -279,8 +284,11 @@ $("viewResultBtn").onclick=async()=>{
  function makeSummary(ps,answers,label){
    let correct=0,total=0;
    Object.keys(answers||{}).forEach(q=>{const a=answers[q]?.[key] || Object.values(answers[q]||{}).find(x=>x && phoneKey(String(x.phone||""))===key);if(a){total++;if(a.correct)correct++;}});
+   // Use the participant identity stored when the exam was taken. A later Result-login name is ignored.
+   const examName=ps.name||"Participant";
+   const examPhone=ps.phone||resultPhone||"";
    const status=ps.disqualified?"Disqualified":ps.winner?`CONGRATULATION ! YOU HAVE WON THE PRIZE FOR QUESTION NUMBER ${esc(ps.winnerQuestion||"")}.`:ps.blocked?"Blocked":"Participant";
-   return `<b>${esc(p.name)}</b><br>Room: <b>${esc(code)}</b><br>${label?`Competition: <b>${esc(label)}</b><br>`:""}Answered: <b>${total}</b><br>Correct: <b>${correct}</b><br>Status: <b>${status}</b>${ps.winner?`<br>Winning Question: <b>Q${esc(ps.winnerQuestion||"")}</b>`:""}`;
+   return `<b>${esc(examName)}</b><br>Roll No.: <b>${esc(examPhone)}</b><br>Room: <b>${esc(code)}</b><br>${label?`Competition: <b>${esc(label)}</b><br>`:""}Answered: <b>${total}</b><br>Correct: <b>${correct}</b><br>Status: <b>${esc(status)}</b>${ps.winner?`<br>Winning Question: <b>Q${esc(ps.winnerQuestion||"")}</b>`:""}`;
  }
  const current=findParticipant(roomData.participants);
  if(current){ $("resultSummary").className="status"; $("resultSummary").innerHTML=makeSummary(current,roomData.answers||{},"Current competition"); return; }

@@ -81,14 +81,14 @@ function countResults(){
 async function persistLive(submitted=false){
   if(!participant||!keyForParticipant()||!room)return;
   const c=countResults();
-  const payload={name:participant.name||"",designation:participant.designation||"",placeOfPosting:participant.placeOfPosting||"",phone:participant.phone||"",answers,currentQuestion:Math.min(idx+1,questions.length),answeredCount:c.answered,correctCount:c.correct,wrongCount:c.wrong,timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),status:submitted?"SUBMITTED":"LIVE",updatedAt:serverTimestamp(),runId};
+  const payload={name:participant.name||"",designation:participant.designation||"",placeOfPosting:participant.placeOfPosting||"",phone:participant.phone||"",examName:participant.name||"",examDesignation:participant.designation||"",examPlaceOfPosting:participant.placeOfPosting||"",rollNo:participant.phone||"",answers,currentQuestion:Math.min(idx+1,questions.length),answeredCount:c.answered,correctCount:c.correct,wrongCount:c.wrong,timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),status:submitted?"SUBMITTED":"LIVE",updatedAt:serverTimestamp(),runId};
   try{await update(ref(db,`rooms/${room}/mcqLive/${keyForParticipant()}`),payload);}catch(e){console.warn("Live progress update failed",e);}
 }
 async function finish(auto=false){
   clearInterval(timer);timer=null;$("nextBtn").disabled=true;
   const key=keyForParticipant();if(!key)return showError("Participant mobile number is missing.");
   const c=countResults();
-  const payload={name:participant.name,designation:participant.designation,placeOfPosting:participant.placeOfPosting,phone:participant.phone,answers,startedAt,submittedAt:serverTimestamp(),timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),autoSubmitted:!!auto,runId};
+  const payload={name:participant.name,designation:participant.designation,placeOfPosting:participant.placeOfPosting,phone:participant.phone,examName:participant.name,examDesignation:participant.designation,examPlaceOfPosting:participant.placeOfPosting,rollNo:participant.phone,answers,startedAt,submittedAt:serverTimestamp(),timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),autoSubmitted:!!auto,runId};
   try{
     await update(ref(db,`rooms/${room}/mcqAnswers/${key}`),payload);
     await update(ref(db,`rooms/${room}/mcqLive/${key}`),{...payload,currentQuestion:questions.length,answeredCount:c.answered,correctCount:c.correct,wrongCount:c.wrong,status:"SUBMITTED",updatedAt:serverTimestamp(),runId});
