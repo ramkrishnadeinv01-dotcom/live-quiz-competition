@@ -20,7 +20,7 @@ function statusText(r){return String(r?.examStatus||"NOT STARTED").toUpperCase()
 async function refreshRooms(){const snap=await get(ref(db,"rooms"));const sel=$("roomSelect");sel.innerHTML='<option value="">-- Select existing MCQ room --</option>';if(snap.exists()){const rooms=snap.val()||{};Object.entries(rooms).filter(([k,r])=>r&&r.examType==="mcq").sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).forEach(([k,r])=>{const o=document.createElement("option");o.value=k;o.textContent=`${k} — ${r.mcqTitle||r.title||"MCQ Exam"} — ${statusText(r)}`;sel.appendChild(o);});}msg("MCQ rooms refreshed.","live");}
 async function loadRoom(){const c=$("roomSelect").value;if(!c){alert("Please select an MCQ room.");return;}const s=await get(ref(db,`rooms/${c}`));if(!s.exists()){alert("Room not found.");return;}const r=s.val();if(r.examType!=="mcq"){alert("This is not an MCQ room.");return;}room=c;$("roomCode").textContent=room;$("setup").classList.remove("hidden");$("title").value=r.mcqTitle||r.title||"MCQ Examination";$("minutes").value=Math.max(1,Math.round(Number(r.mcqTimeSeconds||1800)/60));const qs=r.mcqQuestions||{};questions=Object.keys(qs).sort((a,b)=>Number(a.slice(1))-Number(b.slice(1))).map(k=>qs[k]);$("count").value=questions.length||10;renderQuestions();renderControl(r);msg(`Loaded room ${room}.`,"live");}
 function renderControl(r){$("statusValue").textContent=statusText(r);$("scheduleInfo").textContent=r.scheduledStartAt?`Scheduled: ${fmt(r.scheduledStartAt)} | Duration: ${Math.round(Number(r.durationSeconds||r.mcqTimeSeconds||0)/60)} min`:"No automatic schedule set.";$("manualStartBtn").disabled=["LIVE","CLOSED"].includes(statusText(r));$("scheduleBtn").disabled=["LIVE","CLOSED"].includes(statusText(r));$("cancelScheduleBtn").disabled=statusText(r)!=="SCHEDULED";$("closeExamBtn").disabled=statusText(r)!=="LIVE";}
-async function create(){if(!uid||!(await access(auth.currentUser))){alert("Please sign in as an approved host first.");return;}const title=$("title").value.trim()||"MCQ Examination",minutes=Number($("minutes").value||30),count=Number($("count").value||10);let c;do{c=code();}while((await get(ref(db,`rooms/${c}`))).exists());room=c;await set(ref(db,`rooms/${room}`),{hostUid:uid,title,examType:"mcq",mcqTitle:title,mcqTimeSeconds:minutes*60,mcqQuestions:{},createdAt:Date.now(),runDate:new Date().toISOString().slice(0,10),examStatus:"NOT STARTED",startMode:"manual"});$("roomCode").textContent=room;$("setup").classList.remove("hidden");questions=[];renderQuestions();renderControl({examStatus:"NOT STARTED",mcqTimeSeconds:minutes*60});await refreshRooms();msg(`Room ${room} created. Enter questions and save the exam.`,`live`);}
+async function create(){if(!uid||!(await access(auth.currentUser))){alert("Please sign in as an approved host first.");return;}const title=$("title").value.trim()||"MCQ Examination",minutes=Number($("minutes").value||30),count=Number($("count").value||10);let c;do{c=code();}while((await get(ref(db,`rooms/${c}`))).exists());room=c;await set(ref(db,`rooms/${room}`),{hostUid:uid,title,examType:"mcq",mcqTitle:title,mcqTimeSeconds:minutes*60,mcqQuestions:{},createdAt:Date.now(),runDate:new Date().toISOString().slice(0,10),examStatus:"NOT STARTED",startMode:"manual"});$("roomCode").textContent=room;$("setup").classList.remove("hidden");if(!questions.length){renderQuestions();}else{$("count").value=questions.length;renderQuestions();}renderControl({examStatus:"NOT STARTED",mcqTimeSeconds:minutes*60});await refreshRooms();msg(`Room ${room} created. Enter questions and save the exam.`,`live`);}
 async function save(){if(!room){alert("Create or load an MCQ room first.");return;}const qs=collect();for(let i=0;i<qs.length;i++)if(!qs[i].text||Object.values(qs[i].options).some(v=>!v)){alert(`Please complete Question ${i+1}.`);return;}const minutes=Number($("minutes").value||30);await update(ref(db,`rooms/${room}`),{mcqTitle:$("title").value.trim()||"MCQ Examination",mcqTimeSeconds:minutes*60,mcqQuestions:Object.fromEntries(qs.map((q,i)=>[`q${i+1}`,q])),examType:"mcq",updatedAt:Date.now()});msg(`MCQ Exam saved. Room Code: ${room}`,"live");await refreshRooms();}
 async function startManual(){if(!room)return;const s=await get(ref(db,`rooms/${room}`));if(!s.exists())return;const r=s.val();if(["LIVE","CLOSED"].includes(statusText(r))){alert("This exam cannot be started in its current status. Use RESTART EXAM for a fresh run.");return;}const now=Date.now();await remove(ref(db,`rooms/${room}/mcqAnswers`));await remove(ref(db,`rooms/${room}/mcqLive`));const runId=String(now);await update(ref(db,`rooms/${room}`),{examStatus:"LIVE",startMode:"manual",startedAt:now,runId,scheduledStartAt:null,scheduledEndAt:null,closedAt:null});renderControl({...r,examStatus:"LIVE",startedAt:now,runId});msg("MCQ exam is now LIVE. Participants can see questions now.","live");}
 async function schedule(){if(!room)return alert("Select or create a room first.");const date=$("date").value,time=$("time").value,dur=Number($("duration").value||30);if(!date||!time||dur<1)return alert("Enter date, time and duration.");const start=new Date(`${date}T${time}:00+05:30`).getTime();if(start<=Date.now())return alert("Choose a future IST date and time.");const s=await get(ref(db,`rooms/${room}`));const r=s.val()||{};if(["SCHEDULED","LIVE","CLOSED"].includes(statusText(r))&&statusText(r)!=="SCHEDULED")return alert("This room cannot be scheduled in its current status.");const end=start+dur*60000;await update(ref(db,`rooms/${room}`),{examStatus:"SCHEDULED",startMode:"automatic",scheduledStartAt:start,scheduledEndAt:end,durationSeconds:dur*60});renderControl({...r,examStatus:"SCHEDULED",scheduledStartAt:start,durationSeconds:dur*60});msg(`Exam scheduled for ${fmt(start)}.`,"live");}
@@ -30,10 +30,76 @@ async function restartExam(){if(!room)return;const s=await get(ref(db,`rooms/${r
 async function poll(){if(!room)return;const s=await get(ref(db,`rooms/${room}`));if(!s.exists())return;const r=s.val(),now=Date.now();if(statusText(r)==="SCHEDULED"&&Number(r.scheduledStartAt)<=now){await update(ref(db,`rooms/${room}`),{examStatus:"LIVE",startedAt:Number(r.scheduledStartAt)});r.examStatus="LIVE";r.startedAt=Number(r.scheduledStartAt);}if(statusText(r)==="LIVE"&&r.scheduledEndAt&&Number(r.scheduledEndAt)<=now){await update(ref(db,`rooms/${room}`),{examStatus:"CLOSED",closedAt:Number(r.scheduledEndAt)});r.examStatus="CLOSED";}renderControl(r);}
 $("createBtn").onclick=create;$("saveBtn").onclick=save;$("count").onchange=renderQuestions;$("refreshBtn").onclick=refreshRooms;$("loadBtn").onclick=loadRoom;$("backBtn").onclick=()=>location.href="host.html";$("manualStartBtn").onclick=startManual;$("scheduleBtn").onclick=schedule;$("cancelScheduleBtn").onclick=cancelSchedule;$("closeExamBtn").onclick=closeExam;$("manualMode").onchange=setModeUI;$("autoMode").onchange=setModeUI;setModeUI();setInterval(poll,5000);
 
-function downloadMCQTemplate(){const a=document.createElement("a");a.href="MCQ_Questions_Upload_Template.xlsx";a.download="MCQ_Questions_Upload_Template.xlsx";document.body.appendChild(a);a.click();a.remove();}
-function clearQuestions(){if(!confirm("Clear all MCQ questions from the current editor? You can then upload a new Excel file."))return;questions=[];$('count').value=1;renderQuestions();msg("Question editor cleared. You can now upload a new MCQ Excel file.","live");}
-function parseUploadedMCQRows(rows){const norm=s=>String(s??"").trim().toLowerCase().replace(/[\\s_]+/g," ");const find=(row,names)=>{const keys=Object.keys(row),target=names.map(norm),k=keys.find(x=>target.includes(norm(x)));return k===undefined?"":row[k];};const out=[];for(let idx=0;idx<rows.length;idx++){const r=rows[idx]||{},text=String(find(r,["Question","Question Text","MCQ Question"])).trim(),A=String(find(r,["Option A","A"])).trim(),B=String(find(r,["Option B","B"])).trim(),C=String(find(r,["Option C","C"])).trim(),D=String(find(r,["Option D","D"])).trim(),correct=String(find(r,["Correct Answer","Answer","Correct"])).trim().toUpperCase();if(!text&&!A&&!B&&!C&&!D&&!correct)continue;if(!text||!A||!B||!C||!D||!["A","B","C","D"].includes(correct))throw new Error(`Invalid data in Excel row ${idx+2}. Each row must contain Question, Options A-D and Correct Answer (A/B/C/D).`);out.push({text,options:{A,B,C,D},correct});}return out;}
-async function handleMCQUpload(file){if(!file)return;if(typeof XLSX==="undefined"){alert("Excel upload library could not be loaded. Please check your internet connection.");return;}try{const data=await file.arrayBuffer(),wb=XLSX.read(data,{type:"array"}),sheetName=wb.SheetNames.find(n=>/mcq|question/i.test(n))||wb.SheetNames[0],rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{defval:""});if(!rows.length)throw new Error("The selected Excel sheet contains no question rows.");const imported=parseUploadedMCQRows(rows);if(!imported.length)throw new Error("No valid MCQ questions were found.");if(imported.length>100)throw new Error("Maximum 100 questions can be uploaded at one time.");if(!confirm(`Found ${imported.length} MCQ question(s). Replace the current question set with these questions?`))return;questions=imported;$('count').value=imported.length;renderQuestions();msg(`${imported.length} MCQ question(s) loaded successfully from Excel. Click "Save MCQ Exam" to store them in Firebase.","live");}catch(e){console.error(e);alert("MCQ Excel upload failed.\n\n"+(e?.message||"Please use the official template and try again."));}finally{$('mcqFile').value="";}}
+function downloadMCQTemplate(){
+  const a=document.createElement("a");
+  a.href="./MCQ_Questions_Upload_Template.xlsx";
+  a.download="MCQ_Questions_Upload_Template.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function clearQuestions(){
+  if(!confirm("Clear the MCQ questions currently loaded in the editor?"))return;
+  questions=[];
+  $("count").value=10;
+  renderQuestions();
+  if($("uploadStatus"))$("uploadStatus").textContent="Question editor cleared. You can upload a new Excel file.";
+  msg("Question editor cleared.","live");
+}
+function parseUploadedMCQRows(rows){
+  const norm=s=>String(s??"").trim().toLowerCase().replace(/[\\s_]+/g," ");
+  const find=(row,names)=>{
+    const keys=Object.keys(row),target=names.map(norm);
+    const k=keys.find(x=>target.includes(norm(x)));
+    return k===undefined?"":row[k];
+  };
+  const out=[];
+  for(let idx=0;idx<rows.length;idx++){
+    const r=rows[idx]||{};
+    const text=String(find(r,["Question","Question Text","MCQ Question"])).trim();
+    const A=String(find(r,["Option A","A"])).trim();
+    const B=String(find(r,["Option B","B"])).trim();
+    const C=String(find(r,["Option C","C"])).trim();
+    const D=String(find(r,["Option D","D"])).trim();
+    const correct=String(find(r,["Correct Answer","Answer","Correct"])).trim().toUpperCase();
+    if(!text&&!A&&!B&&!C&&!D&&!correct)continue;
+    if(!text||!A||!B||!C||!D||!["A","B","C","D"].includes(correct)){
+      throw new Error(`Invalid data in Excel row ${idx+2}. Each row must contain Question, Options A-D and Correct Answer (A/B/C/D).`);
+    }
+    out.push({text,options:{A,B,C,D},correct});
+  }
+  return out;
+}
+async function handleMCQUpload(file){
+  if(!file)return;
+  if(typeof XLSX==="undefined"){
+    alert("Excel upload library could not be loaded. Please refresh the page and try again.");
+    return;
+  }
+  try{
+    if($("uploadStatus"))$("uploadStatus").textContent="Reading Excel file…";
+    const data=await file.arrayBuffer();
+    const wb=XLSX.read(data,{type:"array"});
+    const sheetName=wb.SheetNames.find(n=>/mcq|question/i.test(n))||wb.SheetNames[0];
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{defval:""});
+    if(!rows.length)throw new Error("The selected Excel sheet contains no question rows.");
+    const imported=parseUploadedMCQRows(rows);
+    if(!imported.length)throw new Error("No valid MCQ questions were found.");
+    if(imported.length>100)throw new Error("Maximum 100 questions can be uploaded at one time.");
+    if(!confirm(`Found ${imported.length} MCQ question(s). Load these questions into the editor?`))return;
+    questions=imported;
+    $("count").value=imported.length;
+    renderQuestions();
+    if($("uploadStatus"))$("uploadStatus").textContent=`${imported.length} MCQ question(s) loaded successfully. Create/select an exam room and click Save MCQ Exam.`;
+    msg(`${imported.length} MCQ question(s) loaded from Excel.`,"live");
+  }catch(e){
+    console.error(e);
+    if($("uploadStatus"))$("uploadStatus").textContent="Upload failed. Please use the official MCQ template.";
+    alert("MCQ Excel upload failed.\n\n"+(e?.message||"Please use the official template and try again."));
+  }finally{
+    $("mcqFile").value="";
+  }
+}
 
 onAuthStateChanged(auth,async u=>{uid=u?.uid||null;$("authStatus").textContent=u?`Signed in: ${u.email}`:"Not signed in";if(!u||!(await access(u))){msg("Host approval is required before managing MCQ exams.","blocked");$("createBtn").disabled=true;$("refreshBtn").disabled=true;$("loadBtn").disabled=true;}else{await refreshRooms();msg("Approved host. Select an existing room or create a new MCQ exam.","live");}});
 
