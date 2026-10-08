@@ -1,10 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
-await setPersistence(auth,browserLocalPersistence);
+await setPersistence(auth,indexedDBLocalPersistence);
 if (typeof auth.authStateReady === "function") await auth.authStateReady();
 const $=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
@@ -506,14 +506,14 @@ $("registrationSubmitBtn").onclick=async()=>{try{
   if(password.length<6){msg("Password must be at least 6 characters.");return;}
   if(!/^[0-9+()\- ]{7,15}$/.test(phone)){msg("Please enter a valid phone number.");return;}
   $("registrationSubmitBtn").disabled=true;
-  await setPersistence(auth,browserLocalPersistence);
+  await setPersistence(auth,indexedDBLocalPersistence);
   const cred=await createUserWithEmailAndPassword(auth,email,password);
   const profile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()};
   await set(ref(db,`hosts/${cred.user.uid}`),profile);
   hostProfile={...profile,requestedAt:Date.now()};
   msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host registration submitted. Please wait for Administrator approval.");
 }catch(e){msg(e.message||String(e));$("registrationSubmitBtn").disabled=false;}};
-$("loginBtn").onclick=async()=>{try{await setPersistence(auth,browserLocalPersistence);await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(e){msg(e.message)}};
+$("loginBtn").onclick=async()=>{try{await setPersistence(auth,indexedDBLocalPersistence);await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(e){msg(e.message)}};
 $("forgotPasswordBtn").onclick=async()=>{try{
   const email=$("email").value.trim().toLowerCase();
   if(!email){msg("Please enter your registered email address in the Email box first.");$("email").focus();return;}
@@ -609,6 +609,13 @@ async function importWordQuestions(){
 }
 
 onAuthStateChanged(auth,async user=>{
+  // Firebase may restore local auth asynchronously on a new page. Do not show the login form
+  // until the restoration attempt has completed and give IndexedDB persistence a short retry.
+  if(!user && typeof auth.authStateReady === "function"){ try{ await auth.authStateReady(); user=auth.currentUser||null; }catch(e){} }
+  if(!user){
+    for(let i=0;i<5 && !auth.currentUser;i++){ await new Promise(r=>setTimeout(r,300)); }
+    user=auth.currentUser||null;
+  }
   currentUser=user||null; uid=user?.uid||null;
   $("authStatus").textContent=user?(isAdmin(user)?"Administrator signed in":"Signed in"):"Not signed in";
   $("loginCard").classList.toggle("hidden",!!user);
