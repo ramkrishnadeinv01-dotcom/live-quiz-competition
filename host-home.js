@@ -1,8 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, set, update, get, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
+setPersistence(auth,browserLocalPersistence).catch(e=>console.error("Firebase auth persistence setup failed:",e));
 const $=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadevin.01@gmail.com";
 let uid=null,currentUser=null,hostProfile=null;

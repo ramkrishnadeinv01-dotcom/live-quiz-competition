@@ -21,3 +21,6 @@ After the host clicks CLOSE COMPETITION, the room enters competition_closed stat
 
 
 V44: Host Portal redesigned with an elegant home/control centre. Live Quiz Competition moved to host-live-quiz.html; MCQ and General Exam Setup remain on their existing pages. Core Live Quiz functionality remains unchanged.
+
+
+Version 45: fixed Host Portal authentication persistence so Live Quiz Competition retains the signed-in host when navigating from Host Home.
