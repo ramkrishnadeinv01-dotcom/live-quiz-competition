@@ -67,7 +67,9 @@
             ".write": "auth != null && auth.uid === $student"
           }
         }
-      }
+      },
+      ".read": "auth != null && (auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com')",
+      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
     },
     "otherExamResults": {
       "$phoneHash": {
