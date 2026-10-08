@@ -1,8 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, get, runTransaction, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const app=initializeApp(firebaseConfig),db=getDatabase(app);
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
+const authReady=signInAnonymously(auth).catch(e=>{console.error("Participant anonymous authentication failed",e);return null;});
 const $=id=>document.getElementById(id);
 let room="",studentKey="",selected="",questionNo=0,openedAt=0,answered=false,timer,violationCount=0,lastViolationAt=0;
 let questionTimerSeconds=30;
@@ -37,6 +39,8 @@ function openRoomModal(type){
 }
 function closeRoomModal(){$("roomModal").classList.add("hidden");}
 async function enterAssignment(type){
+ const signedIn=await authReady;
+ if(!signedIn){$("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="Participant sign-in is unavailable. Please enable Anonymous sign-in in Firebase Authentication.";return;}
  const code=$("assignmentRoomCode").value.trim().toUpperCase();
  if(!/^[A-Z0-9]{6}$/.test(code)){ $("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="Enter a valid 6-character room code.";return; }
  const rs=await get(ref(db,`rooms/${code}`));
@@ -52,6 +56,8 @@ async function enterAssignment(type){
  closeRoomModal(); await joinExistingQuiz(code,p);
 }
 async function joinExistingQuiz(code,p){
+ const signedIn=await authReady;
+ if(!signedIn){alert("Participant sign-in is unavailable. Please enable Anonymous sign-in in Firebase Authentication.");return;}
  room=code; const phone=p.phone;
  studentKey=phoneKey(phone);
  const rs=await get(ref(db,`rooms/${room}`)); if(!rs.exists())return alert("Room not found."); const r=rs.val()||{};

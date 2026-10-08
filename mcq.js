@@ -1,8 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase,ref,get,update,onValue,serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-const app=initializeApp(firebaseConfig),db=getDatabase(app),$=id=>document.getElementById(id);
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
+const authReady=signInAnonymously(auth).catch(e=>{console.error("MCQ anonymous authentication failed",e);return null;});
 const params=new URLSearchParams(location.search);
 const room=(params.get("room")||sessionStorage.getItem("mcqRoom")||"").toUpperCase();
 const participant=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
@@ -105,6 +107,8 @@ async function activateRoom(r){
   renderQuestion();
 }
 async function init(){
+  const signedIn=await authReady;
+  if(!signedIn){return showError("Participant sign-in is unavailable. Please enable Anonymous sign-in in Firebase Authentication.");}
   if(!/^[A-Z0-9]{6}$/.test(room))return showError("Room code is missing or invalid.");
   $("roomCode").textContent=room;
   if(!participant)return showError("Participant details are missing. Please return to the Participant Panel and enter your details.");
