@@ -170,9 +170,28 @@ $("viewResultBtn").onclick=async()=>{
  if(!snap.exists()){ $("resultSummary").textContent="Room not found.";return; }
  const roomData=snap.val()||{};
  if(roomData.mcqQuestions && roomData.mcqAnswers){
-   const mcqAnswers=roomData.mcqAnswers||{};
+   // Find the participant result in the active run first. If the Host used
+   // RESTART EXAM, the previous run is preserved under mcqHistory, so search
+   // the archived runs as well. This prevents a valid submitted result from
+   // disappearing after a restart.
+   let mcqAnswers=roomData.mcqAnswers||{};
    let rec=mcqAnswers[key]||null;
    if(!rec){for(const v of Object.values(mcqAnswers)){if(v && phoneKey(String(v.phone||""))===key){rec=v;break;}}}
+   let resultRunLabel="Current Run";
+   if(!rec){
+     const history=roomData.mcqHistory||{};
+     const historyEntries=Object.entries(history).sort((a,b)=>{
+       const ta=Number(a[1]?.closedAt||a[1]?.archivedAt||a[1]?.startedAt||a[0]||0);
+       const tb=Number(b[1]?.closedAt||b[1]?.archivedAt||b[1]?.startedAt||b[0]||0);
+       return tb-ta;
+     });
+     for(const [runId,run] of historyEntries){
+       const aa=run?.mcqAnswers||{};
+       let candidate=aa[key]||null;
+       if(!candidate){for(const v of Object.values(aa)){if(v && phoneKey(String(v.phone||""))===key){candidate=v;break;}}}
+       if(candidate){rec=candidate;mcqAnswers=aa;resultRunLabel=`Archived Run ${runId}`;break;}
+     }
+   }
    if(!rec){$("resultSummary").className="status";$("resultSummary").textContent="No MCQ result found for this participant in this room.";return;}
    const qObj=roomData.mcqQuestions||{};
    const qs=Object.keys(qObj).sort((a,b)=>Number((a.match(/\d+/)||[0])[0])-Number((b.match(/\d+/)||[0])[0])).map(k=>({id:k,...qObj[k]}));
@@ -270,7 +289,7 @@ $("viewResultBtn").onclick=async()=>{
      doc.save(`MCQ_${code}_Result.pdf`);
    };
    $("resultSummary").className="status";
-   $("resultSummary").innerHTML=`<div style="font-size:22px;font-weight:800;color:#16355c;margin-bottom:8px">🏆 FINAL RANK: #${rank}</div><b>${safe(rec.name||p.name)}</b><br>Exam: <b>${safe(roomData.mcqTitle||"MCQ Examination")}</b><br>Room: <b>${code}</b><br>Correct: <b>${correct}</b> &nbsp; Wrong: <b>${wrong}</b> &nbsp; Unanswered: <b>${unanswered}</b><br>Total Marks: <b>${correct}/${qs.length}</b> &nbsp; Percentage: <b>${pct.toFixed(2)}%</b><br><button class="success" type="button" style="margin-top:10px" onclick="downloadParticipantMcqPdf()">📄 DOWNLOAD MY RESULT – PDF</button>`;
+   $("resultSummary").innerHTML=`<div style="font-size:22px;font-weight:800;color:#16355c;margin-bottom:8px">🏆 FINAL RANK: #${rank}</div><b>${safe(rec.name||p.name)}</b><br>Exam: <b>${safe(roomData.mcqTitle||"MCQ Examination")}</b><br>Room: <b>${code}</b><br>Run: <b>${safe(resultRunLabel)}</b><br>Correct: <b>${correct}</b> &nbsp; Wrong: <b>${wrong}</b> &nbsp; Unanswered: <b>${unanswered}</b><br>Total Marks: <b>${correct}/${qs.length}</b> &nbsp; Percentage: <b>${pct.toFixed(2)}%</b><br><button class="success" type="button" style="margin-top:10px" onclick="downloadParticipantMcqPdf()">📄 DOWNLOAD MY RESULT – PDF</button>`;
    return;
  }
  function findParticipant(obj){
