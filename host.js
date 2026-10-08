@@ -644,3 +644,19 @@ onAuthStateChanged(auth,async user=>{
     }
   }catch(e){console.error(e);msg(`Access check failed: ${e.message||e}`);}
 });
+
+// Host Control Centre navigation buttons
+function bindHostPortalButtons(){
+  const actions={
+    openLiveQuizBtn:()=>{localStorage.setItem('hostPortalLastSection','liveQuiz');location.hash='#liveQuiz';syncLiveQuizRoute();window.scrollTo({top:0,behavior:'smooth'});},
+    openMcqBtn:()=>location.href='host-mcq.html',
+    openGeneralBtn:()=>location.href='host-general.html',
+    openOtherResultsBtn:()=>location.href='other-results.html',
+    openOtherResultsManageBtn:()=>location.href='other-results.html#manage',
+    openMcqResultsBtn:()=>location.href='host-mcq-results.html',
+    homeLogoutBtn:async()=>{clearHostRegistrationFields();await signOut(auth);},
+    openAdminPageBtn:()=>location.href='administrator.html'
+  };
+  Object.entries(actions).forEach(([id,fn])=>{const el=$(id);if(el)el.onclick=fn;});
+}
+bindHostPortalButtons();
