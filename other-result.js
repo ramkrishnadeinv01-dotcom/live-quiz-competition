@@ -12,7 +12,23 @@ function render(){
 function ensureJspdf(){return new Promise((res,rej)=>{if(window.jspdf)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s)});}
 function drawMarksheet(d,r){const W=210,M=12;d.setFillColor(59,7,100);d.rect(0,0,W,34,'F');d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(18);d.text('OTHER EXAMINATION RESULT',M,13);d.setFontSize(9);d.setFont('helvetica','normal');d.text('Officially Published Result / Marksheet',M,21);d.setFontSize(8);d.text(`Publication ID: ${r.publicationId||'—'}`,M,28);let y=45;d.setTextColor(30,41,59);d.setFont('helvetica','bold');d.setFontSize(16);d.text(String(r.examName||'Other Examination'),M,y);y+=9;d.setFont('helvetica','normal');d.setFontSize(9);d.text(`Exam Date: ${r.examDate||'—'}    Roll No: ${r.rollNo||'—'}`,M,y);y+=8;d.setFont('helvetica','bold');d.setFontSize(10);d.text(`Name: ${r.name||'—'}`,M,y);d.setFont('helvetica','normal');d.text(`Class / Designation: ${r.designation||'—'}`,105,y);y+=6;d.text(`School / Place: ${r.placeOfPosting||'—'}`,M,y);y+=10;
  if(r.subjects?.length){d.setFillColor(59,7,100);d.rect(M,y-5,W-2*M,8,'F');d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(8);d.text('SUBJECT',M+3,y);d.text('MARKS',105,y);d.text('GRADE',137,y);d.text('SUBJECT RANK',163,y);y+=8; r.subjects.forEach((x,idx)=>{if(y>270){d.addPage();y=20;} if(idx%2===0){d.setFillColor(248,250,252);d.rect(M,y-5,W-2*M,8,'F');}d.setTextColor(30,41,59);d.setFont('helvetica','normal');d.text(String(x.subject||'—'),M+3,y);d.text(String(x.marks||'—'),105,y);d.text(String(x.grade||'—'),137,y);d.text(String(x.rank||'—'),163,y);y+=8;}); }
- y+=5;d.setFillColor(238,242,255);d.roundedRect(M,y-5,W-2*M,18,2,2,'F');d.setTextColor(30,41,59);d.setFont('helvetica','bold');d.setFontSize(9);d.text(`TOTAL: ${r.obtainedMarks||'—'} / ${r.totalMarks||'—'}`,M+5,y+1);d.text(`PERCENTAGE: ${r.percentage||'—'}`,75,y+1);d.text(`OVERALL RANK: ${r.rank||'—'}`,140,y+1);d.setFontSize(10);d.text(`RESULT: ${r.status||'—'}`,M+5,y+9);if(r.overallGrade)d.text(`OVERALL GRADE: ${r.overallGrade}`,75,y+9);y+=27;if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(8);d.text(`Remarks: ${String(r.remarks).slice(0,110)}`,M,y);y+=8;}d.setFontSize(7);d.setTextColor(100,116,139);d.text(`Downloaded on ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`,M,289);}
+ y+=5;
+ const boxH=30;
+ d.setFillColor(238,242,255);d.roundedRect(M,y-5,W-2*M,boxH,2,2,'F');
+ d.setTextColor(30,41,59);d.setFont('helvetica','bold');d.setFontSize(8.5);
+ d.text(`TOTAL: ${r.obtainedMarks||'—'} / ${r.totalMarks||'—'}`,M+5,y+2);
+ d.text(`PERCENTAGE: ${r.percentage||'—'}`,72,y+2);
+ d.text(`OVERALL RANK: ${r.rank||'—'}`,140,y+2);
+ d.setFontSize(9.5);
+ if(r.overallGrade)d.text(`OVERALL GRADE: ${r.overallGrade}`,M+5,y+11);
+ const resultText=`RESULT: ${r.status||'—'}`;
+ d.setFontSize(9);
+ const maxResultW=W-2*M-10;
+ const resultLines=d.splitTextToSize(resultText,maxResultW);
+ d.text(resultLines,M+5,y+20,{maxWidth:maxResultW});
+ y += boxH + 7 + Math.max(0,resultLines.length-1)*4;
+ if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(8);const rem=d.splitTextToSize(`Remarks: ${String(r.remarks)}`,W-2*M);d.text(rem,M,y);y+=Math.max(8,rem.length*4);}
+ d.setFontSize(7);d.setTextColor(100,116,139);d.text(`Downloaded on ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`,M,289);}
 async function pdf(r){try{await ensureJspdf();const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4'});drawMarksheet(d,r);const safe=String(r.name||'Result').replace(/[^a-z0-9]+/gi,'_');d.save(`Other_Exam_Marksheet_${safe}_${r.publicationId||''}.pdf`);}catch(e){alert(`PDF generation failed: ${e.message||e}`);}}
 async function allPdf(){if(!results.length)return;try{await ensureJspdf();const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4'});results.forEach((r,i)=>{if(i)d.addPage();drawMarksheet(d,r)});d.save('Other_Exam_All_Marksheets.pdf');}catch(e){alert(`PDF generation failed: ${e.message||e}`);}}
 $("searchBtn").onclick=search;$("phone").onkeydown=e=>{if(e.key==='Enter')search();};$("allBtn").onclick=allPdf;$("backBtn").onclick=()=>location.href='student.html';
