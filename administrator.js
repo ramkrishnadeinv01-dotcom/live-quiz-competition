@@ -15,4 +15,14 @@ function render(u){currentUser=u||null;$("authStatus").textContent=u?(isAdmin(u)
 $("loginBtn").onclick=async()=>{try{await persist();const email=$("email").value.trim().toLowerCase();if(email!==ADMIN_EMAIL){msg("This page is restricted to the Administrator account.");return;}await signInWithEmailAndPassword(auth,email,$("password").value);}catch(e){msg(e.message||String(e));}};
 $("forgotBtn").onclick=async()=>{try{const email=$("email").value.trim().toLowerCase();if(email!==ADMIN_EMAIL){msg("Enter the Administrator email address first.");return;}await sendPasswordResetEmail(auth,email);msg("Password reset link sent. Check Inbox and Spam/Junk folder.");}catch(e){msg(e.message||String(e));}};
 $("refreshBtn").onclick=load;$("logoutBtn").onclick=()=>signOut(auth);$("backBtn").onclick=$("backBtn2").onclick=()=>location.href="host.html";
-onAuthStateChanged(auth,u=>{if(u&&!isAdmin(u)){signOut(auth);msg("This account is not authorized as Administrator.");return;}render(u);});
+onAuthStateChanged(auth,u=>{
+  // Do not sign out a normal Host automatically. The Administrator login must be able to replace the current Host session safely.
+  if(u&&!isAdmin(u)){
+    currentUser=null;
+    $("authStatus").textContent="Not authorized";
+    $("adminLoginCard").classList.remove("hidden");
+    $("adminApp").classList.add("hidden");
+    return;
+  }
+  render(u);
+});
