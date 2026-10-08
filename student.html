@@ -18,6 +18,10 @@
       <div class="field"><label>Mobile Number *</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="13" autocomplete="off" placeholder="10-digit mobile number"></div>
     </div>
     <button id="participantContinueBtn" class="success" style="margin-top:14px" type="button" onclick="quickParticipantContinue()">CONTINUE</button>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0">
+      <p class="muted" style="margin:0 0 8px"><b>Checking a result from an examination conducted outside this portal?</b></p>
+      <button id="directOtherResultBtn" type="button" style="background:#7c3aed">📊 RESULT OF OTHER EXAM — SEARCH BY MOBILE NUMBER</button>
+    </div>
     <p id="joinMsg"></p>
   </div>
 
@@ -95,6 +99,7 @@ function quickParticipantContinue(){
   document.getElementById('participantWelcome').textContent=`Welcome, ${name} • ${designation} • ${place}`;
   document.getElementById('connection').textContent='Ready';
 }
+document.getElementById('directOtherResultBtn').onclick=function(){location.href='other-result.html';};
 </script>
-<script type="module" src="student.js?v=v23"></script>
+<script type="module" src="student.js?v=20261008-51"></script>
 </body></html>

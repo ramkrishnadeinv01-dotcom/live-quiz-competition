@@ -24,3 +24,13 @@ V44: Host Portal redesigned with an elegant home/control centre. Live Quiz Compe
 
 
 Version 45: fixed Host Portal authentication persistence so Live Quiz Competition retains the signed-in host when navigating from Host Home.
+
+
+## v51 — Other Exam Result Publication
+- Added Host Portal → Other Exam Result Publication.
+- Added Excel template: `Other_Exam_Result_Upload_Template.xlsx`.
+- Approved hosts/Admin can upload one publication set at a time.
+- Excel rows are imported into Firebase under hashed mobile-number keys; the Excel file is not the live database after upload.
+- Participant Dashboard → Result → Result of Other Exam searches by mobile number only.
+- Participants can download an individual result or all their published Other Exam results as PDF.
+- Other Exam Results are separate from Quiz/MCQ/General Exam results.
