@@ -90,21 +90,76 @@ async function finish(auto=false,confirmed=false){
   if(finalized||submitting)return;
   if(!auto&&!confirmed){showSubmitConfirm();return;}
   submitting=true;
-  clearInterval(timer);timer=null;$('"'"'nextBtn'"'"').disabled=true;
-  const key=keyForParticipant();if(!key){submitting=false;return showError("Participant mobile number is missing.");}
+
+  // Freeze the exam controls immediately while the final submission is being saved.
+  clearInterval(timer);timer=null;
+  $("nextBtn").disabled=true;
+  $("finishBtnWrap")?.classList.add("hidden");
+  document.querySelectorAll(".mcq-option").forEach(el=>{el.disabled=true;el.style.pointerEvents="none";});
+  $("status").className="status";
+  $("status").textContent="Submitting your examination. Please wait…";
+
+  const key=keyForParticipant();
+  if(!key){
+    submitting=false;
+    $("status").className="status blocked";
+    $("status").textContent="Participant mobile number is missing.";
+    $("nextBtn").disabled=false;
+    return;
+  }
+
   const c=countResults();
-  const payload={authUid:auth.currentUser?.uid||"",name:participant.name,designation:participant.designation,placeOfPosting:participant.placeOfPosting,phone:participant.phone,examName:participant.name,examDesignation:participant.designation,examPlaceOfPosting:participant.placeOfPosting,rollNo:participant.phone,answers,startedAt,submittedAt:serverTimestamp(),timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),autoSubmitted:!!auto,runId};
+  const payload={
+    authUid:auth.currentUser?.uid||"",
+    name:participant.name||"",
+    designation:participant.designation||"",
+    placeOfPosting:participant.placeOfPosting||"",
+    phone:participant.phone||"",
+    examName:participant.name||"",
+    examDesignation:participant.designation||"",
+    examPlaceOfPosting:participant.placeOfPosting||"",
+    rollNo:participant.phone||"",
+    answers,
+    startedAt,
+    submittedAt:serverTimestamp(),
+    timeTakenSeconds:Math.max(0,Math.round((Date.now()-startedAt)/1000)),
+    autoSubmitted:!!auto,
+    runId
+  };
+
   try{
     await update(ref(db,`rooms/${room}/mcqAnswers/${key}`),payload);
-    await update(ref(db,`rooms/${room}/mcqLive/${key}`),{...payload,currentQuestion:questions.length,answeredCount:c.answered,correctCount:c.correct,wrongCount:c.wrong,status:"SUBMITTED",updatedAt:serverTimestamp(),runId});
-    $("status").className="status live";$("status").textContent=`Exam submitted successfully. Correct answers: ${c.correct} / ${questions.length}.`;
-    $("message").innerHTML=`<div class="successbox">Your MCQ examination has been submitted successfully.</div>`;
-    $("options").innerHTML="";$("finishBtnWrap")?.classList.add("hidden");
+    await update(ref(db,`rooms/${room}/mcqLive/${key}`),{
+      ...payload,
+      currentQuestion:questions.length,
+      answeredCount:c.answered,
+      correctCount:c.correct,
+      wrongCount:c.wrong,
+      status:"SUBMITTED",
+      updatedAt:serverTimestamp(),
+      runId
+    });
+
+    // Final state: no further editing, no further Firebase listeners, full-screen EXAM OVER.
+    finalized=true;
+    submitting=false;
+    clearInterval(timer);timer=null;
+    try{roomUnsub?.();}catch(e){}
+    $("status").className="status live";
+    $("status").textContent=`Exam submitted successfully. Correct answers: ${c.correct} / ${questions.length}.`;
+    $("message").innerHTML="";
+    $("options").innerHTML="";
+    $("nextBtn").disabled=true;
+    $("finishBtnWrap")?.classList.add("hidden");
     showExamComplete();
   }catch(e){
     submitting=false;
-    $("status").className="status blocked";$("status").textContent=`Submission failed: ${e?.message||e}`;
+    $("status").className="status blocked";
+    $("status").textContent=`Submission failed: ${e?.message||e}`;
+    // Allow another attempt only when the final write really failed.
     $("nextBtn").disabled=false;
+    document.querySelectorAll(".mcq-option").forEach(el=>{el.disabled=false;el.style.pointerEvents="auto";});
+    if(idx===questions.length-1)$("finishBtnWrap")?.classList.remove("hidden");
   }
 }
 async function activateRoom(r){
@@ -157,6 +212,6 @@ async function init(){
   }catch(e){showError(`Unable to load examination: ${e?.message||e}`);}
 }
 $("nextBtn").onclick=async()=>{if(finalized||submitting)return;if(idx<questions.length-1){idx++;await persistLive(false);renderQuestion();}else showSubmitConfirm();};
-$("finishBtn")?.addEventListener("click",showSubmitConfirm);
+$("finishBtn")?.addEventListener("click",()=>showSubmitConfirm());
 $("backBtn").onclick=()=>location.href="student.html";
 init();

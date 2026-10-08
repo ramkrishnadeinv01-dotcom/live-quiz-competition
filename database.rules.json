@@ -47,7 +47,7 @@
         "mcqAnswers": {
           "$student": {
             ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-            ".write": "auth != null && (!data.exists() || data.child('runId').val() !== newData.child('runId').val() || data.child('authUid').val() === auth.uid)"
+            ".write": "auth != null && (!data.exists() || data.child('status').val() !== 'SUBMITTED' || data.child('runId').val() !== newData.child('runId').val() || data.child('authUid').val() === auth.uid)"
           }
         },
         "generalQuestions": {
