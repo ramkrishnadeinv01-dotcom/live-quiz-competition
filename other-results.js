@@ -13,14 +13,15 @@ function msg(t,cls="status"){const e=$("msg");e.textContent=t;e.className=cls;}
 function profileApproved(){return isAdmin()||profile?.status==="approved";}
 function parseDate(v){if(v instanceof Date && !Number.isNaN(v.getTime()))return v.toISOString().slice(0,10); if(typeof v==="number"){const d=new Date(Math.round((v-25569)*86400*1000));if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10);} const s=String(v??"").trim(); if(!s)return ""; let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;m=s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);return m?`${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`:s;}
 function cleanHeader(v){return String(v??"").trim().replace(/\s+/g," ").toLowerCase();}
-const aliases={publicationid:["publication id","publicationid","result id"],examname:["exam name","examination name","exam"],examdate:["exam date","date of exam","date"],rollno:["roll no","roll no.","roll number","roll"],mobile:["mobile number","mobile","phone number","phone"],name:["name","candidate name","participant"],designation:["designation","post"],place:["place of posting","place","posting place"],total:["total marks","full marks","total"],obtained:["obtained marks","marks obtained","marks","score"],percentage:["percentage","%","percent"],rank:["rank","position"],status:["result / status","result/status","result","status"],remarks:["remarks","remark"]};
+const aliases={publicationid:["publication id","publicationid","result id"],examname:["exam name","examination name","exam"],examdate:["exam date","date of exam","date"],rollno:["roll no","roll no.","roll number","roll"],mobile:["mobile number","mobile","phone number","phone"],name:["name","student name","candidate name","candidate/student name","participant"],designation:["designation","post"],place:["place of posting","place","posting place"],total:["total marks","full marks","total"],obtained:["obtained marks","marks obtained","marks","score"],percentage:["percentage","%","percent"],rank:["overall rank","rank","position"],status:["result / status","result/status","result","status"],remarks:["remarks","remark"]};
 function getVal(row,map,key){for(const a of aliases[key]){const idx=map[cleanHeader(a)];if(idx!==undefined)return row[idx];}return "";}
 function detectSubjects(headers){
   const found={};
   headers.forEach((h,i)=>{const raw=String(h??"").trim(); const n=cleanHeader(raw);
-    let m=raw.match(/^(.+?)\s+marks$/i); if(m){const sub=m[1].trim(); (found[sub]??={}).marks=i; return;}
-    m=raw.match(/^(.+?)\s+grade$/i); if(m){const sub=m[1].trim(); (found[sub]??={}).grade=i; return;}
-    m=raw.match(/^(.+?)\s+rank$/i); if(m){const sub=m[1].trim(); (found[sub]??={}).rank=i; return;}
+    if(n.startsWith("overall ")) return;
+    let m=raw.match(/^(.+?)\s+marks$/i); if(m){const sub=m[1].trim(); if(cleanHeader(sub)!=="overall"){(found[sub]??={}).marks=i;} return;}
+    m=raw.match(/^(.+?)\s+grade$/i); if(m){const sub=m[1].trim(); if(cleanHeader(sub)!=="overall"){(found[sub]??={}).grade=i;} return;}
+    m=raw.match(/^(.+?)\s+rank$/i); if(m){const sub=m[1].trim(); if(cleanHeader(sub)!=="overall"){(found[sub]??={}).rank=i;} return;}
   });
   return Object.entries(found).filter(([_,v])=>v.marks!==undefined||v.grade!==undefined||v.rank!==undefined).map(([name,v])=>({name,...v}));
 }
@@ -29,7 +30,7 @@ async function readExcel(file){
  const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array",cellDates:true}); const ws=wb.Sheets[wb.SheetNames[0]];
  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""}); if(rows.length<2)throw new Error("The Excel file has no result rows.");
  const headers=rows[0]; const map={}; headers.forEach((h,i)=>map[cleanHeader(h)]=i);
- const required=["publicationid","examname","mobile","name"]; for(const k of required)if(!aliases[k].some(a=>map[cleanHeader(a)]!==undefined))throw new Error(`Missing required column: ${aliases[k][0]}`);
+ const required=["examname","mobile","name"]; for(const k of required)if(!aliases[k].some(a=>map[cleanHeader(a)]!==undefined))throw new Error(`Missing required column: ${k==="name"?"Student Name / Name":aliases[k][0]}`);
  const subjects=detectSubjects(headers);
  const out=[]; for(let i=1;i<rows.length;i++){const row=rows[i]; if(!row.some(x=>String(x??"").trim()))continue;
   let pub=String(getVal(row,map,"publicationid")??"").trim()||String($("publicationIdOverride").value||"").trim();

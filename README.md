@@ -34,3 +34,6 @@ Version 45: fixed Host Portal authentication persistence so Live Quiz Competitio
 - Participant Dashboard → Result → Result of Other Exam searches by mobile number only.
 - Participants can download an individual result or all their published Other Exam results as PDF.
 - Other Exam Results are separate from Quiz/MCQ/General Exam results.
+
+
+V53 FIX: Other Exam Result Excel upload now accepts "Student Name" (as used by the official template) and correctly treats "Overall Rank"/"Overall Grade" as overall fields rather than subject fields.
