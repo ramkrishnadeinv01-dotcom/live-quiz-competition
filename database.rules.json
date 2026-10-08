@@ -60,6 +60,12 @@
             ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
             ".write": "auth != null && auth.uid === $student && !data.exists()"
           }
+        },
+        "mcqLive": {
+          "$student": {
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".write": "auth != null && auth.uid === $student"
+          }
         }
       }
     }
