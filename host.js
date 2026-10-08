@@ -4,7 +4,8 @@ import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } 
 import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
-setPersistence(auth,browserLocalPersistence).catch(e=>console.error("Firebase auth persistence setup failed:",e));
+await setPersistence(auth,browserLocalPersistence);
+if (typeof auth.authStateReady === "function") await auth.authStateReady();
 const $=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 let uid=null, currentUser=null, hostProfile=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
@@ -505,13 +506,14 @@ $("registrationSubmitBtn").onclick=async()=>{try{
   if(password.length<6){msg("Password must be at least 6 characters.");return;}
   if(!/^[0-9+()\- ]{7,15}$/.test(phone)){msg("Please enter a valid phone number.");return;}
   $("registrationSubmitBtn").disabled=true;
+  await setPersistence(auth,browserLocalPersistence);
   const cred=await createUserWithEmailAndPassword(auth,email,password);
   const profile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()};
   await set(ref(db,`hosts/${cred.user.uid}`),profile);
   hostProfile={...profile,requestedAt:Date.now()};
   msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host registration submitted. Please wait for Administrator approval.");
 }catch(e){msg(e.message||String(e));$("registrationSubmitBtn").disabled=false;}};
-$("loginBtn").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(e){msg(e.message)}};
+$("loginBtn").onclick=async()=>{try{await setPersistence(auth,browserLocalPersistence);await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);}catch(e){msg(e.message)}};
 $("forgotPasswordBtn").onclick=async()=>{try{
   const email=$("email").value.trim().toLowerCase();
   if(!email){msg("Please enter your registered email address in the Email box first.");$("email").focus();return;}
