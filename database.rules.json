@@ -1,20 +1,19 @@
 {
   "rules": {
     "hosts": {
-      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))",
-        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (auth.uid === $uid && !data.exists() && newData.child('email').val() === auth.token.email && newData.child('status').val() === 'pending'))"
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
       }
     },
     "rooms": {
       "$room": {
         ".read": "auth != null",
-        ".write": "auth != null && ((data.exists() && data.child('hostUid').val() === auth.uid && (root.child('hosts').child(auth.uid).child('status').val() === 'approved' || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))) || (!data.exists() && newData.child('hostUid').val() === auth.uid && (root.child('hosts').child(auth.uid).child('status').val() === 'approved' || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))))",
+        ".write": "auth != null && (data.child('hostUid').val() === auth.uid || (!data.exists() && newData.child('hostUid').val() === auth.uid))",
         "participants": {
           "$student": {
             ".read": "auth != null",
-            ".write": "auth != null && !data.exists()"
+            ".write": "auth != null && ((auth.uid === $student && !data.exists()) || root.child('rooms').child($room).child('hostUid').val() === auth.uid)"
           }
         },
         "questions": {
@@ -27,7 +26,7 @@
           "$q": {
             "$student": {
               ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-              ".write": "auth != null && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()"
+              ".write": "auth != null && auth.uid === $student && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()"
             }
           }
         },
@@ -35,51 +34,19 @@
           "$student": {
             "$event": {
               ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-              ".write": "auth != null && !data.exists()"
+              ".write": "auth != null && auth.uid === $student && !data.exists()"
             }
           }
-        },
-        "mcqQuestions": {
-          "$q": {
-            ".read": "auth != null"
-          }
-        },
-        "mcqAnswers": {
-          "$student": {
-            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-            ".write": "auth != null && (!data.exists() || data.child('status').val() !== 'SUBMITTED' || data.child('runId').val() !== newData.child('runId').val() || data.child('authUid').val() === auth.uid)"
-          }
-        },
-        "generalQuestions": {
-          "$q": {
-            ".read": "auth != null"
-          }
-        },
-        "generalAnswers": {
-          "$student": {
-            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-            ".write": "auth != null && !data.exists()"
-          }
-        },
-        "mcqLive": {
-          "$student": {
-            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-            ".write": "auth != null"
-          }
         }
-      },
-      ".read": "auth != null && (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com' || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
-      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
-    },
-    "otherExamResults": {
-      "$phoneHash": {
-        ".read": "true",
-        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
       }
     },
-    "otherExamPublications": {
-      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
-      ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+    "hindiPakhwadaResults": {
+      ".read": false,
+      ".write": "auth != null",
+      "$phone": {
+        ".read": true,
+        ".write": "auth != null"
+      }
     }
   }
 }

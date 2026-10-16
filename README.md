@@ -1,56 +1,81 @@
-v13 - registration button fallback and cache refresh
+# Live Quiz Competition — Firebase + GitHub Pages
 
-# Live Quiz Competition — Competition Close Update
+This package is connected to the Firebase project shown during setup:
+**Hindi Question-Answer Platform**
 
-This version adds a final **CLOSE COMPETITION** control.
+## Files
+- `host.html` — host control panel
+- `student.html` — student panel
+- `host.js` / `student.js` — realtime quiz logic
+- `firebase-config.js` — your Firebase web configuration
+- `database.rules.json` — starter rules
+- `styles.css` — responsive UI
 
-## Competition closing behavior
-- Host Panel has a **🔒 CLOSE COMPETITION** button.
-- When the host closes the competition, the room is permanently marked `competitionClosed: true` for that quiz room.
-- New participants entering the room code are shown: **“This competition is closed. You cannot join this room now.”**
-- Participants already on the quiz screen immediately see: **“Competition Closed — This competition has been closed by the host. No further participation is allowed.”**
-- The participant screen clears the current question, timer, answer options and previous winner display, so the last-question winner is no longer shown after closure.
-- Question controls are locked after closure.
-- Excel export remains available to the host.
+## Before first use
 
-All existing timer, Word upload, winner/blocking, disqualification/unblock and Excel features are retained.
+### 1. Enable Firebase Authentication for the host
+Firebase Console → Build/Security → Authentication → Get started.
+Enable:
+- Email/Password (for host)
 
+Student SMS/OTP authentication is **not used** in this version, so Firebase phone-auth billing is not required for students.
 
-## Competition Close / Freeze
-After the host clicks CLOSE COMPETITION, the room enters competition_closed state. Participant anti-cheat events (leaving the page, tab switch, blur, fullscreen exit) are ignored after closure, so no participant can become newly disqualified after the competition has ended. Participant records, winners and disqualification lists remain frozen from client-side actions.
+### 2. Publish the rules
+Realtime Database → Rules → replace the rules with the contents of `database.rules.json` → Publish.
 
+IMPORTANT: These rules are a starting point. The host login is protected by Firebase Authentication, but for a high-stakes paid competition you should add stronger server-side winner adjudication (for example Cloud Functions/Admin SDK) before the event.
 
-V44: Host Portal redesigned with an elegant home/control centre. Live Quiz Competition moved to host-live-quiz.html; MCQ and General Exam Setup remain on their existing pages. Core Live Quiz functionality remains unchanged.
+### 3. Host
+Open `host.html` on your GitHub Pages site.
+Create a host account or sign in.
+Create a room, save all questions, then use:
+SHOW QUESTION → CLOSE ANSWERS → SHOW ANSWER & WINNER → NEXT QUESTION.
 
+### 4. Participants
+Give students the URL:
+`student.html`
+and the room code. They enter their **Name, Designation, Place of Posting and Mobile Number**. No OTP is sent. The same normalized mobile number can participate only once in a quiz room.
 
-Version 45: fixed Host Portal authentication persistence so Live Quiz Competition retains the signed-in host when navigating from Host Home.
+## Rules implemented
+- Host controls question release.
+- One answer per participant per question.
+- Participant identity is based on the normalized mobile number for that quiz room.
+- Only correct answers are eligible.
+- Fastest recorded server receipt is considered first.
+- Exact equal fastest server-receipt timestamps trigger random tie selection.
+- Once a participant wins a prize, they are blocked for the rest of that quiz.
+- Excel export is available from the host panel.
 
+## Important timing note
+The database records a Firebase server timestamp when the answer is written. The displayed elapsed time is also calculated in the browser from the question's opening timestamp. For a prize event where disputes must be impossible, use a server-side adjudicator/Cloud Function so the authoritative elapsed time and tie resolution cannot be altered by a browser.
 
-## v51 — Other Exam Result Publication
-- Added Host Portal → Other Exam Result Publication.
-- Added Excel template: `Other_Exam_Result_Upload_Template.xlsx`.
-- Approved hosts/Admin can upload one publication set at a time.
-- Excel rows are imported into Firebase under hashed mobile-number keys; the Excel file is not the live database after upload.
-- Participant Dashboard → Result → Result of Other Exam searches by mobile number only.
-- Participants can download an individual result or all their published Other Exam results as PDF.
-- Other Exam Results are separate from Quiz/MCQ/General Exam results.
-
-
-V53 FIX: Other Exam Result Excel upload now accepts "Student Name" (as used by the official template) and correctly treats "Overall Rank"/"Overall Grade" as overall fields rather than subject fields.
-
-
-## v55 — Other Exam Result Deletion
-- Added prominent Host Portal access to manage/delete Other Exam result publications.
-- Added a dedicated Delete Published Result section with publication selector.
-- Existing row-level DELETE buttons retained.
-- Deletion removes the publication metadata and all candidate result records belonging to that publication.
-- Firebase security remains restricted to approved hosts and administrator.
-
-## v56 Administrator Panel
-Added dedicated administrator.html / administrator.js for host approval. Administrator email: ramkrishnadeinv.01@gmail.com. Also fixed an Administrator email typo in host.js and added a direct Administrator Page launcher on Host Portal.
-
-
-V57 fix: Administrator Page launcher is always visible on Host Portal Home. Clicking it opens the dedicated Administrator page, which itself enforces the administrator email check. This allows the administrator to access the approval page even when the Host Portal is currently signed in as a normal host.
+## GitHub Pages
+Upload all files to a repository. Settings → Pages → Deploy from branch → main / root. Then use:
+`https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/host.html`
+for the host and:
+`https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/student.html`
+for students.
 
 
-V70 fixes: participant MCQ submission permission handling; approved-host room listing; robust MCQ create/save errors; restored direct athlete-wise live MCQ result access from Host Panel.
+## Host-controlled timer
+
+When creating a new quiz room, the Host can set **Time per Question (seconds)**. The default is 30 seconds. Before the first question is shown, the Host can also change the timer in the room settings and click **Update Timer**.
+
+When the Host clicks **SHOW QUESTION**, the timer starts. Participants see a countdown. When the time expires, the Host panel automatically closes the question and late submissions are rejected.
+
+
+The Host Panel now displays the configured timer prominently and changes it to the live countdown when a question is shown.
+
+
+The Host Panel separates two groups:
+- **Blocked Winners** — legitimate prize winners who are blocked from all remaining questions and are not treated as disqualified.
+- **Disqualified Participants** — participants blocked because of anti-cheating violations. The Host can use **UNBLOCK** when necessary; the previous violation history is retained.
+
+Excel export creates separate sheets for **Prize Winners**, **All Participants**, **Answer Log**, **Question Results**, **Blocked Winners**, and **Disqualified Participants**.
+
+
+## Hindi Pakhwada Examination–2026 personalised marksheets
+- Sign in to Host Panel and use **Hindi Pakhwada Result — Marksheets** to upload an Excel/CSV file. Download the provided template for the exact column names.
+- Required: a valid 10-digit Mobile Number column. Marks columns: Hindi Typing, Hindi Translation, Hindi Noting and Drafting, Hindi Essay Writing, Hindi Proofreading; each subject is out of 50. Total Marks, Name, Designation, Office/Section, Roll Number, Remarks and Rank are optional.
+- Participants open the Participant Panel, enter their registered mobile number in the Hindi Pakhwada Result section and download the personalised two-page PDF. The second page uses the uploaded appreciation page. Keep `assets/marksheet-1.png` and `assets/marksheet-2.png` in the `assets` folder.
+- **Firebase setup required:** publish the updated `database.rules.json` rules in Firebase Realtime Database → Rules. Results can be looked up without sign-in by phone number; phone-only lookup is not strong identity verification. A guessed phone number may expose that person's result. The current rules also allow signed-in accounts to upload/overwrite result records, so only share host sign-in access with trusted organisers. For stronger privacy, use a unique PIN and a trusted backend with rate limiting.
