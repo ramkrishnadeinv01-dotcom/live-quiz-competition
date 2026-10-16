@@ -33,8 +33,11 @@ function loadTemplateImage(src){return new Promise((resolve,reject)=>{const im=n
 function fitText(d,text,x,y,maxWidth,fontSize=5.3){d.setFontSize(fontSize);const t=String(text??'').trim();if(!t)return;const lines=d.splitTextToSize(t,maxWidth);d.text(lines.slice(0,1),x,y);}
 async function drawOfficialMarksheet(d,r){
  const [p1,p2]=await Promise.all([loadTemplateImage('hindi-pakhwada-page1.png'),loadTemplateImage('hindi-pakhwada-page2.png')]);
- const W=297,H=210, sx=W/p1.width, sy=H/p1.height;
- const px=(v)=>v*sx, py=(v)=>v*sy;
+ const W=297,H=210;
+ // Coordinates below are based on the original 1024x768 marksheet layout.
+ // The high-resolution template image is 1404x993, so scale overlay coordinates
+ // against the original layout rather than the template image dimensions.
+ const px=(v)=>v*(W/1024), py=(v)=>v*(H/768);
  d.addImage(p1.data,'PNG',0,0,W,H);
  d.setTextColor(20,30,60);d.setFont('helvetica','bold');
  // Participant particulars, positioned over the blank lines in the supplied original page 1.
