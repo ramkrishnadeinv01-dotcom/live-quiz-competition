@@ -20,7 +20,10 @@
     <button id="participantContinueBtn" class="success" style="margin-top:14px" type="button" onclick="quickParticipantContinue()">CONTINUE</button>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0">
       <p class="muted" style="margin:0 0 8px"><b>Checking a result from an examination conducted outside this portal?</b></p>
-      <button id="directOtherResultBtn" type="button" style="background:#7c3aed">📊 RESULT OF OTHER EXAM — SEARCH BY MOBILE NUMBER</button>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <button id="directOtherResultBtn" type="button" style="background:#7c3aed">📊 RESULT OF OTHER EXAM — SEARCH BY MOBILE NUMBER</button>
+        <button id="directHindiPakhwadaResultBtn" type="button" style="background:#b45309">🏅 HINDI PAKHWADA 2026 RESULT</button>
+      </div>
     </div>
     <p id="joinMsg"></p>
   </div>
@@ -100,6 +103,7 @@ function quickParticipantContinue(){
   document.getElementById('connection').textContent='Ready';
 }
 document.getElementById('directOtherResultBtn').onclick=function(){location.href='other-result.html';};
+document.getElementById('directHindiPakhwadaResultBtn').onclick=function(){location.href='hindi-pakhwada-result.html';};
 </script>
 <script type="module" src="student.js?v=20261008-71"></script>
 </body></html>
