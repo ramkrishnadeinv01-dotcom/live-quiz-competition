@@ -26,7 +26,7 @@
           "$q": {
             "$student": {
               ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-              ".write": "auth != null && auth.uid === $student && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()"
+             ".write": "auth != null && auth.uid === $student && !data.exists() && root.child('rooms').child($room).child('participants').child($student).child('blocked').val() != true"
             }
           }
         },
