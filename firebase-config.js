@@ -6,5 +6,5 @@ export const firebaseConfig = {
   projectId: "hindi-question-answer-platform",
   storageBucket: "hindi-question-answer-platform.firebasestorage.app",
   messagingSenderId: "186829322127",
-  appId: "1:186829322127:web:38d630a75e419b28f27dfa"
+  appId: "1:186829322127:web:38d63a75e419b28f27dfa"
 };
