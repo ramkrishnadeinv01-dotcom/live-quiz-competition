@@ -29,6 +29,35 @@ function drawMarksheet(d,r){const W=210,M=12;d.setFillColor(59,7,100);d.rect(0,0
  y += boxH + 7 + Math.max(0,resultLines.length-1)*4;
  if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(8);const rem=d.splitTextToSize(`Remarks: ${String(r.remarks)}`,W-2*M);d.text(rem,M,y);y+=Math.max(8,rem.length*4);}
  d.setFontSize(7);d.setTextColor(100,116,139);d.text(`Downloaded on ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`,M,289);}
-async function pdf(r){try{await ensureJspdf();const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4'});drawMarksheet(d,r);const safe=String(r.name||'Result').replace(/[^a-z0-9]+/gi,'_');d.save(`Hindi_Pakhwada_Marksheet_${safe}_${r.publicationId||''}.pdf`);}catch(e){alert(`PDF generation failed: ${e.message||e}`);}}
-async function allPdf(){if(!results.length)return;try{await ensureJspdf();const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4'});results.forEach((r,i)=>{if(i)d.addPage();drawMarksheet(d,r)});d.save('Hindi_Pakhwada_All_Marksheets.pdf');}catch(e){alert(`PDF generation failed: ${e.message||e}`);}}
+function loadTemplateImage(src){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);resolve({data:c.toDataURL('image/png'),width:im.naturalWidth,height:im.naturalHeight});};im.onerror=()=>reject(new Error(`Could not load marksheet template image: ${src}`));im.src=src;});}
+function fitText(d,text,x,y,maxWidth,fontSize=5.3){d.setFontSize(fontSize);const t=String(text??'').trim();if(!t)return;const lines=d.splitTextToSize(t,maxWidth);d.text(lines.slice(0,1),x,y);}
+async function drawOfficialMarksheet(d,r){
+ const [p1,p2]=await Promise.all([loadTemplateImage('hindi-pakhwada-page1.png'),loadTemplateImage('hindi-pakhwada-page2.png')]);
+ const W=297,H=210, sx=W/p1.width, sy=H/p1.height;
+ const px=(v)=>v*sx, py=(v)=>v*sy;
+ d.addImage(p1.data,'PNG',0,0,W,H);
+ d.setTextColor(20,30,60);d.setFont('helvetica','bold');
+ // Participant particulars, positioned over the blank lines in the supplied original page 1.
+ fitText(d,r.name,px(220),py(220),px(285),7);
+ fitText(d,r.designation,px(220),py(253),px(285),6.2);
+ fitText(d,r.rollNo,px(760),py(220),px(225),6.2);
+ fitText(d,r.placeOfPosting,px(760),py(253),px(225),6.2);
+ const rowY=[371,397,422,447,473];
+ const subjectRanks=Array.isArray(r.subjectRanks)?r.subjectRanks:[];
+ for(let i=0;i<5;i++){
+  const sr=subjectRanks[i]||{}; const y=py(rowY[i]);
+  d.setFont('helvetica','bold');d.setFontSize(6.2);
+  const own=sr.marks!==undefined&&sr.marks!==''?String(sr.marks):'';
+  if(own) d.text(own,px(303),y,{align:'center'});
+  const ranks=Array.isArray(sr.ranks)?sr.ranks:[];
+  const col=[{nameX:380,markX:547},{nameX:594,markX:755},{nameX:806,markX:968}];
+  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(j===0?145:145),4.6);if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(5.5);d.text(String(rr.marks),px(c.markX),y,{align:'center'});}});
+ }
+ d.setFont('helvetica','bold');d.setFontSize(7);d.text(String(r.obtainedMarks??''),px(265),py(519));
+ if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(5.3);fitText(d,r.remarks,px(600),py(519),px(370),5.3);}
+ // Keep the supplied appreciation page exactly as provided, without overlays.
+ d.addPage('a4','landscape');d.addImage(p2.data,'PNG',0,0,W,H);
+}
+async function pdf(r){try{await ensureJspdf();const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});await drawOfficialMarksheet(d,r);const safe=String(r.name||'Result').replace(/[^a-z0-9]+/gi,'_');d.save(`Hindi_Pakhwada_2026_Marksheet_${safe}.pdf`);}catch(e){alert(`PDF generation failed: ${e.message||e}`);}}
+async function allPdf(){if(!results.length)return;for(const r of results){await pdf(r);}}
 $("searchBtn").onclick=search;$("phone").onkeydown=e=>{if(e.key==='Enter')search();};$("allBtn").onclick=allPdf;$("backBtn").onclick=()=>location.href='student.html';

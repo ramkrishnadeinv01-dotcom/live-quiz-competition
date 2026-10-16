@@ -29,6 +29,40 @@ function detectSubjects(headers){
 async function readExcel(file){
  const data=await file.arrayBuffer(); const wb=XLSX.read(data,{type:"array",cellDates:true}); const ws=wb.Sheets[wb.SheetNames[0]];
  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:""}); if(rows.length<2)throw new Error("The Excel file has no result rows.");
+ // Hindi Pakhwada workbook has a merged title row, so its column headers are on row 2.
+ if(HINDI_MODE){
+  if(rows.length<3)throw new Error("The Hindi Pakhwada workbook has no candidate rows.");
+  const headers=rows[1].map(x=>String(x??"").trim()); const map={}; headers.forEach((h,i)=>map[cleanHeader(h)]=i);
+  const idx=(name)=>map[cleanHeader(name)]; const required=["Participant Mobile Number (Required)","Officer Name","Designation","Roll No. / Serial No.","Office / Department","Total Marks (/250)"];
+  for(const h of required)if(idx(h)===undefined)throw new Error(`Missing required column: ${h}`);
+  const subjects=[
+   {name:"Hindi Typing",marks:"Hindi Typing Marks (/50)"},
+   {name:"Hindi Translation",marks:"Hindi Translation Marks (/50)"},
+   {name:"Hindi Noting & Drafting",marks:"Hindi Noting & Drafting Marks (/50)"},
+   {name:"Hindi Essay Writing",marks:"Hindi Essay Writing Marks (/50)"},
+   {name:"Hindi Proofreading",marks:"Hindi Proofreading Marks (/50)"}
+  ];
+  const out=[]; for(let i=2;i<rows.length;i++){const row=rows[i]; if(!row.some(x=>String(x??"").trim()))continue;
+   const name=String(row[idx("Officer Name")]??"").trim(); if(/sample officer/i.test(name)||/sample row only/i.test(String(row[idx("Remarks")]??"")))continue;
+   const mobile=normalizePhone(row[idx("Participant Mobile Number (Required)")]); if(phoneDigits(mobile).length<10)throw new Error(`Row ${i+1}: enter a valid 10-digit participant mobile number.`);
+   const subjectRanks=[]; const subjectResults=[];
+   for(const sub of subjects){
+    if(idx(sub.marks)===undefined)throw new Error(`Missing required column: ${sub.marks}`);
+    const rankData=[]; for(let rank=1;rank<=3;rank++){
+     const nm=`${sub.name} Rank ${rank} Officer Name`, mk=`${sub.name} Rank ${rank} Marks (/50)`;
+     if(idx(nm)===undefined||idx(mk)===undefined)throw new Error(`Missing subject-rank columns for ${sub.name}, Rank ${rank}. Please use the supplied corrected template.`);
+     rankData.push({rank, name:String(row[idx(nm)]??"").trim(), marks:row[idx(mk)]===""?"":Number(row[idx(mk)])});
+    }
+    const own=row[idx(sub.marks)]===""?"":Number(row[idx(sub.marks)]);
+    subjectRanks.push({subject:sub.name, marks:own, ranks:rankData});
+    subjectResults.push({subject:sub.name,marks:own,rank:rankData.filter(x=>x.name).map(x=>`Rank ${x.rank}: ${x.name} (${x.marks}/50)`).join("; ")});
+   }
+   const total=Number(row[idx("Total Marks (/250)")]); const resultId=`r${String(i-1).padStart(5,"0")}`;
+   out.push({resultId,publicationId:HINDI_PUBLICATION_ID,examName:HINDI_EXAM_NAME,examDate:parseDate(idx("Exam Date (YYYY-MM-DD)")===undefined?"":row[idx("Exam Date (YYYY-MM-DD)")]),rollNo:String(row[idx("Roll No. / Serial No.")]??""),mobile,name,designation:String(row[idx("Designation")]??""),placeOfPosting:String(row[idx("Office / Department")]??""),totalMarks:250,obtainedMarks:Number.isFinite(total)?total:"",percentage:Number.isFinite(total)?(total/250*100).toFixed(2)+"%":"",rank:"",overallGrade:"",status:"Published",remarks:String(row[idx("Remarks")]??""),subjects:subjectResults,subjectRanks});
+  }
+  if(!out.length)throw new Error("No real participant rows found. Replace or delete the yellow sample row, then upload again.");
+  const seen=new Set();for(const r of out){const k=phoneDigits(r.mobile);if(seen.has(k))throw new Error(`Duplicate mobile number found: ${r.mobile}`);seen.add(k);}return out;
+ }
  const headers=rows[0]; const map={}; headers.forEach((h,i)=>map[cleanHeader(h)]=i);
  const required=["examname","mobile","name"]; for(const k of required)if(!aliases[k].some(a=>map[cleanHeader(a)]!==undefined))throw new Error(`Missing required column: ${k==="name"?"Student Name / Name":aliases[k][0]}`);
  const subjects=detectSubjects(headers);
