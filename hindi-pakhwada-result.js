@@ -32,7 +32,7 @@ function drawMarksheet(d,r){const W=210,M=12;d.setFillColor(59,7,100);d.rect(0,0
 function loadTemplateImage(src){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);resolve({data:c.toDataURL('image/png'),width:im.naturalWidth,height:im.naturalHeight});};im.onerror=()=>reject(new Error(`Could not load marksheet template image: ${src}`));im.src=src;});}
 function fitText(d,text,x,y,maxWidth,fontSize=5.3){d.setFontSize(fontSize);const t=String(text??'').trim();if(!t)return;const lines=d.splitTextToSize(t,maxWidth);d.text(lines.slice(0,1),x,y);}
 async function drawOfficialMarksheet(d,r){
- const [p1,p2]=await Promise.all([loadTemplateImage('hindi-pakhwada-page1.png'),loadTemplateImage('hindi-pakhwada-page2.png')]);
+ const [p1,p2]=await Promise.all([loadTemplateImage('hindi-pakhwada-page1.png?v=20261017-corrected-template'),loadTemplateImage('hindi-pakhwada-page2.png?v=20261017-corrected-template')]);
  // Compose page 1 on a browser canvas. Canvas uses the browser's Unicode text
  // shaping, so Hindi/Devanagari characters render correctly (jsPDF Helvetica does not).
  const img=new Image(); img.src=p1.data; await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;});
