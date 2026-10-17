@@ -90,11 +90,14 @@ async function drawOfficialMarksheet(d,r){
      }
    });
  });
- const panels=[{rank:1,cx:198,cy:618,w:250},{rank:2,cx:518,cy:618,w:250},{rank:3,cx:835,cy:618,w:250}];
+ const panels=[{rank:1,cx:198},{rank:2,cx:518},{rank:3,cx:835}];
+ // Put the subject name only in the printed blank between “आपने” and “में”.
+ // Keep a single consistent bold font size across all three prize panels and
+ // vertically centre it in that blank line so it does not touch the sentence below.
  panels.forEach(p=>{
    const subs=[...new Set(wins[p.rank])];if(!subs.length)return;
-   const label=subs.join('、');
-   centered(label,X(p.cx),Y(p.cy+7),X(p.w),23,{bold:true,minPx:14});
+   const label=subs.join(' / ');
+   centered(label,X(p.cx),Y(610),X(145),16,{bold:true,minPx:16});
  });
  const page1=canvas.toDataURL('image/png');
  d.addImage(page1,'PNG',0,0,297,210);
