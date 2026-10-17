@@ -30,7 +30,7 @@ function drawMarksheet(d,r){const W=210,M=12;d.setFillColor(59,7,100);d.rect(0,0
  if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(8);const rem=d.splitTextToSize(`Remarks: ${String(r.remarks)}`,W-2*M);d.text(rem,M,y);y+=Math.max(8,rem.length*4);}
  d.setFontSize(7);d.setTextColor(100,116,139);d.text(`Downloaded on ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`,M,289);}
 function loadTemplateImage(src){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);resolve({data:c.toDataURL('image/png'),width:im.naturalWidth,height:im.naturalHeight});};im.onerror=()=>reject(new Error(`Could not load marksheet template image: ${src}`));im.src=src;});}
-function fitText(d,text,x,y,maxWidth,fontSize=5.3){d.setFontSize(fontSize);const t=String(text??'').trim();if(!t)return;const lines=d.splitTextToSize(t,maxWidth);d.text(lines.slice(0,1),x,y);}
+function fitText(d,text,x,y,maxWidth,fontSize=7.4){const t=String(text??'').trim();if(!t)return;let size=fontSize;d.setFont('helvetica','normal');while(size>5.8){d.setFontSize(size);if(d.getTextWidth(t)<=maxWidth)break;size-=0.3;}d.setFontSize(size);d.text(t,x,y,{maxWidth});}
 async function drawOfficialMarksheet(d,r){
  const [p1,p2]=await Promise.all([loadTemplateImage('hindi-pakhwada-page1.png'),loadTemplateImage('hindi-pakhwada-page2.png')]);
  const W=297,H=210;
@@ -41,23 +41,23 @@ async function drawOfficialMarksheet(d,r){
  d.addImage(p1.data,'PNG',0,0,W,H);
  d.setTextColor(20,30,60);d.setFont('helvetica','bold');
  // Participant particulars, positioned over the blank lines in the supplied original page 1.
- fitText(d,r.name,px(220),py(220),px(285),7);
- fitText(d,r.designation,px(220),py(253),px(285),6.2);
- fitText(d,r.rollNo,px(760),py(220),px(225),6.2);
- fitText(d,r.placeOfPosting,px(760),py(253),px(225),6.2);
+ fitText(d,r.name,px(220),py(220),px(285),9.2);
+ fitText(d,r.designation,px(220),py(253),px(285),8.2);
+ fitText(d,r.rollNo,px(760),py(220),px(225),8.5);
+ fitText(d,r.placeOfPosting,px(760),py(253),px(225),8.0);
  const rowY=[371,397,422,447,473];
  const subjectRanks=Array.isArray(r.subjectRanks)?r.subjectRanks:[];
  for(let i=0;i<5;i++){
   const sr=subjectRanks[i]||{}; const y=py(rowY[i]);
-  d.setFont('helvetica','bold');d.setFontSize(6.2);
+  d.setFont('helvetica','bold');d.setFontSize(8.3);
   const own=sr.marks!==undefined&&sr.marks!==''?String(sr.marks):'';
   if(own) d.text(own,px(303),y,{align:'center'});
   const ranks=Array.isArray(sr.ranks)?sr.ranks:[];
   const col=[{nameX:380,markX:547},{nameX:594,markX:755},{nameX:806,markX:968}];
-  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(j===0?145:145),4.6);if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(5.5);d.text(String(rr.marks),px(c.markX),y,{align:'center'});}});
+  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(145),7.0);if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(7.8);d.text(String(rr.marks),px(c.markX),y,{align:'center'});}});
  }
- d.setFont('helvetica','bold');d.setFontSize(7);d.text(String(r.obtainedMarks??''),px(265),py(519));
- if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(5.3);fitText(d,r.remarks,px(600),py(519),px(370),5.3);}
+ d.setFont('helvetica','bold');d.setFontSize(9.2);d.text(String(r.obtainedMarks??''),px(265),py(519));
+ if(r.remarks){d.setFont('helvetica','normal');fitText(d,r.remarks,px(600),py(519),px(370),7.2);}
  // Keep the supplied appreciation page exactly as provided, without overlays.
  d.addPage('a4','landscape');d.addImage(p2.data,'PNG',0,0,W,H);
 }
