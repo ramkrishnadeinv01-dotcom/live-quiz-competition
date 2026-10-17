@@ -90,14 +90,28 @@ async function drawOfficialMarksheet(d,r){
      }
    });
  });
- const panels=[{rank:1,cx:198},{rank:2,cx:518},{rank:3,cx:835}];
- // Put the subject name only in the printed blank between “आपने” and “में”.
- // Keep a single consistent bold font size across all three prize panels and
- // vertically centre it in that blank line so it does not touch the sentence below.
+ const panels=[
+   // Centres are the actual blank spaces between the printed words “आपने” and “में”.
+   {rank:1,cx:243,maxW:108},
+   {rank:2,cx:563,maxW:108},
+   {rank:3,cx:883,maxW:108}
+ ];
+ // Keep the winner text on the existing blank line only. All three panels use
+ // the same bold font size; if a longer subject occurs, compress it horizontally
+ // within the blank rather than enlarging it or letting it overlap nearby words.
  panels.forEach(p=>{
    const subs=[...new Set(wins[p.rank])];if(!subs.length)return;
    const label=subs.join(' / ');
-   centered(label,X(p.cx),Y(610),X(145),16,{bold:true,minPx:16});
+   const fontPx=14, maxW=X(p.maxW), cx=X(p.cx), cy=Y(610);
+   ctx.save();
+   ctx.font=`700 ${fontPx}px Arial, "Noto Sans Devanagari", sans-serif`;
+   const measured=ctx.measureText(label).width;
+   const scaleX=Math.min(1,maxW/Math.max(1,measured));
+   ctx.translate(cx,cy);
+   ctx.scale(scaleX,1);
+   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#142044';
+   ctx.fillText(label,0,0);
+   ctx.restore();
  });
  const page1=canvas.toDataURL('image/png');
  d.addImage(page1,'PNG',0,0,297,210);
