@@ -30,17 +30,7 @@ function drawMarksheet(d,r){const W=210,M=12;d.setFillColor(59,7,100);d.rect(0,0
  if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(8);const rem=d.splitTextToSize(`Remarks: ${String(r.remarks)}`,W-2*M);d.text(rem,M,y);y+=Math.max(8,rem.length*4);}
  d.setFontSize(7);d.setTextColor(100,116,139);d.text(`Downloaded on ${new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST`,M,289);}
 function loadTemplateImage(src){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;c.getContext('2d').drawImage(im,0,0);resolve({data:c.toDataURL('image/png'),width:im.naturalWidth,height:im.naturalHeight});};im.onerror=()=>reject(new Error(`Could not load marksheet template image: ${src}`));im.src=src;});}
-function fitText(d,text,x,y,maxWidth,fontSize=8.6,align='left'){
- const t=String(text??'').trim(); if(!t)return;
- let size=fontSize;
- d.setFont('helvetica','bold');
- while(size>6.2){d.setFontSize(size);if(d.getTextWidth(t)<=maxWidth)break;size-=0.25;}
- d.setFontSize(size);
- // Use the actual vertical centre of the field, not the top edge/baseline.
- const opts={maxWidth,baseline:'middle'};
- if(align==='center'){opts.align='center';d.text(t,x+maxWidth/2,y,opts);}
- else d.text(t,x,y,opts);
-}
+function fitText(d,text,x,y,maxWidth,fontSize=5.3){d.setFontSize(fontSize);const t=String(text??'').trim();if(!t)return;const lines=d.splitTextToSize(t,maxWidth);d.text(lines.slice(0,1),x,y);}
 async function drawOfficialMarksheet(d,r){
  const [p1,p2]=await Promise.all([loadTemplateImage('hindi-pakhwada-page1.png'),loadTemplateImage('hindi-pakhwada-page2.png')]);
  const W=297,H=210;
@@ -51,23 +41,55 @@ async function drawOfficialMarksheet(d,r){
  d.addImage(p1.data,'PNG',0,0,W,H);
  d.setTextColor(20,30,60);d.setFont('helvetica','bold');
  // Participant particulars, positioned over the blank lines in the supplied original page 1.
- fitText(d,r.name,px(220),py(220),px(285),10.5);
- fitText(d,r.designation,px(220),py(253),px(285),9.0);
- fitText(d,r.rollNo,px(760),py(220),px(225),9.2);
- fitText(d,r.placeOfPosting,px(760),py(253),px(225),8.8);
+ fitText(d,r.name,px(220),py(220),px(285),7);
+ fitText(d,r.designation,px(220),py(253),px(285),6.2);
+ fitText(d,r.rollNo,px(760),py(220),px(225),6.2);
+ fitText(d,r.placeOfPosting,px(760),py(253),px(225),6.2);
  const rowY=[371,397,422,447,473];
  const subjectRanks=Array.isArray(r.subjectRanks)?r.subjectRanks:[];
  for(let i=0;i<5;i++){
   const sr=subjectRanks[i]||{}; const y=py(rowY[i]);
-  d.setFont('helvetica','bold');d.setFontSize(10.2);
+  d.setFont('helvetica','bold');d.setFontSize(6.2);
   const own=sr.marks!==undefined&&sr.marks!==''?String(sr.marks):'';
-  if(own) d.text(own,px(303),y,{align:'center',baseline:'middle'});
+  if(own) d.text(own,px(303),y,{align:'center'});
   const ranks=Array.isArray(sr.ranks)?sr.ranks:[];
   const col=[{nameX:380,markX:547},{nameX:594,markX:755},{nameX:806,markX:968}];
-  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(145),9.0,'center');if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(10.0);d.text(String(rr.marks),px(c.markX),y,{align:'center',baseline:'middle'});}});
+  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(j===0?145:145),4.6);if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(5.5);d.text(String(rr.marks),px(c.markX),y,{align:'center'});}});
  }
- d.setFont('helvetica','bold');d.setFontSize(10.2);d.text(String(r.obtainedMarks??''),px(265),py(519),{align:'center',baseline:'middle'});
- if(r.remarks){d.setFont('helvetica','normal');fitText(d,r.remarks,px(600),py(519),px(370),8.5);}
+ d.setFont('helvetica','bold');d.setFontSize(7);d.text(String(r.obtainedMarks??''),px(265),py(519));
+ if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(5.3);fitText(d,r.remarks,px(600),py(519),px(370),5.3);}
+ // Fill the three award congratulation panels with the subjects this participant won.
+ // A participant may win more than one prize, including prizes in different subjects.
+ const subjectHindi={
+  'Hindi Typing':'हिंदी टाइपिंग','Hindi Translation':'हिंदी अनुवाद',
+  'Hindi Noting & Drafting':'हिंदी नोटिंग एवं प्रारूप लेखन',
+  'Hindi Essay Writing':'हिंदी निबंध लेखन','Hindi Proofreading':'हिंदी शुद्धलेखन',
+  'Hindi Typing Test':'हिंदी टाइपिंग','Hindi Noting and Drafting':'हिंदी नोटिंग एवं प्रारूप लेखन',
+  'Hindi Proof Reading':'हिंदी शुद्धलेखन'
+ };
+ const normName=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase();
+ const wins={1:[],2:[],3:[]};
+ subjectRanks.forEach(sr=>{
+   const subject=String(sr.subject||sr.subjectName||'').trim();
+   (Array.isArray(sr.ranks)?sr.ranks:[]).forEach((rr,idx)=>{
+     if(normName(rr.name)===normName(r.name) && idx<3){
+       const rank=Number(rr.rank)||idx+1;
+       if(rank>=1&&rank<=3) wins[rank].push(subjectHindi[subject]||subject);
+     }
+   });
+ });
+ const awardPanels=[
+   {rank:1,x:45,w:305,y:618},
+   {rank:2,x:365,w:305,y:618},
+   {rank:3,x:682,w:305,y:618}
+ ];
+ awardPanels.forEach(panel=>{
+   const subjects=[...new Set(wins[panel.rank])];
+   if(!subjects.length)return;
+   const label=subjects.join('、');
+   d.setTextColor(25,35,65);d.setFont('helvetica','bold');d.setFontSize(7.2);
+   fitText(d,label,px(panel.x),py(panel.y),px(panel.w),7.2);
+ });
  // Keep the supplied appreciation page exactly as provided, without overlays.
  d.addPage('a4','landscape');d.addImage(p2.data,'PNG',0,0,W,H);
 }
