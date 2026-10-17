@@ -33,65 +33,72 @@ function loadTemplateImage(src){return new Promise((resolve,reject)=>{const im=n
 function fitText(d,text,x,y,maxWidth,fontSize=5.3){d.setFontSize(fontSize);const t=String(text??'').trim();if(!t)return;const lines=d.splitTextToSize(t,maxWidth);d.text(lines.slice(0,1),x,y);}
 async function drawOfficialMarksheet(d,r){
  const [p1,p2]=await Promise.all([loadTemplateImage('hindi-pakhwada-page1.png'),loadTemplateImage('hindi-pakhwada-page2.png')]);
- const W=297,H=210;
- // Coordinates below are based on the original 1024x768 marksheet layout.
- // The high-resolution template image is 1404x993, so scale overlay coordinates
- // against the original layout rather than the template image dimensions.
- const px=(v)=>v*(W/1024), py=(v)=>v*(H/768);
- d.addImage(p1.data,'PNG',0,0,W,H);
- d.setTextColor(20,30,60);d.setFont('helvetica','bold');
- // Participant particulars, positioned over the blank lines in the supplied original page 1.
- fitText(d,r.name,px(220),py(225),px(285),10.5);
- fitText(d,r.designation,px(220),py(258),px(285),9.5);
- fitText(d,r.rollNo,px(760),py(225),px(225),9.5);
- fitText(d,r.placeOfPosting,px(760),py(258),px(225),9.5);
- const rowY=[371,397,422,447,473];
- const subjectRanks=Array.isArray(r.subjectRanks)?r.subjectRanks:[];
- for(let i=0;i<5;i++){
-  const sr=subjectRanks[i]||{}; const y=py(rowY[i]+5);
-  d.setFont('helvetica','bold');d.setFontSize(9.0);
-  const own=sr.marks!==undefined&&sr.marks!==''?String(sr.marks):'';
-  if(own) d.text(own,px(303),y,{align:'center'});
-  const ranks=Array.isArray(sr.ranks)?sr.ranks:[];
-  const col=[{nameX:380,markX:547},{nameX:594,markX:755},{nameX:806,markX:968}];
-  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(145),8.0);if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(8.5);d.text(String(rr.marks),px(c.markX),y,{align:'center'});}});
+ // Compose page 1 on a browser canvas. Canvas uses the browser's Unicode text
+ // shaping, so Hindi/Devanagari characters render correctly (jsPDF Helvetica does not).
+ const img=new Image(); img.src=p1.data; await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;});
+ const canvas=document.createElement('canvas'); canvas.width=img.naturalWidth; canvas.height=img.naturalHeight;
+ const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0);
+ const sx=canvas.width/1024, sy=canvas.height/768;
+ const X=v=>v*sx, Y=v=>v*sy;
+ function centered(text,cx,cy,maxW,fontPx,{bold=true,minPx=18}={}){
+   text=String(text??'').trim(); if(!text)return;
+   let size=fontPx; ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#142044';
+   while(size>minPx){ctx.font=`${bold?'700':'400'} ${size}px Arial, "Noto Sans Devanagari", sans-serif`; if(ctx.measureText(text).width<=maxW)break;size-=1;}
+   ctx.font=`${bold?'700':'400'} ${size}px Arial, "Noto Sans Devanagari", sans-serif`;
+   ctx.save();ctx.beginPath();ctx.rect(cx-maxW/2,cy-30,maxW,60);ctx.clip();ctx.fillText(text,cx,cy);ctx.restore();
  }
- d.setFont('helvetica','bold');d.setFontSize(10);d.text(String(r.obtainedMarks??''),px(265),py(523));
- if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(5.3);fitText(d,r.remarks,px(600),py(523),px(370),8.5);}
- // Fill the three award congratulation panels with the subjects this participant won.
- // A participant may win more than one prize, including prizes in different subjects.
+ function leftFit(text,x,cy,maxW,fontPx,{bold=true,minPx=16}={}){
+   text=String(text??'').trim();if(!text)return;let size=fontPx;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#142044';
+   while(size>minPx){ctx.font=`${bold?'700':'400'} ${size}px Arial, "Noto Sans Devanagari", sans-serif`;if(ctx.measureText(text).width<=maxW)break;size-=1;}
+   ctx.font=`${bold?'700':'400'} ${size}px Arial, "Noto Sans Devanagari", sans-serif`;
+   ctx.save();ctx.beginPath();ctx.rect(x,cy-30,maxW,60);ctx.clip();ctx.fillText(text,x,cy);ctx.restore();
+ }
+ // Participant particulars: text is centred vertically on each printed field line.
+ leftFit(r.name,X(222),Y(225),X(335),27,{bold:true,minPx:18});
+ leftFit(r.designation,X(222),Y(258),X(335),24,{bold:true,minPx:17});
+ centered(r.rollNo,X(865),Y(225),X(205),24,{bold:true,minPx:17});
+ centered(r.placeOfPosting,X(865),Y(258),X(205),22,{bold:true,minPx:16});
+ const rowY=[371,397,422,447,473], subjectRanks=Array.isArray(r.subjectRanks)?r.subjectRanks:[];
+ const cols=[{nameX:463,markX:547},{nameX:676,markX:755},{nameX:884,markX:968}];
+ for(let i=0;i<5;i++){
+   const sr=subjectRanks[i]||{};const cy=Y(rowY[i]+5);
+   if(sr.marks!==undefined&&sr.marks!=='')centered(sr.marks,X(303),cy,X(72),22,{bold:true,minPx:17});
+   (Array.isArray(sr.ranks)?sr.ranks:[]).forEach((rr,j)=>{
+     const c=cols[j];if(!c)return;
+     // Names and marks use identical base font sizes; long names shrink only as needed.
+     centered(rr.name,X(c.nameX-70),cy,X(145),19,{bold:true,minPx:13});
+     if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null)centered(rr.marks,X(c.markX),cy,X(60),20,{bold:true,minPx:16});
+   });
+ }
+ centered(r.obtainedMarks??'',X(265),Y(523),X(95),23,{bold:true,minPx:17});
+ if(r.remarks)leftFit(r.remarks,X(600),Y(523),X(370),17,{bold:false,minPx:12});
+ // Prize panels: find the subject(s) where this participant appears as rank 1/2/3.
  const subjectHindi={
-  'Hindi Typing':'हिंदी टाइपिंग','Hindi Translation':'हिंदी अनुवाद',
-  'Hindi Noting & Drafting':'हिंदी नोटिंग एवं प्रारूप लेखन',
-  'Hindi Essay Writing':'हिंदी निबंध लेखन','Hindi Proofreading':'हिंदी शुद्धलेखन',
-  'Hindi Typing Test':'हिंदी टाइपिंग','Hindi Noting and Drafting':'हिंदी नोटिंग एवं प्रारूप लेखन',
-  'Hindi Proof Reading':'हिंदी शुद्धलेखन'
+  'hindi typing':'हिंदी टाइपिंग','hindi translation':'हिंदी अनुवाद',
+  'hindi noting & drafting':'हिंदी नोटिंग एवं प्रारूप लेखन','hindi noting and drafting':'हिंदी नोटिंग एवं प्रारूप लेखन',
+  'hindi essay writing':'हिंदी निबंध लेखन','hindi proofreading':'हिंदी शुद्धलेखन','hindi proof reading':'हिंदी शुद्धलेखन',
+  'hindi typing test':'हिंदी टाइपिंग'
  };
- const normName=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase();
+ const clean=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase();
  const wins={1:[],2:[],3:[]};
  subjectRanks.forEach(sr=>{
    const subject=String(sr.subject||sr.subjectName||'').trim();
    (Array.isArray(sr.ranks)?sr.ranks:[]).forEach((rr,idx)=>{
-     if(normName(rr.name)===normName(r.name) && idx<3){
+     if(clean(rr.name)===clean(r.name)){
        const rank=Number(rr.rank)||idx+1;
-       if(rank>=1&&rank<=3) wins[rank].push(subjectHindi[subject]||subject);
+       if(rank>=1&&rank<=3)wins[rank].push(subjectHindi[clean(subject)]||subject);
      }
    });
  });
- const awardPanels=[
-   {rank:1,x:45,w:305,y:618},
-   {rank:2,x:365,w:305,y:618},
-   {rank:3,x:682,w:305,y:618}
- ];
- awardPanels.forEach(panel=>{
-   const subjects=[...new Set(wins[panel.rank])];
-   if(!subjects.length)return;
-   const label=subjects.join('、');
-   d.setTextColor(25,35,65);d.setFont('helvetica','bold');d.setFontSize(10);
-   fitText(d,label,px(panel.x),py(panel.y+7),px(panel.w),10);
+ const panels=[{rank:1,cx:198,cy:618,w:250},{rank:2,cx:518,cy:618,w:250},{rank:3,cx:835,cy:618,w:250}];
+ panels.forEach(p=>{
+   const subs=[...new Set(wins[p.rank])];if(!subs.length)return;
+   const label=subs.join('、');
+   centered(label,X(p.cx),Y(p.cy+7),X(p.w),23,{bold:true,minPx:14});
  });
- // Keep the supplied appreciation page exactly as provided, without overlays.
- d.addPage('a4','landscape');d.addImage(p2.data,'PNG',0,0,W,H);
+ const page1=canvas.toDataURL('image/png');
+ d.addImage(page1,'PNG',0,0,297,210);
+ d.addPage('a4','landscape');d.addImage(p2.data,'PNG',0,0,297,210);
 }
 async function pdf(r){try{await ensureJspdf();const {jsPDF}=window.jspdf;const d=new jsPDF({unit:'mm',format:'a4',orientation:'landscape'});await drawOfficialMarksheet(d,r);const safe=String(r.name||'Result').replace(/[^a-z0-9]+/gi,'_');d.save(`Hindi_Pakhwada_2026_Marksheet_${safe}.pdf`);}catch(e){alert(`PDF generation failed: ${e.message||e}`);}}
 async function allPdf(){if(!results.length)return;for(const r of results){await pdf(r);}}
