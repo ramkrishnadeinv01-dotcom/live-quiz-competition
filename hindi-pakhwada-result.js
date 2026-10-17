@@ -41,23 +41,23 @@ async function drawOfficialMarksheet(d,r){
  d.addImage(p1.data,'PNG',0,0,W,H);
  d.setTextColor(20,30,60);d.setFont('helvetica','bold');
  // Participant particulars, positioned over the blank lines in the supplied original page 1.
- fitText(d,r.name,px(220),py(220),px(285),7);
- fitText(d,r.designation,px(220),py(253),px(285),6.2);
- fitText(d,r.rollNo,px(760),py(220),px(225),6.2);
- fitText(d,r.placeOfPosting,px(760),py(253),px(225),6.2);
+ fitText(d,r.name,px(220),py(225),px(285),10.5);
+ fitText(d,r.designation,px(220),py(258),px(285),9.5);
+ fitText(d,r.rollNo,px(760),py(225),px(225),9.5);
+ fitText(d,r.placeOfPosting,px(760),py(258),px(225),9.5);
  const rowY=[371,397,422,447,473];
  const subjectRanks=Array.isArray(r.subjectRanks)?r.subjectRanks:[];
  for(let i=0;i<5;i++){
-  const sr=subjectRanks[i]||{}; const y=py(rowY[i]);
-  d.setFont('helvetica','bold');d.setFontSize(6.2);
+  const sr=subjectRanks[i]||{}; const y=py(rowY[i]+5);
+  d.setFont('helvetica','bold');d.setFontSize(9.0);
   const own=sr.marks!==undefined&&sr.marks!==''?String(sr.marks):'';
   if(own) d.text(own,px(303),y,{align:'center'});
   const ranks=Array.isArray(sr.ranks)?sr.ranks:[];
   const col=[{nameX:380,markX:547},{nameX:594,markX:755},{nameX:806,markX:968}];
-  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(j===0?145:145),4.6);if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(5.5);d.text(String(rr.marks),px(c.markX),y,{align:'center'});}});
+  ranks.forEach((rr,j)=>{const c=col[j];if(!c)return;d.setFont('helvetica','normal');fitText(d,rr.name,px(c.nameX),y,px(145),8.0);if(rr.marks!==''&&rr.marks!==undefined&&rr.marks!==null){d.setFont('helvetica','bold');d.setFontSize(8.5);d.text(String(rr.marks),px(c.markX),y,{align:'center'});}});
  }
- d.setFont('helvetica','bold');d.setFontSize(7);d.text(String(r.obtainedMarks??''),px(265),py(519));
- if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(5.3);fitText(d,r.remarks,px(600),py(519),px(370),5.3);}
+ d.setFont('helvetica','bold');d.setFontSize(10);d.text(String(r.obtainedMarks??''),px(265),py(523));
+ if(r.remarks){d.setFont('helvetica','normal');d.setFontSize(5.3);fitText(d,r.remarks,px(600),py(523),px(370),8.5);}
  // Fill the three award congratulation panels with the subjects this participant won.
  // A participant may win more than one prize, including prizes in different subjects.
  const subjectHindi={
@@ -87,8 +87,8 @@ async function drawOfficialMarksheet(d,r){
    const subjects=[...new Set(wins[panel.rank])];
    if(!subjects.length)return;
    const label=subjects.join('、');
-   d.setTextColor(25,35,65);d.setFont('helvetica','bold');d.setFontSize(7.2);
-   fitText(d,label,px(panel.x),py(panel.y),px(panel.w),7.2);
+   d.setTextColor(25,35,65);d.setFont('helvetica','bold');d.setFontSize(10);
+   fitText(d,label,px(panel.x),py(panel.y+7),px(panel.w),10);
  });
  // Keep the supplied appreciation page exactly as provided, without overlays.
  d.addPage('a4','landscape');d.addImage(p2.data,'PNG',0,0,W,H);
