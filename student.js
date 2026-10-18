@@ -3,6 +3,16 @@ import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/1
 import { getDatabase, ref, get, runTransaction, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
+
+// Browser Back from the participant dashboard logs the participant out.
+window.addEventListener("popstate", () => {
+  sessionStorage.removeItem("quizParticipant");
+  sessionStorage.removeItem("mcqRoom");
+  sessionStorage.removeItem("generalRoom");
+  sessionStorage.removeItem("participantResultRoom");
+  sessionStorage.removeItem("participantResultPhone");
+});
+
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const authReady=signInAnonymously(auth).catch(e=>{console.error("Participant anonymous authentication failed",e);return null;});
 const $=id=>document.getElementById(id);
