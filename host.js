@@ -5,29 +5,29 @@ import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 
-// Browser Back behaviour for the Host Portal:
-// - Back from #liveQuiz returns to the host home without a logout prompt.
-// - Every Back attempt from the host home asks before logging out.
-// - The history guard is re-armed BEFORE showing the prompt, so Cancel and
-//   repeated Back presses (including after a refresh) remain on the host home.
+// Browser Back behaviour for the Host Portal home page:
+// - Back from #liveQuiz returns to the home view without asking to log out.
+// - Back from the home view asks before signing out.
+// - Cancel restores a same-page history entry so the user stays on the home view.
 let hostPortalLastHash = location.hash;
 let hostPortalBackPromptOpen = false;
+let hostPortalHomeGuardInstalled = false;
 function installHostPortalHomeGuard(){
   if (location.hash) return;
   try {
-    history.pushState({ hostPortalHomeGuard: true, guardTime: Date.now() }, "", location.href);
-  } catch (e) {
-    console.warn("Could not install Host Portal history guard", e);
-  }
+    history.pushState({ hostPortalHomeGuard: true }, "", location.href);
+    hostPortalHomeGuardInstalled = true;
+  } catch (e) { console.warn("Could not install Host Portal history guard", e); }
 }
-// Install immediately when opened on the home view. If opened directly on the
-// Live Quiz view, the guard is installed when the home view is reached.
 installHostPortalHomeGuard();
 window.addEventListener("hashchange", () => {
   const previousHash = hostPortalLastHash;
   hostPortalLastHash = location.hash;
-  // Returning to the home hash by an in-page control is not a logout attempt.
-  if (location.hash === "" && previousHash !== "") {
+  // If the Live Quiz hash was removed by Back, this is an in-portal navigation.
+  // Do not show the logout prompt; the home guard entry remains in history.
+  if (previousHash === "#liveQuiz" && location.hash === "") {
+    hostPortalHomeGuardInstalled = true;
+  } else if (location.hash === "" && !hostPortalHomeGuardInstalled) {
     installHostPortalHomeGuard();
   }
 });
@@ -35,19 +35,13 @@ window.addEventListener("popstate", async () => {
   const previousHash = hostPortalLastHash;
   const currentHash = location.hash;
   hostPortalLastHash = currentHash;
-
-  // Back from Live Quiz to home is internal navigation. Re-arm the guard and
-  // do not show a logout prompt. The following Back press will prompt.
+  // Back from Live Quiz to the Host Portal home view is not a logout attempt.
   if (previousHash === "#liveQuiz" && currentHash === "") {
-    installHostPortalHomeGuard();
+    hostPortalHomeGuardInstalled = true;
     return;
   }
+  // The prompt is only for leaving the Host Portal home view.
   if (currentHash !== "" || hostPortalBackPromptOpen) return;
-
-  // A Back press on home consumes the prior guard entry. Re-arm it immediately,
-  // before opening the synchronous confirmation dialog, so it remains armed
-  // whether the user cancels or the page is refreshed afterwards.
-  installHostPortalHomeGuard();
   hostPortalBackPromptOpen = true;
   const confirmLogout = window.confirm("Do you want to log out?");
   if (confirmLogout) {
@@ -60,6 +54,10 @@ window.addEventListener("popstate", async () => {
     location.replace("./index.html");
     return;
   }
+  try {
+    history.pushState({ hostPortalHomeGuard: true }, "", location.href);
+    hostPortalHomeGuardInstalled = true;
+  } catch (e) { console.warn("Could not restore Host Portal history guard", e); }
   hostPortalBackPromptOpen = false;
 });
 
