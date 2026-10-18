@@ -8,10 +8,19 @@ import { firebaseConfig } from "./firebase-config.js";
 // Keep this behaviour limited to host.html; other host modules are not modified.
 let hostBackPromptOpen = false;
 function installHostBackLogoutGuard(){
-  try { history.pushState({ hostLogoutGuard: true }, "", location.href); } catch (_) {}
+  // Remember this page's own URL. After a Back action, location.href may already
+  // refer to an older history entry (for example, host-general.html).
+  const hostPageUrl = `${location.pathname}${location.search}`;
+  const addGuardEntry = () => {
+    try { history.pushState({ hostLogoutGuard: true }, "", hostPageUrl); } catch (_) {}
+  };
+  addGuardEntry();
   window.addEventListener("popstate", async () => {
     if (hostBackPromptOpen) return;
     hostBackPromptOpen = true;
+    // Restore the host.html URL immediately so Cancel never leaves the browser
+    // pointing at an earlier host module.
+    addGuardEntry();
     const confirmLogout = window.confirm("Do you want to log out?");
     if (confirmLogout) {
       try {
@@ -20,12 +29,9 @@ function installHostBackLogoutGuard(){
       } catch (e) {
         console.error("Host sign-out failed:", e);
       }
-      // Replace the current history entry so Back does not reopen the authenticated panel.
       location.replace("./index.html");
       return;
     }
-    // Cancel: stay on host.html and create a fresh guard entry for the next Back click.
-    try { history.pushState({ hostLogoutGuard: true }, "", location.href); } catch (_) {}
     hostBackPromptOpen = false;
   });
 }
