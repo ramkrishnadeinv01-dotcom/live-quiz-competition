@@ -1,8 +1,24 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id),ADMIN="ramkrishnadeinv.01@gmail.com";let uid=null,room="",questions=[];
+// Browser Back on Host General asks for confirmation before signing out.
+// Choosing No restores this page in history; choosing Yes signs out and opens the Host Home page.
+const hostGeneralBackGuardKey = "hostGeneralBackGuard";
+if (!history.state || !history.state[hostGeneralBackGuardKey]) {
+  history.pushState({ ...(history.state || {}), [hostGeneralBackGuardKey]: true }, "", location.href);
+}
+window.addEventListener("popstate", async () => {
+  const confirmLogout = window.confirm("Do you want to log out?\n\nClick OK to log out, or Cancel to stay on the Host General page.");
+  if (confirmLogout) {
+    try { await signOut(auth); } catch (e) { console.error("Host logout failed:", e); }
+    location.replace("host.html");
+  } else {
+    history.pushState({ ...(history.state || {}), [hostGeneralBackGuardKey]: true }, "", location.href);
+  }
+});
+
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}function msg(t,cls=""){$("msg").textContent=t;$("msg").className="status "+cls;}function isAdmin(u){return String(u?.email||"").toLowerCase()===ADMIN;}async function access(u){if(!u)return false;if(isAdmin(u))return true;const s=await get(ref(db,`hosts/${u.uid}`));return s.exists()&&s.val()?.status==="approved";}function code(){const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let x="";for(let i=0;i<6;i++)x+=c[Math.floor(Math.random()*c.length)];return x;}function fmt(ts){if(!ts)return"—";return new Date(Number(ts)).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",dateStyle:"medium",timeStyle:"short"})+" IST";}function st(r){return String(r?.examStatus||"NOT STARTED").toUpperCase();}
 function render(){const n=Math.max(1,Math.min(100,Number($("count").value||10)));questions=Array.from({length:n},(_,i)=>questions[i]||{text:""});$("questions").innerHTML=questions.map((q,i)=>`<div class="qbox"><h3>Question ${i+1}</h3><div class="field"><label>Question *</label><textarea id="q_${i}" rows="5" style="width:100%;box-sizing:border-box">${esc(q.text)}</textarea></div></div>`).join("");}function collect(){return questions.map((_,i)=>({text:$("q_"+i).value.trim()}));}
 async function refreshRooms(){const s=await get(ref(db,"rooms"));const sel=$("roomSelect");sel.innerHTML='<option value="">-- Select existing General Question room --</option>';if(s.exists())Object.entries(s.val()||{}).filter(([k,r])=>r&&r.examType==="general").sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0)).forEach(([k,r])=>{const o=document.createElement("option");o.value=k;o.textContent=`${k} — ${r.generalTitle||r.title||"General Exam"} — ${st(r)}`;sel.appendChild(o);});msg("General exam rooms refreshed.","live");}
