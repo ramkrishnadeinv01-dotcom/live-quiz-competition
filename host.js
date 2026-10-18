@@ -4,26 +4,33 @@ import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } 
 import { firebaseConfig } from "./firebase-config.js";
 
 
-// Host page browser Back button: ask before signing out.
-// Keep this behaviour limited to host.html; other host modules are not modified.
+// Host page browser Back button: always confirm before leaving host.html.
+// This guard is intentionally limited to host.html; other host modules are untouched.
 let hostBackPromptOpen = false;
-function installHostBackLogoutGuard(){
-  // Remember this page's own URL. After a Back action, location.href may already
-  // refer to an older history entry (for example, host-general.html).
-  // Preserve the complete current URL (including a hash such as #liveQuiz).
-  const hostPageUrl = location.href;
-  const addGuardEntry = () => {
-    try { history.pushState({ hostLogoutGuard: true, url: hostPageUrl }, "", hostPageUrl); } catch (_) {}
-  };
-  // Seed more than one same-page entry. This protects against the browser
-  // consuming the only guard entry after a Cancel or page refresh.
-  addGuardEntry();
-  addGuardEntry();
+let hostGuardUrl = location.href;
+function seedHostBackEntries(count = 6) {
+  // Always push entries for this host page, never for the page that Back reached.
+  for (let i = 0; i < count; i++) {
+    try { history.pushState({ hostLogoutGuard: true, seq: i }, "", hostGuardUrl); }
+    catch (e) { console.warn("Could not add Host Portal history guard:", e); break; }
+  }
+}
+function installHostBackLogoutGuard() {
+  // Seed several entries on every fresh load/show so browser refresh does not
+  // leave only one guard entry before an older host-general.html entry.
+  seedHostBackEntries(6);
+  window.addEventListener("pageshow", () => {
+    if (!hostBackPromptOpen) seedHostBackEntries(6);
+  });
+  // Track in-page hash navigation while keeping the guard on host.html.
+  window.addEventListener("hashchange", () => {
+    hostGuardUrl = location.href;
+  });
   window.addEventListener("popstate", async () => {
     if (hostBackPromptOpen) return;
     hostBackPromptOpen = true;
-    // Immediately restore a guard entry before showing the prompt.
-    addGuardEntry();
+    // Re-arm immediately, before the confirmation dialog appears.
+    seedHostBackEntries(6);
     const confirmLogout = window.confirm("Do you want to log out?");
     if (confirmLogout) {
       try {
@@ -35,8 +42,8 @@ function installHostBackLogoutGuard(){
       location.replace("./index.html");
       return;
     }
-    // On Cancel, keep the page protected for the next Back click as well.
-    addGuardEntry();
+    // Cancel: remain on the Host Portal and replenish the guard entries.
+    seedHostBackEntries(6);
     hostBackPromptOpen = false;
   });
 }
