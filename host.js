@@ -3,52 +3,6 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWith
 import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
-
-// Host page browser Back button: always confirm before leaving host.html.
-// This guard is intentionally limited to host.html; other host modules are untouched.
-let hostBackPromptOpen = false;
-let hostGuardUrl = location.href;
-function seedHostBackEntries(count = 6) {
-  // Always push entries for this host page, never for the page that Back reached.
-  for (let i = 0; i < count; i++) {
-    try { history.pushState({ hostLogoutGuard: true, seq: i }, "", hostGuardUrl); }
-    catch (e) { console.warn("Could not add Host Portal history guard:", e); break; }
-  }
-}
-function installHostBackLogoutGuard() {
-  // Seed several entries on every fresh load/show so browser refresh does not
-  // leave only one guard entry before an older host-general.html entry.
-  seedHostBackEntries(6);
-  window.addEventListener("pageshow", () => {
-    if (!hostBackPromptOpen) seedHostBackEntries(6);
-  });
-  // Track in-page hash navigation while keeping the guard on host.html.
-  window.addEventListener("hashchange", () => {
-    hostGuardUrl = location.href;
-  });
-  window.addEventListener("popstate", async () => {
-    if (hostBackPromptOpen) return;
-    hostBackPromptOpen = true;
-    // Re-arm immediately, before the confirmation dialog appears.
-    seedHostBackEntries(6);
-    const confirmLogout = window.confirm("Do you want to log out?");
-    if (confirmLogout) {
-      try {
-        clearHostRegistrationFields();
-        await signOut(auth);
-      } catch (e) {
-        console.error("Host sign-out failed:", e);
-      }
-      location.replace("./index.html");
-      return;
-    }
-    // Cancel: remain on the Host Portal and replenish the guard entries.
-    seedHostBackEntries(6);
-    hostBackPromptOpen = false;
-  });
-}
-installHostBackLogoutGuard();
-
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 async function ensureAuthPersistence(){
   try { await setPersistence(auth,browserLocalPersistence); return "local"; }
