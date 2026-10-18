@@ -79,3 +79,96 @@ body.landing-body{min-height:100vh;display:block}
 #closeCompetitionBtn{box-shadow:0 7px 18px rgba(220,38,38,.16)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @media(max-width:900px){#hostApp .row{flex-direction:column}#hostApp .row>.field,#hostApp .row>button{width:100%}#quizControls table{min-width:680px}}
+
+
+/* v66 appearance-only refresh: navy / white professional visual layer.
+   Deliberately limited to presentation; no layout logic, controls, or app behaviour is changed. */
+:root{
+  --bg:#f3f6fc;
+  --surface:#ffffff;
+  --surface2:#f7f9fd;
+  --ink:#10213f;
+  --muted:#62718a;
+  --primary:#1456c0;
+  --primary2:#082b63;
+  --success:#07845b;
+  --danger:#c9343b;
+  --warning:#b86b08;
+  --purple:#6842c2;
+  --border:#dbe4f1;
+  --shadow:0 12px 30px rgba(9,35,78,.075);
+  --radius:18px;
+}
+body{
+  background:
+    radial-gradient(ellipse at 8% 0%,rgba(48,117,225,.075),transparent 34%),
+    radial-gradient(ellipse at 100% 8%,rgba(91,75,190,.055),transparent 28%),
+    var(--bg);
+  color:var(--ink);
+}
+header{
+  background:linear-gradient(112deg,#071d42 0%,#0b3474 58%,#1456c0 100%);
+  border-bottom:1px solid rgba(255,255,255,.14);
+  box-shadow:0 7px 22px rgba(4,22,51,.18);
+}
+header h1{font-weight:850;letter-spacing:-.025em}
+header small{color:rgba(255,255,255,.82)}
+.container{max-width:1320px}
+.card{
+  border:1px solid rgba(211,224,242,.95);
+  border-radius:18px;
+  box-shadow:0 8px 25px rgba(9,35,78,.065);
+}
+h2,h3{color:#102c58}
+button{
+  background:linear-gradient(135deg,#1766d5,#104da9);
+  border-radius:11px;
+  box-shadow:0 3px 9px rgba(16,77,169,.13);
+}
+button.secondary{background:linear-gradient(135deg,#64748b,#475569)}
+button.success{background:linear-gradient(135deg,#0a9b68,#08784f)}
+button.danger{background:linear-gradient(135deg,#e04449,#b91c1c)}
+button.warning{background:linear-gradient(135deg,#e28b16,#b65e08)}
+input,select,textarea{
+  border:1px solid #c8d6e8;
+  border-radius:11px;
+  background:#fff;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:#6d9fe9;
+  box-shadow:0 0 0 4px rgba(20,86,192,.11);
+}
+.badge{background:#e8f0ff;color:#16458e}
+.status{border:1px solid #e0e8f3;background:#f6f9fd}
+.status.live{border-color:#a9e6c8}
+.notice{box-shadow:0 3px 10px rgba(130,75,12,.035)}
+.successbox{box-shadow:0 3px 10px rgba(7,132,91,.035)}
+table{border-color:#e0e8f2}
+th{background:#edf3fc;color:#1c3d6c}
+td,th{border-bottom-color:#e2eaf4}
+tbody tr:nth-child(even){background:rgba(247,250,255,.72)}
+tbody tr:hover{background:#eef5ff}
+.panel-card,.assignment-card,.stat-card,.stat{
+  box-shadow:0 9px 24px rgba(9,35,78,.065);
+}
+.panel-card{border-color:#dce6f4}
+.panel-card.host{border-top-color:#1456c0}
+.panel-card.host a{background:linear-gradient(135deg,#1c70e6,#104da9)}
+.panel-card.participant{border-top-color:#07845b}
+.panel-card.participant a{background:linear-gradient(135deg,#0aa875,#08784f)}
+.panel-card.admin{border-top-color:#6842c2}
+.panel-card.admin a{background:linear-gradient(135deg,#8059dd,#5a35ad)}
+.landing-hero{
+  background:linear-gradient(125deg,#071a3a 0%,#0b3474 52%,#1766d5 100%);
+  box-shadow:0 24px 60px rgba(7,36,83,.22);
+}
+.brand-mark{border-color:#d6e4fb;background:#edf4ff;color:#123f84}
+.assignment-card{background:linear-gradient(180deg,#fff,#fbfdff)}
+.assignment-card:hover{box-shadow:0 13px 30px rgba(9,35,78,.11)}
+.admin-toolbar{background:#f4f7fc;border-color:#dbe5f2}
+.danger-zone{border-color:#f1c8cb!important}
+@media(max-width:560px){
+  .container{padding-left:12px;padding-right:12px}
+  .card{border-radius:15px}
+  button{max-width:100%}
+}
