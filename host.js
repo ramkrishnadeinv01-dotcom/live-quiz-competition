@@ -10,16 +10,19 @@ let hostBackPromptOpen = false;
 function installHostBackLogoutGuard(){
   // Remember this page's own URL. After a Back action, location.href may already
   // refer to an older history entry (for example, host-general.html).
-  const hostPageUrl = `${location.pathname}${location.search}`;
+  // Preserve the complete current URL (including a hash such as #liveQuiz).
+  const hostPageUrl = location.href;
   const addGuardEntry = () => {
-    try { history.pushState({ hostLogoutGuard: true }, "", hostPageUrl); } catch (_) {}
+    try { history.pushState({ hostLogoutGuard: true, url: hostPageUrl }, "", hostPageUrl); } catch (_) {}
   };
+  // Seed more than one same-page entry. This protects against the browser
+  // consuming the only guard entry after a Cancel or page refresh.
+  addGuardEntry();
   addGuardEntry();
   window.addEventListener("popstate", async () => {
     if (hostBackPromptOpen) return;
     hostBackPromptOpen = true;
-    // Restore the host.html URL immediately so Cancel never leaves the browser
-    // pointing at an earlier host module.
+    // Immediately restore a guard entry before showing the prompt.
     addGuardEntry();
     const confirmLogout = window.confirm("Do you want to log out?");
     if (confirmLogout) {
@@ -32,6 +35,8 @@ function installHostBackLogoutGuard(){
       location.replace("./index.html");
       return;
     }
+    // On Cancel, keep the page protected for the next Back click as well.
+    addGuardEntry();
     hostBackPromptOpen = false;
   });
 }
