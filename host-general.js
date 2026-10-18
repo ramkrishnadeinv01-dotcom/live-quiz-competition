@@ -1,21 +1,22 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id),ADMIN="ramkrishnadeinv.01@gmail.com";let uid=null,room="",questions=[];
-// Browser Back on Host General asks for confirmation before signing out.
-// Choosing No restores this page in history; choosing Yes signs out and opens the Host Home page.
-const hostGeneralBackGuardKey = "hostGeneralBackGuard";
-if (!history.state || !history.state[hostGeneralBackGuardKey]) {
-  history.pushState({ ...(history.state || {}), [hostGeneralBackGuardKey]: true }, "", location.href);
+// Host General: browser Back asks whether to log out. Cancel stays on this page.
+const hostGeneralBackGuardKey = "hostGeneralBackGuardV3";
+function armHostGeneralBackGuard() {
+  try { history.pushState({ ...(history.state || {}), [hostGeneralBackGuardKey]: true }, "", location.href); }
+  catch (e) { console.warn("Could not arm Host General back guard", e); }
 }
-window.addEventListener("popstate", async () => {
-  const confirmLogout = window.confirm("Do you want to log out?\n\nClick OK to log out, or Cancel to stay on the Host General page.");
-  if (confirmLogout) {
-    try { await signOut(auth); } catch (e) { console.error("Host logout failed:", e); }
-    location.replace("host.html");
-  } else {
-    history.pushState({ ...(history.state || {}), [hostGeneralBackGuardKey]: true }, "", location.href);
+armHostGeneralBackGuard();
+window.addEventListener("popstate", () => {
+  // Add a fresh history entry so Cancel keeps the host on Host General.
+  armHostGeneralBackGuard();
+  if (window.confirm("Do you want to log out?")) {
+    signOut(auth).catch(e => console.error("Host logout failed:", e)).finally(() => {
+      location.replace("host.html?loggedOut=1");
+    });
   }
 });
 
