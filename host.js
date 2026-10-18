@@ -4,6 +4,63 @@ import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } 
 import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
+
+// Browser Back behaviour for the Host Portal home page:
+// - Back from #liveQuiz returns to the home view without asking to log out.
+// - Back from the home view asks before signing out.
+// - Cancel restores a same-page history entry so the user stays on the home view.
+let hostPortalLastHash = location.hash;
+let hostPortalBackPromptOpen = false;
+let hostPortalHomeGuardInstalled = false;
+function installHostPortalHomeGuard(){
+  if (location.hash) return;
+  try {
+    history.pushState({ hostPortalHomeGuard: true }, "", location.href);
+    hostPortalHomeGuardInstalled = true;
+  } catch (e) { console.warn("Could not install Host Portal history guard", e); }
+}
+installHostPortalHomeGuard();
+window.addEventListener("hashchange", () => {
+  const previousHash = hostPortalLastHash;
+  hostPortalLastHash = location.hash;
+  // If the Live Quiz hash was removed by Back, this is an in-portal navigation.
+  // Do not show the logout prompt; the home guard entry remains in history.
+  if (previousHash === "#liveQuiz" && location.hash === "") {
+    hostPortalHomeGuardInstalled = true;
+  } else if (location.hash === "" && !hostPortalHomeGuardInstalled) {
+    installHostPortalHomeGuard();
+  }
+});
+window.addEventListener("popstate", async () => {
+  const previousHash = hostPortalLastHash;
+  const currentHash = location.hash;
+  hostPortalLastHash = currentHash;
+  // Back from Live Quiz to the Host Portal home view is not a logout attempt.
+  if (previousHash === "#liveQuiz" && currentHash === "") {
+    hostPortalHomeGuardInstalled = true;
+    return;
+  }
+  // The prompt is only for leaving the Host Portal home view.
+  if (currentHash !== "" || hostPortalBackPromptOpen) return;
+  hostPortalBackPromptOpen = true;
+  const confirmLogout = window.confirm("Do you want to log out?");
+  if (confirmLogout) {
+    try {
+      clearHostRegistrationFields();
+      await signOut(auth);
+    } catch (e) {
+      console.error("Host sign-out failed:", e);
+    }
+    location.replace("./index.html");
+    return;
+  }
+  try {
+    history.pushState({ hostPortalHomeGuard: true }, "", location.href);
+    hostPortalHomeGuardInstalled = true;
+  } catch (e) { console.warn("Could not restore Host Portal history guard", e); }
+  hostPortalBackPromptOpen = false;
+});
+
 async function ensureAuthPersistence(){
   try { await setPersistence(auth,browserLocalPersistence); return "local"; }
   catch(e) { try { await setPersistence(auth,indexedDBLocalPersistence); return "indexeddb"; } catch(e2) { console.warn("Auth persistence unavailable", e2); return "memory"; } }
