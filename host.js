@@ -3,6 +3,34 @@ import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWith
 import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
+
+// Host page browser Back button: ask before signing out.
+// Keep this behaviour limited to host.html; other host modules are not modified.
+let hostBackPromptOpen = false;
+function installHostBackLogoutGuard(){
+  try { history.pushState({ hostLogoutGuard: true }, "", location.href); } catch (_) {}
+  window.addEventListener("popstate", async () => {
+    if (hostBackPromptOpen) return;
+    hostBackPromptOpen = true;
+    const confirmLogout = window.confirm("Do you want to log out?");
+    if (confirmLogout) {
+      try {
+        clearHostRegistrationFields();
+        await signOut(auth);
+      } catch (e) {
+        console.error("Host sign-out failed:", e);
+      }
+      // Replace the current history entry so Back does not reopen the authenticated panel.
+      location.replace("./index.html");
+      return;
+    }
+    // Cancel: stay on host.html and create a fresh guard entry for the next Back click.
+    try { history.pushState({ hostLogoutGuard: true }, "", location.href); } catch (_) {}
+    hostBackPromptOpen = false;
+  });
+}
+installHostBackLogoutGuard();
+
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 async function ensureAuthPersistence(){
   try { await setPersistence(auth,browserLocalPersistence); return "local"; }
@@ -617,22 +645,6 @@ async function importWordQuestions(){
 
 function syncLiveQuizRoute(){const live=location.hash==="#liveQuiz";const appBox=$("hostApp");const menu=$("hostMenu");if(appBox&&currentUser&&isApproved())appBox.classList.toggle("hidden",!live);if(menu&&currentUser&&isApproved())menu.classList.toggle("hidden",live);}
 window.addEventListener("hashchange",syncLiveQuizRoute);
-// If the host is already on the Host Portal home view (no hash), browser Back logs out.
-// Returning from the live-quiz view (#liveQuiz) to the home view is still page-wise;
-// a subsequent Back action from the home view signs out the host.
-let lastHostHash=location.hash;
-window.addEventListener("hashchange",()=>{lastHostHash=location.hash;});
-window.addEventListener("popstate",async()=>{
-  const currentHash=location.hash;
-  if(currentHash==="" && lastHostHash===""){
-    try{
-      clearHostRegistrationFields();
-      await signOut(auth);
-    }catch(err){console.error("Host logout on browser Back failed:",err);}
-    location.replace("index.html");
-  }
-  lastHostHash=currentHash;
-});
 $("backHostHomeBtn2")?.addEventListener("click",()=>{location.hash="";syncLiveQuizRoute();window.scrollTo({top:0,behavior:"smooth"});});
 
 let authResolvedOnce=false;
