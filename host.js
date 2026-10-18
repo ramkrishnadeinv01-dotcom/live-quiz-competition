@@ -617,6 +617,22 @@ async function importWordQuestions(){
 
 function syncLiveQuizRoute(){const live=location.hash==="#liveQuiz";const appBox=$("hostApp");const menu=$("hostMenu");if(appBox&&currentUser&&isApproved())appBox.classList.toggle("hidden",!live);if(menu&&currentUser&&isApproved())menu.classList.toggle("hidden",live);}
 window.addEventListener("hashchange",syncLiveQuizRoute);
+// If the host is already on the Host Portal home view (no hash), browser Back logs out.
+// Returning from the live-quiz view (#liveQuiz) to the home view is still page-wise;
+// a subsequent Back action from the home view signs out the host.
+let lastHostHash=location.hash;
+window.addEventListener("hashchange",()=>{lastHostHash=location.hash;});
+window.addEventListener("popstate",async()=>{
+  const currentHash=location.hash;
+  if(currentHash==="" && lastHostHash===""){
+    try{
+      clearHostRegistrationFields();
+      await signOut(auth);
+    }catch(err){console.error("Host logout on browser Back failed:",err);}
+    location.replace("index.html");
+  }
+  lastHostHash=currentHash;
+});
 $("backHostHomeBtn2")?.addEventListener("click",()=>{location.hash="";syncLiveQuizRoute();window.scrollTo({top:0,behavior:"smooth"});});
 
 let authResolvedOnce=false;
