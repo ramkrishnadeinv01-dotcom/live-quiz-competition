@@ -1,7 +1,57 @@
 <!doctype html>
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Host Portal — Home</title><link href="styles.css?v=20261008-64" rel="stylesheet"/><style>.host-countdown{font-size:46px;font-weight:900;text-align:center;padding:12px 16px;margin:8px 0 14px;border-radius:14px;background:#fff7ed;color:#b42318;border:2px solid #fed7aa;letter-spacing:2px}</style><style>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Host Portal — Home</title><link href="styles.css?v=20261008-64" rel="stylesheet"/><style>.host-countdown{font-size:46px;font-weight:900;text-align:center;padding:12px 16px;margin:8px 0 14px;border-radius:14px;background:#fff7ed;color:#b42318;border:2px solid #fed7aa;letter-spacing:2px}
+/* Approved Host Control Centre redesign. Login and internal module styling remain unchanged. */
+body:has(#hostMenu:not(.hidden)) .host-site-nav{
+  position:sticky;top:0;z-index:1000;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  min-height:72px;padding:12px clamp(16px,3vw,42px);background:linear-gradient(110deg,#071d49,#0b347d 65%,#0754b8);
+  box-shadow:0 8px 24px rgba(9,35,82,.2)
+}
+body:has(#hostMenu:not(.hidden)) .host-brand{font-weight:850;font-size:clamp(16px,1.45vw,24px);letter-spacing:-.35px;gap:12px;white-space:normal;max-width:410px;line-height:1.15}
+body:has(#hostMenu:not(.hidden)) .host-brand em{font-style:normal;color:#ffd166}
+body:has(#hostMenu:not(.hidden)) .host-brand-mark{font-size:32px}
+body:has(#hostMenu:not(.hidden)) .host-nav-links{margin-left:auto;gap:6px;align-items:center;flex-wrap:wrap}
+body:has(#hostMenu:not(.hidden)) .host-nav-links a{padding:12px 13px;border-radius:13px;font-weight:750;white-space:nowrap}
+body:has(#hostMenu:not(.hidden)) .host-nav-links a.active{background:#1769f5;box-shadow:0 5px 14px rgba(0,0,0,.16)}
+body:has(#hostMenu:not(.hidden)) .host-auth-pill{display:none!important}
+body:has(#hostMenu:not(.hidden)) .host-page-shell{max-width:none;width:100%;padding:24px clamp(14px,3vw,48px) 40px;background:linear-gradient(180deg,#eef7ff,#f8fbff 65%,#edf6ff)}
+body:has(#hostMenu:not(.hidden)) #hostMenu{max-width:1500px;margin:0 auto}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero{position:relative;overflow:hidden;border:1px solid #a7d8ff;border-radius:26px;padding:34px clamp(24px,4vw,58px);margin:0 0 22px;background:linear-gradient(110deg,#dff2ff 0%,#b8e3ff 52%,#4aa6f4 100%);box-shadow:0 12px 30px rgba(34,111,190,.14)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero:after{content:'📚　🖥️　🏆';position:absolute;right:4%;bottom:12px;font-size:clamp(42px,7vw,86px);opacity:.9;pointer-events:none}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero h2{font-size:clamp(30px,3.2vw,48px);line-height:1.1;color:#092967;margin:0 0 12px;max-width:62%;letter-spacing:-1px}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero p{font-size:clamp(15px,1.25vw,19px);line-height:1.5;color:#234c7f;max-width:62%;margin:0}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;margin-top:20px}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card{display:flex;flex-direction:column;min-width:0;border:1px solid #d4e7fb;border-top:5px solid #1686ef!important;border-radius:22px;padding:22px;background:linear-gradient(145deg,#fff,#f2f8ff);box-shadow:0 8px 22px rgba(25,78,136,.09);transition:transform .18s ease,box-shadow .18s ease}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(2){border-top-color:#0a9c61!important;background:linear-gradient(145deg,#fff,#effcf5)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(3){border-top-color:#7c3aed!important;background:linear-gradient(145deg,#fff,#f6f1ff)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(4){border-top-color:#f97316!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(5){border-top-color:#0784e8!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(6){border-top-color:#be185d!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(25,78,136,.14)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-icon{width:64px;height:64px;display:grid;place-items:center;border-radius:50%;background:#e0efff;font-size:34px;margin-bottom:12px}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card h3{font-size:21px;line-height:1.25;color:#102b60;margin:0 0 8px}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card p{font-size:15px;line-height:1.5;color:#536b8b;margin:0 0 18px}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card>button,
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-tools button{border-radius:12px;min-height:46px;font-weight:800;box-shadow:0 4px 10px rgba(12,54,112,.1)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card>button{margin-top:auto}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(4),
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(5){grid-column:span 2}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(4) .host-tools{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"]{margin-top:20px!important;border:1px solid #cfe4fb;border-top:5px solid #1385ed;border-radius:22px;padding:22px 26px;background:#fff;box-shadow:0 9px 24px rgba(25,78,136,.09)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"] h3{font-size:22px;color:#102b60;margin-top:0}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-home-note{border-radius:16px;margin-top:16px;padding:14px 18px;background:#e6f2ff;color:#31577f}
+body:has(#hostMenu:not(.hidden)) #hostMenu #homeLogoutBtn{display:none!important}
+body:has(#hostMenu:not(.hidden)) .host-nav-signout{border:0;border-radius:12px;background:#fff;color:#b42318;padding:12px 16px;font-weight:850;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.13);white-space:nowrap}
+body:has(#hostMenu:not(.hidden)) .host-permission-pill{display:inline-flex;align-items:center;gap:8px;background:#d8fbe6;color:#087443;border:1px solid #a4edc1;border-radius:12px;padding:10px 13px;font-weight:800;font-size:13px;white-space:nowrap}
+body:has(#hostMenu:not(.hidden)) .host-permission-pill:before{content:'●';font-size:12px;color:#0b9c5b}
+body:has(#hostMenu:not(.hidden)) #hostAccessCard{margin:0 auto 18px;max-width:1500px;padding:10px 16px;border:1px solid #bce9d0;border-radius:14px;background:#f0fff6;box-shadow:none}
+body:has(#hostMenu:not(.hidden)) #hostAccessCard>h2{display:none}
+body:has(#hostMenu:not(.hidden)) #hostAccessCard #hostAccessStatus{margin:0;padding:0;border:0;background:transparent;color:#087443;font-size:14px}
+@media(max-width:1100px){body:has(#hostMenu:not(.hidden)) .host-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}body:has(#hostMenu:not(.hidden)) .host-nav-links{margin-left:0}}
+@media(max-width:650px){body:has(#hostMenu:not(.hidden)) .host-site-nav{gap:10px}body:has(#hostMenu:not(.hidden)) .host-menu-grid{grid-template-columns:1fr!important}body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(4),body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(5){grid-column:auto}body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(4) .host-tools{grid-template-columns:1fr}body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero:after{opacity:.22;right:0}body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero h2,body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero p{max-width:100%}}
+
+</style><style>
 /* Modern blue Host Portal appearance; functional IDs and scripts remain unchanged. */
 .host-site-nav{height:auto;min-height:76px;background:linear-gradient(110deg,#061b3c,#0b2c5d);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px clamp(18px,3vw,42px);box-shadow:0 5px 22px rgba(4,24,55,.2);position:relative;z-index:5}
 .host-brand{display:flex;align-items:center;gap:12px;white-space:nowrap;font-weight:800;font-size:clamp(17px,2vw,24px)}.host-brand-mark{font-size:34px;line-height:1}
@@ -187,7 +237,7 @@ body:has(.host-page-shell #loginCard:not(.hidden)) .host-login-card #registratio
 </head>
 <body>
 <nav class="host-site-nav" aria-label="Main navigation">
-  <a class="host-brand" href="index.html" aria-label="Live Quiz Competition home"><span class="host-brand-mark">🏆</span><span>Live Quiz Competition</span></a>
+  <a class="host-brand" href="index.html" aria-label="Welcome World of Exam Host Portal home"><span class="host-brand-mark">🏆</span><span>Welcome <em>World of Exam</em> Host Portal</span></a>
   <div class="host-nav-links">
     <a href="index.html">⌂ &nbsp;Home</a>
     <a href="student.html">♟ &nbsp;Participant</a>
@@ -411,4 +461,37 @@ body:has(.host-page-shell #loginCard:not(.hidden)) .host-login-card #registratio
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="host.js?v=20261018-option1-backfix1" type="module"></script>
+
+<script>
+/* Reuse the existing sign-out control and handler; only relocate its presentation in the Host navigation. */
+(function(){
+  function setupHostHeader(){
+    const menu=document.getElementById('hostMenu');
+    const nav=document.querySelector('.host-site-nav');
+    if(!menu||!nav||menu.classList.contains('hidden')) return;
+    if(!nav.querySelector('.host-permission-pill')){
+      const badge=document.createElement('span');
+      badge.className='host-permission-pill';
+      badge.textContent='Host Permission: Active';
+      badge.setAttribute('aria-label','Host permission active');
+      const auth=document.getElementById('authStatus');
+      nav.insertBefore(badge,auth||null);
+    }
+    const logout=document.getElementById('homeLogoutBtn');
+    if(logout&&!nav.querySelector('.host-nav-signout')){
+      const button=document.createElement('button');
+      button.type='button';button.className='host-nav-signout';button.textContent='⇥ Sign Out';
+      button.addEventListener('click',()=>logout.click());
+      nav.appendChild(button);
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    setupHostHeader();
+    const observer=new MutationObserver(setupHostHeader);
+    const menu=document.getElementById('hostMenu');
+    if(menu) observer.observe(menu,{attributes:true,attributeFilter:['class']});
+  });
+})();
+</script>
+
 </body></html>
