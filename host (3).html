@@ -1,0 +1,261 @@
+<!doctype html>
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Host Portal — Home</title><link href="styles.css?v=20261008-64" rel="stylesheet"/><style>.host-countdown{font-size:46px;font-weight:900;text-align:center;padding:12px 16px;margin:8px 0 14px;border-radius:14px;background:#fff7ed;color:#b42318;border:2px solid #fed7aa;letter-spacing:2px}</style><style>
+/* Modern blue Host Portal appearance; functional IDs and scripts remain unchanged. */
+.host-site-nav{height:auto;min-height:76px;background:linear-gradient(110deg,#061b3c,#0b2c5d);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px clamp(18px,3vw,42px);box-shadow:0 5px 22px rgba(4,24,55,.2);position:relative;z-index:5}
+.host-brand{display:flex;align-items:center;gap:12px;white-space:nowrap;font-weight:800;font-size:clamp(17px,2vw,24px)}.host-brand-mark{font-size:34px;line-height:1}
+.host-nav-links{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}.host-nav-links a{color:#e8f1ff;text-decoration:none;padding:12px 15px;border-radius:12px;font-weight:700;font-size:14px;transition:background .18s ease}.host-nav-links a:hover{background:rgba(255,255,255,.12)}.host-nav-links a.active{background:#1261ed;color:#fff;box-shadow:0 5px 16px rgba(18,97,237,.28)}
+.host-auth-pill{background:#eaf2ff;color:#16458c;border-radius:999px;padding:10px 15px;font-size:13px;font-weight:800;white-space:nowrap}
+.host-page-shell{max-width:1440px;margin:0 auto;padding:24px clamp(16px,3vw,40px) 48px}
+.host-login-hero{min-height:205px;border-radius:24px;background:linear-gradient(120deg,#f5faff 0%,#e4f2ff 50%,#f8fbff 100%);border:1px solid #d6e8ff;display:grid;grid-template-columns:minmax(130px,1fr) minmax(280px,1.4fr) minmax(130px,1fr);align-items:center;gap:18px;padding:24px 30px;margin-bottom:22px;overflow:hidden;position:relative;box-shadow:0 12px 30px rgba(25,89,170,.08)}
+.host-login-hero:before,.host-login-hero:after{content:"";position:absolute;border-radius:50%;background:rgba(53,139,255,.08);pointer-events:none}.host-login-hero:before{width:260px;height:260px;left:-100px;bottom:-190px}.host-login-hero:after{width:300px;height:300px;right:-120px;top:-200px}
+.host-hero-art{font-size:clamp(48px,6vw,78px);text-align:center;filter:drop-shadow(0 8px 8px rgba(20,75,145,.12));position:relative;z-index:1}.host-login-hero-copy{text-align:center;position:relative;z-index:1}.host-login-hero-copy h2{font-size:clamp(30px,4vw,48px);line-height:1.1;margin:0 0 8px;color:#102b59}.host-login-hero-copy strong{display:block;color:#075ee9;font-size:clamp(17px,2vw,23px);margin-bottom:12px}.host-login-hero-copy p{color:#425a7b;font-size:15px;line-height:1.6;margin:0 auto;max-width:560px}
+.host-login-card{max-width:1040px;margin:0 auto!important;border:1px solid #dbe8f8!important;border-radius:24px!important;padding:clamp(22px,3vw,38px)!important;background:#fff!important;box-shadow:0 18px 48px rgba(22,71,136,.12)!important}
+.host-login-card>h2{font-size:clamp(25px,3vw,34px);color:#102b59;display:flex;align-items:center;gap:14px;margin:0 0 20px}.host-login-card>h2:before{content:"▣";display:inline-grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#1261ed;color:#fff;font-size:26px;box-shadow:0 6px 16px rgba(18,97,237,.2)}
+.host-login-card .notice{background:#f0f7ff!important;border:1px solid #d2e6ff!important;border-radius:14px!important;color:#214675!important;padding:15px 18px!important;line-height:1.65}.host-login-card .field label{font-size:13px;font-weight:800;color:#24466f;text-transform:uppercase;letter-spacing:.35px}.host-login-card input,.host-login-card select{min-height:52px;border:1px solid #cbdcf2!important;border-radius:12px!important;background:#fff!important;padding:12px 15px!important;font-size:15px!important;box-shadow:inset 0 1px 2px rgba(20,60,110,.03)}.host-login-card input:focus,.host-login-card select:focus{outline:3px solid rgba(18,97,237,.13);border-color:#4385f5!important}.host-login-card button{border-radius:12px!important;min-height:48px;font-weight:800!important;padding:12px 20px!important;box-shadow:0 5px 12px rgba(16,58,110,.1);transition:transform .16s ease,box-shadow .16s ease}.host-login-card button:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(16,58,110,.15)}
+.host-login-card #signupBtn{background:#1261ed!important}.host-login-card #loginBtn{background:#079657!important}.host-login-card #forgotPasswordBtn{background:#e8f1ff!important;color:#1356b5!important}
+.host-login-card .status{border-radius:14px}
+.host-menu .host-hero{border-radius:22px}.host-page-shell:has(#hostMenu:not(.hidden))>.host-login-hero{display:none}
+@media(max-width:900px){.host-site-nav{align-items:flex-start;flex-direction:column}.host-nav-links{justify-content:flex-start}.host-login-hero{grid-template-columns:90px 1fr 90px;padding:20px 14px}.host-hero-art{font-size:48px}}
+@media(max-width:600px){.host-brand{font-size:18px}.host-nav-links{width:100%;gap:3px}.host-nav-links a{padding:9px 10px;font-size:12px}.host-login-hero{grid-template-columns:1fr;gap:8px;padding:22px 18px}.host-login-hero .host-hero-art{display:none}.host-login-card .row{display:flex;flex-direction:column;gap:12px}.host-page-shell{padding:16px 12px 32px}}
+</style><style>
+.host-hero{background:linear-gradient(135deg,#071f52 0%,#123d91 48%,#1d74e8 100%);color:#fff;border-radius:24px;padding:34px 34px 30px;margin-bottom:20px;box-shadow:0 18px 50px rgba(15,61,145,.22);position:relative;overflow:hidden}.host-hero:after{content:"";position:absolute;width:280px;height:280px;border-radius:50%;right:-90px;top:-120px;background:rgba(255,255,255,.08)}.host-hero h2{font-size:34px;margin:0 0 8px;position:relative;z-index:1}.host-hero p{margin:0;opacity:.9;font-size:15px;position:relative;z-index:1}.host-menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:18px}.host-menu-card{border:1px solid #dbe5f3;border-radius:20px;padding:24px;background:#fff;box-shadow:0 10px 28px rgba(20,40,80,.07);transition:.2s;display:flex;flex-direction:column;min-height:190px}.host-menu-card:hover{transform:translateY(-3px);box-shadow:0 16px 35px rgba(20,40,80,.12)}.host-menu-icon{font-size:42px;margin-bottom:12px}.host-menu-card h3{font-size:20px;margin:0 0 7px}.host-menu-card p{color:#64748b;line-height:1.5;flex:1;margin:0 0 18px}.host-menu-card button{width:100%;font-size:15px;padding:13px 16px}.host-menu-card.live{border-top:5px solid #1769e0}.host-menu-card.mcq{border-top:5px solid #0a9b61}.host-menu-card.general{border-top:5px solid #d97706}.host-tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.host-tools button{min-width:180px}.host-home-note{margin-top:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:13px 15px;color:#475569}@media(max-width:850px){.host-menu-grid{grid-template-columns:1fr}.host-hero h2{font-size:28px}}
+</style>
+<style>
+/* Approved illustrated Host Login design: appearance only; preserve all original IDs and handlers. */
+.host-site-nav{min-height:90px;padding:12px clamp(16px,2vw,30px);gap:12px}
+.host-brand{font-size:clamp(16px,1.8vw,24px);color:#fff;text-decoration:none}
+.host-brand:visited{color:#fff}
+.host-brand-mark{font-size:42px}
+.host-nav-links{gap:8px}
+.host-nav-links a{font-size:clamp(12px,1.05vw,16px);padding:13px 15px}
+.host-auth-pill{font-size:14px;padding:13px 18px}
+.host-page-shell{max-width:none;padding:0 0 44px;background:linear-gradient(180deg,#edf7ff 0%,#f8fbff 62%,#eef6ff 100%)}
+.host-login-hero-dynamic{max-width:none;width:100%;min-height:255px;border-radius:0;margin:0 auto 0;padding:20px clamp(16px,3vw,50px);grid-template-columns:minmax(230px,1fr) minmax(320px,1.15fr) minmax(230px,1fr);gap:12px;border:0;border-bottom:1px solid #d9eaff;box-shadow:none;background:linear-gradient(180deg,#f7fbff 0%,#eaf5ff 100%)}
+.host-login-hero-dynamic:before{width:420px;height:420px;left:-150px;bottom:-310px;background:rgba(53,139,255,.10)}
+.host-login-hero-dynamic:after{width:400px;height:400px;right:-160px;top:-260px;background:rgba(53,139,255,.08)}
+.host-login-hero-dynamic .host-hero-art{height:240px;display:flex;align-items:center;justify-content:center;overflow:hidden;filter:none}
+.host-login-hero-dynamic .host-hero-art img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;filter:drop-shadow(0 8px 10px rgba(20,75,145,.08))}
+.host-login-hero-dynamic .host-login-hero-copy h2{font-size:clamp(34px,4vw,58px);font-weight:850;letter-spacing:-1px;margin-bottom:6px}
+.host-login-hero-dynamic .host-login-hero-copy strong{font-size:clamp(19px,2vw,27px);margin-bottom:16px}
+.host-login-hero-dynamic .host-login-hero-copy p{font-size:clamp(14px,1.25vw,19px);max-width:550px}
+.host-page-shell>.container{max-width:1050px;margin:0 auto;padding:0 clamp(14px,2vw,26px)}
+.host-login-card{max-width:1050px;margin:26px auto 0!important;border-radius:24px!important;padding:clamp(22px,2.7vw,40px)!important;box-shadow:0 18px 44px rgba(31,105,205,.15)!important}
+.host-login-card>h2{font-size:clamp(27px,2.5vw,38px);margin-bottom:20px}
+.host-login-card>h2:before{width:62px;height:62px;font-size:29px}
+.host-login-card .notice{font-size:clamp(14px,1.2vw,18px);padding:16px 20px!important}
+.host-login-card .field label{font-size:14px}
+.host-login-card input,.host-login-card select{min-height:54px;font-size:16px!important}
+.host-login-card button{font-size:16px}
+@media(max-width:900px){
+ .host-login-hero-dynamic{grid-template-columns:120px 1fr 120px;min-height:210px;padding:16px 10px}
+ .host-login-hero-dynamic .host-hero-art{height:190px}
+ .host-site-nav{flex-wrap:wrap}
+}
+@media(max-width:600px){
+ .host-login-hero-dynamic{grid-template-columns:1fr;min-height:0;padding:28px 16px}
+ .host-login-hero-dynamic .host-hero-art{display:none}
+ .host-login-hero-dynamic .host-login-hero-copy h2{font-size:36px}
+ .host-page-shell>.container{padding:0 12px}
+ .host-login-card{margin-top:16px!important}
+}
+</style>
+
+<style>
+/* Self-contained hero artwork: no external image paths or data-URI dependencies. */
+.host-login-hero-dynamic .host-hero-art-illustration{position:relative;display:flex;align-items:center;justify-content:center;min-height:220px;overflow:visible;font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif;filter:none}
+.host-login-hero-dynamic .host-hero-art-illustration .art-main{display:flex;align-items:center;justify-content:center;width:150px;height:150px;border-radius:32px;background:linear-gradient(145deg,#fff,#e2efff);border:1px solid #c9defb;box-shadow:0 18px 36px rgba(16,63,130,.14);font-size:92px;line-height:1}
+.host-login-hero-dynamic .host-hero-art-illustration .art-secondary{position:absolute;right:12%;bottom:22px;display:flex;align-items:center;justify-content:center;width:82px;height:82px;border-radius:22px;background:#fff;border:1px solid #d8e7fb;box-shadow:0 12px 24px rgba(16,63,130,.12);font-size:48px}
+@media(max-width:900px){.host-login-hero-dynamic .host-hero-art-illustration .art-main{width:110px;height:110px;font-size:68px}.host-login-hero-dynamic .host-hero-art-illustration .art-secondary{width:62px;height:62px;font-size:36px}}
+</style>
+</head>
+<body>
+<nav class="host-site-nav" aria-label="Main navigation">
+  <a class="host-brand" href="index.html" aria-label="Live Quiz Competition home"><span class="host-brand-mark">🏆</span><span>Live Quiz Competition</span></a>
+  <div class="host-nav-links">
+    <a href="index.html">⌂ &nbsp;Home</a>
+    <a href="student.html">♟ &nbsp;Participant</a>
+    <a class="active" href="host.html" aria-current="page">▣ &nbsp;Host</a>
+    <a href="administrator.html">⬡ &nbsp;Administrator</a>
+  </div>
+  <span class="host-auth-pill" id="authStatus">Connecting…</span>
+</nav>
+<div class="host-page-shell">
+<section class="host-login-hero host-login-hero-dynamic" aria-label="Host Portal introduction">
+  <div class="host-hero-art host-hero-art-left host-hero-art-illustration" aria-hidden="true"><span class="art-main">💻</span><span class="art-secondary">📋</span></div>
+  <div class="host-login-hero-copy"><h2>Host Portal</h2><strong>Host Control Centre</strong><p>Create and manage competitions, conduct live quizzes and view participants.</p></div>
+  <div class="host-hero-art host-hero-art-right host-hero-art-illustration" aria-hidden="true"><span class="art-main">🏆</span><span class="art-secondary">📚</span></div>
+</section>
+<div class="container">
+<div class="card host-login-card" id="loginCard">
+<h2>Host Login</h2><p class="notice">This panel is for the host only. Create/sign in with an Email/Password account.</p>
+<div class="row"><div class="field"><label>Email</label><input autocomplete="email" id="email" type="email"/></div><div class="field"><label>Password</label><input autocomplete="new-password" id="password" type="password"/></div></div>
+<div class="notice" style="margin-top:12px"><b>Host registration</b><br/>For a new Host Account, click <b>Create Host Account</b> below. You will be required to complete all Host details <b>before the host account and host request are created</b>.</div>
+<div class="status hidden" id="registrationBox" style="margin-top:12px">
+<h3>📝 Complete Host Registration</h3>
+<p class="muted">All information marked with * is required. The account and host approval request will be created only after you submit this completed form.</p>
+<div class="row" style="margin-top:12px">
+<div class="field"><label>Host Name *</label><input autocomplete="off" id="hostName" placeholder="Full name" type="text"/></div>
+<div class="field"><label>Designation *</label><input autocomplete="off" id="hostDesignation" placeholder="Designation" type="text"/></div>
+</div>
+<div class="row" style="margin-top:12px">
+<div class="field"><label>Place of Posting *</label><input autocomplete="off" id="hostPlace" placeholder="Office / Place of posting" type="text"/></div>
+<div class="field"><label>Phone Number *</label><input autocomplete="off" id="hostPhone" inputmode="numeric" maxlength="15" placeholder="Mobile number" type="tel"/></div>
+</div>
+<div class="row" style="margin-top:12px">
+<div class="field"><label>Purpose of Hosting *</label><select id="hostPurpose"><option value="">Select purpose</option><option>Official / Departmental Quiz</option><option>Educational / Academic Quiz</option><option>Training / Workshop Quiz</option><option>Competition / Event</option><option>Other</option></select></div>
+<div class="field"><label>Purpose Details *</label><input autocomplete="off" id="hostPurposeDetails" placeholder="Briefly state the purpose" type="text"/></div>
+</div>
+<div class="row" style="margin-top:12px"><button class="success" id="registrationSubmitBtn" type="button">📝 Submit Registration &amp; Create Account</button></div>
+</div>
+<div class="row" style="margin-top:12px"><button id="signupBtn" type="button">Create Host Account</button><button class="success" id="loginBtn" type="button">Sign In</button></div><p style="margin-top:8px"><button class="secondary" id="forgotPasswordBtn" type="button">Forgot Password?</button></p>
+<p id="loginMsg"></p>
+</div>
+
+<div class="card hidden admin-launcher-card" id="adminLauncher">
+<button class="admin-launcher" id="openAdminApprovalBtn" type="button">🛡️ <span>Host Approval</span><small>Administrator</small></button>
+</div>
+<div class="card hidden admin-launcher-card" id="adminPageLauncher"><button class="admin-launcher" id="openAdminPageBtn" type="button">⚙️ <span>Administrator Page</span><small>Manage Host Requests</small></button></div>
+<div aria-hidden="true" class="admin-modal hidden" id="adminModal">
+<div class="admin-modal-box">
+<div class="admin-modal-head">
+<div><h2>🛡️ Host Approval</h2><p class="muted">Approve, reject, revoke or delete host requests.</p></div>
+<button class="secondary" id="closeAdminApprovalBtn" type="button">✕ Close</button>
+</div>
+<div class="notice">Only the Administrator can approve or revoke permission to conduct competitions. <b>Delete</b> removes the host request record from the database; it does not delete the login account.</div>
+<div class="status" id="adminStatus">Loading host requests…</div>
+<div class="tablewrap admin-table-wrap" style="margin-top:12px"><table><thead><tr><th>Email</th><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Phone</th><th>Purpose</th><th>Status</th><th>Requested</th><th>Action</th></tr></thead><tbody id="hostRequests"><tr><td colspan="9">No host requests.</td></tr></tbody></table></div>
+<div class="admin-modal-foot"><button class="success" id="backToMainBtn" type="button">↩ Back to Main Menu</button></div>
+</div>
+</div>
+<div class="card hidden" id="hostAccessCard">
+<h2>🔐 Host Permission</h2>
+<div class="status" id="hostAccessStatus"></div>
+<div class="status hidden" id="hostProfileUpdate" style="margin-top:12px">
+<b>Complete / Update Host Registration</b>
+<p class="muted">Please provide the following information so the Administrator can review your host request.</p>
+<div class="row">
+<div class="field"><label>Host Name *</label><input autocomplete="off" id="updateHostName" type="text"/></div>
+<div class="field"><label>Designation *</label><input autocomplete="off" id="updateHostDesignation" type="text"/></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="field"><label>Place of Posting *</label><input autocomplete="off" id="updateHostPlace" type="text"/></div>
+<div class="field"><label>Phone Number *</label><input autocomplete="off" id="updateHostPhone" inputmode="numeric" maxlength="15" type="tel"/></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="field"><label>Purpose of Hosting *</label><select id="updateHostPurpose"><option value="">Select purpose</option><option>Official / Departmental Quiz</option><option>Educational / Academic Quiz</option><option>Training / Workshop Quiz</option><option>Competition / Event</option><option>Other</option></select></div>
+<div class="field"><label>Purpose Details *</label><input autocomplete="off" id="updateHostPurposeDetails" type="text"/></div>
+</div>
+<div class="row" style="margin-top:12px"><button class="success" id="saveHostProfileBtn" type="button">💾 Save Registration Details</button></div>
+<p id="hostProfileUpdateMsg"></p>
+</div>
+<div class="row" style="margin-top:12px"><button class="secondary" id="pendingLogoutBtn" type="button">🚪 Sign Out</button></div>
+</div>
+<div class="hidden" id="hostMenu">
+<section class="host-hero">
+<h2>Host Control Centre</h2>
+<p>Select the examination mode you want to conduct. Each module opens in its dedicated setup page.</p>
+</section>
+<div class="host-menu-grid">
+<div class="host-menu-card live"><div class="host-menu-icon">🏆</div><h3>Live Quiz Competition</h3><p>Run the original live quiz with host-controlled questions, prizes, winners, live monitoring and competition controls.</p><button id="openLiveQuizBtn" type="button">Open Live Quiz Competition →</button></div>
+<div class="host-menu-card mcq"><div class="host-menu-icon">📝</div><h3>MCQ Exam Setup</h3><p>Create and manage multiple-choice examinations, schedules, questions, timers and results.</p><button class="success" id="openMcqBtn" type="button">Open MCQ Exam Setup →</button></div>
+<div class="host-menu-card general"><div class="host-menu-icon">✍️</div><h3>General Question Exam Setup</h3><p>Set up descriptive/general-question examinations in the dedicated examination module.</p><button class="warning" id="openGeneralBtn" type="button">Open General Exam Setup →</button></div>
+<div class="host-menu-card" style="border-top:5px solid #7c3aed"><div class="host-menu-icon">📊</div><h3>Other Exam Result Publication</h3><p>Publish results of examinations conducted outside this portal. Upload the prepared Excel result sheet and make results searchable by mobile number.</p><div class="host-tools" style="margin-top:auto"><button style="background:#7c3aed" id="openOtherResultsBtn" type="button">Publish Other Exam Results →</button><button class="danger" id="openOtherResultsManageBtn" type="button">🗑 Manage / Delete Results</button></div></div>
+<div class="host-menu-card" style="border-top:5px solid #be185d"><div class="host-menu-icon">🏅</div><h3>Hindi Pakhwada 2026 Result Publication</h3><p>Upload and publish Hindi Pakhwada examination marksheets. Participants can search their result using their registered mobile number in the Participant Panel.</p><div class="host-tools" style="margin-top:auto"><button style="background:#be185d" id="openHindiResultsBtn" type="button">Publish Hindi Pakhwada Results →</button></div></div>
+</div>
+<div class="card" style="margin-top:18px"><h3>📊 Result Management</h3><p class="muted">Access MCQ result management separately when you need to review or export completed examination results.</p><div class="host-tools"><button class="secondary" id="openMcqResultsBtn" type="button">Open MCQ Results</button><button class="success" id="openMcqLiveResultsBtn" type="button">🏁 MCQ Live Athlete-wise Result</button><button class="danger" id="homeLogoutBtn" type="button">🚪 Sign Out</button></div></div>
+<div class="host-home-note">🔐 <b>Host security:</b> Only approved hosts can open the examination modules. Administrator approval remains unchanged.</div>
+</div>
+
+
+<div class="hidden" id="hostApp">
+<div class="card" style="border-top:5px solid #1769e0">
+<h2>🏆 Live Quiz Competition</h2>
+<p class="muted">Create a new quiz room or resume a saved room. The Live Quiz controls below remain inside the same authenticated Host Portal, so you will not be asked to log in again.</p>
+<div class="row" style="margin-top:12px">
+<div class="field"><label>Quiz Title</label><input id="quizTitle" value="Live Quiz Competition" placeholder="Quiz title"/></div>
+<div class="field"><label>Number of Questions</label><input id="qCount" min="1" max="100" type="number" value="30"/></div>
+<div class="field"><label>Timer per Question (seconds)</label><input id="timerSeconds" min="5" max="3600" type="number" value="30"/></div>
+</div>
+<div class="row" style="margin-top:12px"><button class="success" id="createRoomBtn" type="button">➕ CREATE NEW QUIZ ROOM</button><button class="secondary" id="resumeRoomBtn" type="button">▶ RESUME SELECTED ROOM</button><button class="danger" id="deleteRoomBtn" type="button">🗑 DELETE CLOSED ROOM</button></div>
+<div class="row" style="margin-top:12px">
+<div class="field"><label>Saved Quiz Rooms</label><select id="existingRooms"><option value="">Select a saved quiz room</option></select></div>
+<div class="field"><label>Current Room</label><div class="status" id="roomInfo"><b>Room Code:</b> <span id="roomCode">—</span> &nbsp; <b>Status:</b> <span id="roomState"><span class="badge">not opened</span></span></div></div>
+</div>
+<div class="row" style="margin-top:12px"><div class="field"><label>Room Timer</label><input id="roomTimerSeconds" min="5" max="3600" type="number" value="30"/></div><div class="field" style="justify-content:end"><button class="secondary" id="updateTimerBtn" type="button">⏱ UPDATE TIMER</button><p id="timerSettingMsg" class="muted" style="margin:6px 0 0"></p></div></div>
+</div>
+<div class="card"><h3>🏠 Host Portal</h3><p class="muted">Return to the main Host Control Centre to choose another examination module.</p><div class="row"><button class="secondary" id="backHostHomeBtn2" type="button">← Back to Host Home</button></div></div>
+<div class="hidden grid" id="quizControls">
+<div>
+<div class="card" style="margin-bottom:12px">
+<h2>📄 Upload Questions from Word Document</h2>
+<p class="notice">Upload a .docx containing numbered questions, options A–D, and a separate Answer Key. Prize amounts are NOT taken from the Word file.</p>
+<input accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" id="wordFileInput" type="file"/>
+<button id="importWordBtn" style="margin-top:10px" type="button">Import Questions</button>
+<p id="wordImportMsg"></p>
+</div>
+<div class="card">
+<h2 id="editorHeading">Question 1</h2>
+<div class="field"><label>Question</label><textarea id="questionText"></textarea></div>
+<div class="row" style="margin-top:10px">
+<div class="field"><label>Option A</label><input id="optA"/></div><div class="field"><label>Option B</label><input id="optB"/></div>
+</div><div class="row" style="margin-top:10px">
+<div class="field"><label>Option C</label><input id="optC"/></div><div class="field"><label>Option D</label><input id="optD"/></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="field"><label>Correct Answer</label><select id="correct"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
+<div class="field"><label>Prize (₹)</label><input id="prize" min="0" type="number" value="500"/></div>
+</div>
+<div class="row" style="margin-top:12px"><button id="saveQBtn">Save Question</button><button class="secondary" id="prevQBtn">Previous</button><button class="secondary" id="nextEditBtn">Next Question</button></div>
+</div>
+<div class="card">
+<h2>⏱️ Live Question Control &amp; Timer</h2>
+<div class="host-countdown" id="hostCountdown">00:00</div>
+<div class="status" id="liveQuestion">No question is open.</div>
+<div class="row"><button class="success" id="showBtn">▶ SHOW QUESTION</button><button class="danger" id="closeBtn">■ CLOSE ANSWERS</button><button class="warning" id="revealBtn">🏆 SHOW ANSWER &amp; WINNER</button><button class="secondary" id="nextBtn">⏭ NEXT QUESTION</button><button class="danger" id="closeCompetitionBtn">🔒 CLOSE COMPETITION</button><button class="success" disabled="" id="restartCompetitionBtn">🔄 RESTART COMPETITION</button></div>
+<p id="controlMsg"></p>
+</div>
+</div>
+<div>
+<div class="card"><h2>Live Statistics</h2><div class="statgrid"><div class="stat">Online<b id="onlineCount">0</b></div><div class="stat">Answers<b id="answerCount">0</b></div><div class="stat">Blocked<b id="blockedCount">0</b></div><div class="stat">Winners<b id="winnerCount">0</b></div></div></div>
+<div class="card"><h2>Winner / Tie Break</h2><div class="status" id="winnerBox">No winner selected.</div><button class="warning" disabled="" id="randomTieBtn">🎲 RANDOM TIE-BREAK</button></div>
+<div class="card">
+<h2>🏆 Blocked Winners</h2>
+<p class="muted">Legitimate prize winners remain blocked from all remaining questions. They are not treated as disqualified.</p>
+<div class="tablewrap" style="max-height:260px">
+<table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Prize</th><th>Status</th></tr></thead>
+<tbody id="blockedWinners"><tr><td colspan="6">No blocked winners yet.</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="card">
+<h2>🚫 Disqualified Participants</h2>
+<p class="muted">Anti-cheating violations block the participant from the competition. The host may unblock a participant when necessary; previous violation history is retained.</p>
+<div class="tablewrap" style="max-height:260px">
+<table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Violations</th><th>Host Action</th></tr></thead>
+<tbody id="disqualifiedParticipants"><tr><td colspan="6">No disqualified participants.</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="card"><h2>Participants</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Mobile</th><th>Violations</th><th>Status</th><th>Host Action</th></tr></thead><tbody id="participants"></tbody></table></div></div>
+<div class="card"><h2>Current Answers</h2><div class="tablewrap"><table><thead><tr><th>Name</th><th>Designation</th><th>Place of Posting</th><th>Answer</th><th>Correct</th><th>Time</th><th>Eligible</th></tr></thead><tbody id="answers"></tbody></table></div></div>
+<div class="card"><h2>📚 Competition History &amp; Results</h2>
+<p class="muted">Each time this room is closed, its results are frozen and saved separately. Select the competition date/time to view its frozen results or download its Excel file.</p>
+<div class="row" style="margin-top:10px"><div class="field"><label>Competition Date / Run</label><select id="resultRunSelect"><option value="">Select a completed competition</option></select></div><div class="field" style="justify-content:end"><button class="secondary" id="viewResultBtn" type="button">👁 VIEW SELECTED RESULT</button><button class="success" id="exportBtn" type="button">📊 DOWNLOAD SELECTED EXCEL</button></div></div>
+<div class="status" id="selectedResultSummary" style="margin-top:12px">Select a completed competition to view its frozen result.</div>
+<div class="hidden" id="selectedResultTables" style="margin-top:12px">
+<div class="tablewrap"><h3>🏆 Prize Winners</h3><table><thead><tr><th>Question</th><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Prize</th></tr></thead><tbody id="historyWinners"></tbody></table></div>
+<div class="tablewrap" style="margin-top:12px"><h3>🚫 Disqualified Participants</h3><table><thead><tr><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Violations</th><th>Status</th></tr></thead><tbody id="historyDisqualified"></tbody></table></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="host.js?v=20261018-option1-backfix1" type="module"></script>
+</body></html>
