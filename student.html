@@ -1,10 +1,67 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css?v=20261018-appearance-final"><style>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css?v=20261008-69"><style>
 .dashboard-tabs{display:flex;gap:8px;margin-bottom:18px}.tab{border:1px solid #ccd5e1;background:#eef3f8;padding:12px 20px;border-radius:10px;font-weight:700}.tab.active{background:#1769e0;color:#fff}.assignment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.assignment-card{text-align:left;padding:20px;border:1px solid #d9e1ea;border-radius:14px;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:8px}.assignment-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}.assignment-card span{font-size:30px}.assignment-card b{font-size:18px}.assignment-card small{color:#64748b}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}.modal-card{background:#fff;width:min(520px,100%);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modal-card input{width:100%;box-sizing:border-box;margin-top:8px;padding:13px;border:1px solid #ccd5e1;border-radius:8px;font-size:18px}.modal-card .row{display:flex;gap:10px}.modal-card button{margin-top:0}
-</style></head>
+</style>
+<style id="participant-approved-design">
+body#studentBody{background:radial-gradient(ellipse at 0% 28%,#dceeff 0,transparent 30%),radial-gradient(ellipse at 100% 35%,#e0efff 0,transparent 28%),linear-gradient(180deg,#f8fbff,#eaf4ff 100%);color:#12315b;min-height:100vh}
+#studentBody .participant-topbar{position:relative;top:auto;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:12px clamp(16px,2.4vw,36px);background:linear-gradient(100deg,#041d3d,#062c58 60%,#064b9e);box-shadow:0 5px 18px #062b5829}
+.participant-brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:900;font-size:clamp(17px,1.8vw,24px);white-space:nowrap;letter-spacing:-.4px}.brand-trophy{font-size:31px;filter:drop-shadow(0 2px 2px #0003)}
+.participant-nav{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}.participant-nav a{display:inline-flex;align-items:center;gap:7px;color:#e5efff;text-decoration:none;font-size:14px;font-weight:750;padding:11px 13px;border-radius:10px;white-space:nowrap;transition:background .16s,color .16s}.participant-nav a:hover{background:#ffffff19;color:#fff}.participant-nav a.active{background:linear-gradient(135deg,#1688f8,#0870d7);color:#fff;box-shadow:0 5px 15px #0074e23b}
+#studentBody .participant-connection{background:#eef6ff;color:#0755a5;padding:9px 13px;font-size:12px;box-shadow:none}
+.participant-hero{position:relative;display:flex;align-items:center;justify-content:center;gap:24px;min-height:185px;padding:24px clamp(16px,4vw,52px) 22px;overflow:hidden;background:linear-gradient(110deg,#e6f3ff,#fff 48%,#e3f1ff);border-bottom:1px solid #d5e9ff}
+.participant-hero:before,.participant-hero:after{content:"";position:absolute;width:300px;height:300px;border-radius:50%;background:#cce5ff80;pointer-events:none}.participant-hero:before{left:-125px;top:-155px}.participant-hero:after{right:-120px;bottom:-200px;background:#b8d9ff70}
+.participant-hero-copy{position:relative;z-index:1;text-align:center;max-width:800px}.hero-kicker{font-size:11px;font-weight:900;letter-spacing:2px;color:#2d72b9;margin-bottom:5px}.participant-hero h1{font-size:clamp(30px,4vw,48px);line-height:1.1;color:#071c39;letter-spacing:-1.5px;margin:0 0 4px;font-weight:900}.participant-hero h2{font-size:clamp(17px,2vw,24px);color:#0782c9;margin:0 0 7px;font-weight:800}.participant-hero p{font-size:15px;color:#536b88;margin:0}.hero-art{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}.hero-art-left{width:210px;height:125px;gap:0;flex-direction:column}.hero-art-left span:first-child{font-size:54px;filter:drop-shadow(0 5px 5px #193b6122);margin-bottom:-12px}.hero-art-left span:last-child{font-size:54px;filter:drop-shadow(0 5px 5px #193b6122)}.hero-art-right{width:150px;height:130px}.hero-art-right span{font-size:82px;filter:drop-shadow(0 7px 5px #9a6b1630)}
+#studentBody>.container{width:min(1425px,calc(100% - 34px));max-width:none;margin:20px auto 44px;padding:0}
+#joinCard.card{position:relative;overflow:hidden;margin-bottom:14px;padding:clamp(18px,2.4vw,32px);border:1px solid #d6e7fb;border-radius:22px;background:#ffffffed;box-shadow:0 16px 42px #164e8d17}
+#joinCard.card:before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,#178cff,#0862c9,#4f46e5)}
+#joinCard>h2{display:none}
+#joinCard .notice{display:flex;align-items:center;gap:15px;margin:0 0 18px;padding:17px 19px;border:1px solid #d7e9ff;border-radius:15px;background:linear-gradient(110deg,#edf6ff,#f6fbff);color:#16427b;font-size:15px;line-height:1.65}
+#joinCard .notice:before{content:"i";display:flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#1395ff,#0863d8);color:white;font-family:Georgia,serif;font-size:29px;font-weight:900;font-style:normal;box-shadow:0 4px 10px #1475da35}
+#joinCard .row{display:flex;gap:16px;margin-top:12px!important;align-items:stretch}
+#joinCard .field{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:13px;row-gap:5px;min-width:0;padding:0;border:0;background:transparent;flex:1}
+#joinCard .field:before{grid-column:1;grid-row:1/3;content:"";align-self:center;width:56px;height:66px;border:1px solid #dbeafe;border-radius:14px;background:linear-gradient(145deg,#edf6ff,#e3efff);display:flex;align-items:center;justify-content:center}
+#joinCard .field:nth-child(1):before{content:"♟";font-size:29px;color:#17549b}#joinCard .field:nth-child(2):before{content:"▣";font-size:28px;color:#17549b}
+#joinCard .row:nth-of-type(3) .field:nth-child(1):before{content:"▦";font-size:28px;color:#17549b}#joinCard .row:nth-of-type(3) .field:nth-child(2):before{content:"☎";font-size:28px;color:#17549b}
+#joinCard .field label{grid-column:2;grid-row:1;margin:0 0 2px;color:#153f79;font-size:12px;letter-spacing:.55px;font-weight:900;text-transform:uppercase}
+#joinCard .field input{grid-column:2;grid-row:2;width:100%;min-width:0;height:48px;padding:0 14px;border:1.5px solid #d0e0f5;border-radius:12px;background:#fff;font-size:15px;color:#17375f;box-shadow:inset 0 1px 2px #133b6508}
+#joinCard .field input:focus{border-color:#2188ef;box-shadow:0 0 0 4px #2188ef1a}
+#participantContinueBtn{display:flex;align-items:center;justify-content:center;gap:12px;width:calc(100% - 78px);margin:19px 0 0 78px!important;min-height:56px;border-radius:12px!important;background:linear-gradient(100deg,#168eff,#0872e8)!important;color:#fff;font-size:17px;font-weight:900;box-shadow:0 7px 16px #0878e833!important}
+#participantContinueBtn:after{content:"➜";display:inline-flex;align-items:center;justify-content:center;width:31px;height:31px;border-radius:50%;background:#fff;color:#0872df;font-size:19px}
+#joinCard>div[style*="border-top"]{margin-top:21px!important;padding-top:19px!important;border-top:1px solid #e1ebf8!important}
+#joinCard .muted{font-size:16px;color:#153d75;line-height:1.5}
+#joinCard>div[style*="display:flex"]{gap:14px!important}
+#directOtherResultBtn,#directHindiPakhwadaResultBtn{display:flex;align-items:center;justify-content:center;gap:10px;flex:1;min-height:58px;padding:13px 18px!important;border-radius:13px!important;color:#fff!important;font-size:14px;font-weight:900;line-height:1.35;white-space:normal;box-shadow:0 7px 16px #123b6b20!important}
+#directOtherResultBtn{background:linear-gradient(105deg,#6555ff,#4430ce)!important}#directOtherResultBtn:before{content:"▤";font-size:23px}#directHindiPakhwadaResultBtn{background:linear-gradient(105deg,#f32c79,#cf0754)!important}#directHindiPakhwadaResultBtn:before{content:"🏅";font-size:22px}
+#joinMsg{margin:12px 0 0;font-weight:750}
+#dashboardCard .card,#quizCard .card{border:1px solid #d8e8fb;border-radius:20px;background:#ffffffed;box-shadow:0 12px 34px #164e8d12}
+#dashboardCard h2,#quizCard h2{color:#103b72;font-weight:850}#dashboardCard .dashboard-tabs{gap:8px;flex-wrap:wrap;width:auto;padding:6px;border:1px solid #dfebfa;background:#f0f6ff;border-radius:13px}#dashboardCard .tab{padding:12px 18px;border-radius:10px!important;color:#234c7b!important}#dashboardCard .tab.active{background:linear-gradient(110deg,#1478ed,#0759c8)!important;color:white!important}
+#dashboardCard .assignment-card{border:1px solid #d9e8fa!important;border-radius:16px!important;background:linear-gradient(145deg,#f1f7ff,#fff)!important;padding:22px!important}#dashboardCard .assignment-card b{color:#133d73}#dashboardCard .assignment-card small{line-height:1.55}
+#roomModal .modal-card{border:1px solid #d6e7fb;border-radius:20px}#roomModal .modal-card h2{color:#103b72}
+#quizCard .question{border:1px solid #d7e7fb;border-radius:16px;padding:20px;background:#f4f8ff;line-height:1.65}
+@media(max-width:1050px){.participant-topbar{justify-content:center!important}.participant-brand{width:100%;justify-content:center}.participant-nav{width:100%}.participant-connection{position:absolute;right:14px;top:12px}.hero-art-left{width:100px}.hero-art-right{width:90px}.hero-art-left span:first-child,.hero-art-left span:last-child{font-size:38px}.hero-art-right span{font-size:60px}}
+@media(max-width:700px){#studentBody .participant-topbar{gap:8px;padding:12px}.participant-brand{font-size:17px;padding-right:90px;justify-content:flex-start}.participant-nav{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px}.participant-nav a{font-size:12px;padding:9px 10px}.participant-nav a span{display:inline}.participant-hero{min-height:150px;padding:22px 14px}.hero-art-left,.hero-art-right{display:none}.participant-hero h1{font-size:32px}.participant-hero p{font-size:13px}#studentBody>.container{width:calc(100% - 18px);margin:13px auto 28px}#joinCard.card{padding:20px 14px;border-radius:18px}#joinCard .notice{font-size:13px;padding:13px;gap:10px}#joinCard .notice:before{flex-basis:34px;width:34px;height:34px;font-size:23px}#joinCard .row{flex-direction:column;gap:13px}#joinCard .field{grid-template-columns:44px minmax(0,1fr);column-gap:10px}#joinCard .field:before{width:44px;height:57px;font-size:23px!important}#joinCard .field input{height:46px;font-size:14px}#participantContinueBtn{width:calc(100% - 54px);margin-left:54px!important;min-height:52px;font-size:15px}#joinCard>div[style*="display:flex"]{flex-direction:column;align-items:stretch!important}#directOtherResultBtn,#directHindiPakhwadaResultBtn{width:100%;font-size:12px;min-height:52px}#joinCard .muted{font-size:14px}}
+</style>
+
+</head>
 <body id="studentBody">
-<header><div><h1>🎓 Live Quiz</h1><small>Participant Panel</small></div><span id="connection" class="badge">Connecting…</span></header>
+<header class="participant-topbar">
+  <a class="participant-brand" href="index.html" aria-label="Live Quiz Competition home"><span class="brand-trophy">🏆</span><span>Live Quiz Competition</span></a>
+  <nav class="participant-nav" aria-label="Main navigation">
+    <a href="index.html">⌂ <span>Home</span></a>
+    <a class="active" href="student.html" aria-current="page">♟ <span>Participant</span></a>
+    <a href="host.html">▣ <span>Host</span></a>
+    <a href="administrator.html">⬟ <span>Administrator</span></a>
+    <a href="other-results.html">▥ <span>Results</span></a>
+    <a href="hindi-pakhwada-result.html">▤ <span>Hindi Pakhwada</span></a>
+  </nav>
+  <span id="connection" class="badge participant-connection">Connecting…</span>
+</header>
+<section class="participant-hero">
+  <div class="hero-art hero-art-left" aria-hidden="true"><span>🎓</span><span>📚</span></div>
+  <div class="participant-hero-copy"><div class="hero-kicker">LIVE QUIZ &amp; EXAMINATION PORTAL</div><h1>Participant Panel</h1><h2>Join the Live Quiz Competition</h2><p>Enter your details below to access your assignments and results.</p></div>
+  <div class="hero-art hero-art-right" aria-hidden="true"><span>🏆</span></div>
+</section>
 <div class="container">
   <div id="joinCard" class="card">
     <h2>Participant Login</h2>
