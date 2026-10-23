@@ -61,6 +61,14 @@
  .host-login-card{margin-top:16px!important}
 }
 </style>
+
+<style>
+/* Self-contained hero artwork: no external image paths or data-URI dependencies. */
+.host-login-hero-dynamic .host-hero-art-illustration{position:relative;display:flex;align-items:center;justify-content:center;min-height:220px;overflow:visible;font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif;filter:none}
+.host-login-hero-dynamic .host-hero-art-illustration .art-main{display:flex;align-items:center;justify-content:center;width:150px;height:150px;border-radius:32px;background:linear-gradient(145deg,#fff,#e2efff);border:1px solid #c9defb;box-shadow:0 18px 36px rgba(16,63,130,.14);font-size:92px;line-height:1}
+.host-login-hero-dynamic .host-hero-art-illustration .art-secondary{position:absolute;right:12%;bottom:22px;display:flex;align-items:center;justify-content:center;width:82px;height:82px;border-radius:22px;background:#fff;border:1px solid #d8e7fb;box-shadow:0 12px 24px rgba(16,63,130,.12);font-size:48px}
+@media(max-width:900px){.host-login-hero-dynamic .host-hero-art-illustration .art-main{width:110px;height:110px;font-size:68px}.host-login-hero-dynamic .host-hero-art-illustration .art-secondary{width:62px;height:62px;font-size:36px}}
+</style>
 </head>
 <body>
 <nav class="host-site-nav" aria-label="Main navigation">
@@ -75,9 +83,9 @@
 </nav>
 <div class="host-page-shell">
 <section class="host-login-hero host-login-hero-dynamic" aria-label="Host Portal introduction">
-  <div class="host-hero-art host-hero-art-left" aria-hidden="true"><img src="assets/host-illustration-left.png" alt=""></div>
+  <div class="host-hero-art host-hero-art-left host-hero-art-illustration" aria-hidden="true"><span class="art-main">💻</span><span class="art-secondary">📋</span></div>
   <div class="host-login-hero-copy"><h2>Host Portal</h2><strong>Host Control Centre</strong><p>Create and manage competitions, conduct live quizzes and view participants.</p></div>
-  <div class="host-hero-art host-hero-art-right" aria-hidden="true"><img src="assets/host-illustration-right.png" alt=""></div>
+  <div class="host-hero-art host-hero-art-right host-hero-art-illustration" aria-hidden="true"><span class="art-main">🏆</span><span class="art-secondary">📚</span></div>
 </section>
 <div class="container">
 <div class="card host-login-card" id="loginCard">
