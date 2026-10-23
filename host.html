@@ -1,13 +1,46 @@
 <!doctype html>
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Host Portal — Home</title><link href="styles.css?v=20261018-appearance-final" rel="stylesheet"/><style>.host-countdown{font-size:46px;font-weight:900;text-align:center;padding:12px 16px;margin:8px 0 14px;border-radius:14px;background:#fff7ed;color:#b42318;border:2px solid #fed7aa;letter-spacing:2px}</style><style>
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Host Portal — Home</title><link href="styles.css?v=20261008-64" rel="stylesheet"/><style>.host-countdown{font-size:46px;font-weight:900;text-align:center;padding:12px 16px;margin:8px 0 14px;border-radius:14px;background:#fff7ed;color:#b42318;border:2px solid #fed7aa;letter-spacing:2px}</style><style>
+/* Modern blue Host Portal appearance; functional IDs and scripts remain unchanged. */
+.host-site-nav{height:auto;min-height:76px;background:linear-gradient(110deg,#061b3c,#0b2c5d);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px clamp(18px,3vw,42px);box-shadow:0 5px 22px rgba(4,24,55,.2);position:relative;z-index:5}
+.host-brand{display:flex;align-items:center;gap:12px;white-space:nowrap;font-weight:800;font-size:clamp(17px,2vw,24px)}.host-brand-mark{font-size:34px;line-height:1}
+.host-nav-links{display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}.host-nav-links a{color:#e8f1ff;text-decoration:none;padding:12px 15px;border-radius:12px;font-weight:700;font-size:14px;transition:background .18s ease}.host-nav-links a:hover{background:rgba(255,255,255,.12)}.host-nav-links a.active{background:#1261ed;color:#fff;box-shadow:0 5px 16px rgba(18,97,237,.28)}
+.host-auth-pill{background:#eaf2ff;color:#16458c;border-radius:999px;padding:10px 15px;font-size:13px;font-weight:800;white-space:nowrap}
+.host-page-shell{max-width:1440px;margin:0 auto;padding:24px clamp(16px,3vw,40px) 48px}
+.host-login-hero{min-height:205px;border-radius:24px;background:linear-gradient(120deg,#f5faff 0%,#e4f2ff 50%,#f8fbff 100%);border:1px solid #d6e8ff;display:grid;grid-template-columns:minmax(130px,1fr) minmax(280px,1.4fr) minmax(130px,1fr);align-items:center;gap:18px;padding:24px 30px;margin-bottom:22px;overflow:hidden;position:relative;box-shadow:0 12px 30px rgba(25,89,170,.08)}
+.host-login-hero:before,.host-login-hero:after{content:"";position:absolute;border-radius:50%;background:rgba(53,139,255,.08);pointer-events:none}.host-login-hero:before{width:260px;height:260px;left:-100px;bottom:-190px}.host-login-hero:after{width:300px;height:300px;right:-120px;top:-200px}
+.host-hero-art{font-size:clamp(48px,6vw,78px);text-align:center;filter:drop-shadow(0 8px 8px rgba(20,75,145,.12));position:relative;z-index:1}.host-login-hero-copy{text-align:center;position:relative;z-index:1}.host-login-hero-copy h2{font-size:clamp(30px,4vw,48px);line-height:1.1;margin:0 0 8px;color:#102b59}.host-login-hero-copy strong{display:block;color:#075ee9;font-size:clamp(17px,2vw,23px);margin-bottom:12px}.host-login-hero-copy p{color:#425a7b;font-size:15px;line-height:1.6;margin:0 auto;max-width:560px}
+.host-login-card{max-width:1040px;margin:0 auto!important;border:1px solid #dbe8f8!important;border-radius:24px!important;padding:clamp(22px,3vw,38px)!important;background:#fff!important;box-shadow:0 18px 48px rgba(22,71,136,.12)!important}
+.host-login-card>h2{font-size:clamp(25px,3vw,34px);color:#102b59;display:flex;align-items:center;gap:14px;margin:0 0 20px}.host-login-card>h2:before{content:"▣";display:inline-grid;place-items:center;width:54px;height:54px;border-radius:50%;background:#1261ed;color:#fff;font-size:26px;box-shadow:0 6px 16px rgba(18,97,237,.2)}
+.host-login-card .notice{background:#f0f7ff!important;border:1px solid #d2e6ff!important;border-radius:14px!important;color:#214675!important;padding:15px 18px!important;line-height:1.65}.host-login-card .field label{font-size:13px;font-weight:800;color:#24466f;text-transform:uppercase;letter-spacing:.35px}.host-login-card input,.host-login-card select{min-height:52px;border:1px solid #cbdcf2!important;border-radius:12px!important;background:#fff!important;padding:12px 15px!important;font-size:15px!important;box-shadow:inset 0 1px 2px rgba(20,60,110,.03)}.host-login-card input:focus,.host-login-card select:focus{outline:3px solid rgba(18,97,237,.13);border-color:#4385f5!important}.host-login-card button{border-radius:12px!important;min-height:48px;font-weight:800!important;padding:12px 20px!important;box-shadow:0 5px 12px rgba(16,58,110,.1);transition:transform .16s ease,box-shadow .16s ease}.host-login-card button:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(16,58,110,.15)}
+.host-login-card #signupBtn{background:#1261ed!important}.host-login-card #loginBtn{background:#079657!important}.host-login-card #forgotPasswordBtn{background:#e8f1ff!important;color:#1356b5!important}
+.host-login-card .status{border-radius:14px}
+.host-menu .host-hero{border-radius:22px}.host-page-shell:has(#hostMenu:not(.hidden))>.host-login-hero{display:none}
+@media(max-width:900px){.host-site-nav{align-items:flex-start;flex-direction:column}.host-nav-links{justify-content:flex-start}.host-login-hero{grid-template-columns:90px 1fr 90px;padding:20px 14px}.host-hero-art{font-size:48px}}
+@media(max-width:600px){.host-brand{font-size:18px}.host-nav-links{width:100%;gap:3px}.host-nav-links a{padding:9px 10px;font-size:12px}.host-login-hero{grid-template-columns:1fr;gap:8px;padding:22px 18px}.host-login-hero .host-hero-art{display:none}.host-login-card .row{display:flex;flex-direction:column;gap:12px}.host-page-shell{padding:16px 12px 32px}}
+</style><style>
 .host-hero{background:linear-gradient(135deg,#071f52 0%,#123d91 48%,#1d74e8 100%);color:#fff;border-radius:24px;padding:34px 34px 30px;margin-bottom:20px;box-shadow:0 18px 50px rgba(15,61,145,.22);position:relative;overflow:hidden}.host-hero:after{content:"";position:absolute;width:280px;height:280px;border-radius:50%;right:-90px;top:-120px;background:rgba(255,255,255,.08)}.host-hero h2{font-size:34px;margin:0 0 8px;position:relative;z-index:1}.host-hero p{margin:0;opacity:.9;font-size:15px;position:relative;z-index:1}.host-menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:18px}.host-menu-card{border:1px solid #dbe5f3;border-radius:20px;padding:24px;background:#fff;box-shadow:0 10px 28px rgba(20,40,80,.07);transition:.2s;display:flex;flex-direction:column;min-height:190px}.host-menu-card:hover{transform:translateY(-3px);box-shadow:0 16px 35px rgba(20,40,80,.12)}.host-menu-icon{font-size:42px;margin-bottom:12px}.host-menu-card h3{font-size:20px;margin:0 0 7px}.host-menu-card p{color:#64748b;line-height:1.5;flex:1;margin:0 0 18px}.host-menu-card button{width:100%;font-size:15px;padding:13px 16px}.host-menu-card.live{border-top:5px solid #1769e0}.host-menu-card.mcq{border-top:5px solid #0a9b61}.host-menu-card.general{border-top:5px solid #d97706}.host-tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.host-tools button{min-width:180px}.host-home-note{margin-top:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:13px 15px;color:#475569}@media(max-width:850px){.host-menu-grid{grid-template-columns:1fr}.host-hero h2{font-size:28px}}
 </style></head>
 <body>
-<header><div><h1>🏆 Host Portal</h1><small>Host Control Centre</small></div><span class="badge" id="authStatus">Connecting…</span></header>
+<nav class="host-site-nav" aria-label="Main navigation">
+  <a class="host-brand" href="index.html" aria-label="Live Quiz Competition home"><span class="host-brand-mark">🏆</span><span>Live Quiz Competition</span></a>
+  <div class="host-nav-links">
+    <a href="index.html">⌂ &nbsp;Home</a>
+    <a href="student.html">♟ &nbsp;Participant</a>
+    <a class="active" href="host.html" aria-current="page">▣ &nbsp;Host</a>
+    <a href="administrator.html">⬡ &nbsp;Administrator</a>
+  </div>
+  <span class="host-auth-pill" id="authStatus">Connecting…</span>
+</nav>
+<div class="host-page-shell">
+<section class="host-login-hero" aria-label="Host Portal introduction">
+  <div class="host-hero-art" aria-hidden="true">💻📋</div>
+  <div class="host-login-hero-copy"><h2>Host Portal</h2><strong>Host Control Centre</strong><p>Create and manage competitions, conduct live quizzes and view participants.</p></div>
+  <div class="host-hero-art" aria-hidden="true">📚🏆</div>
+</section>
 <div class="container">
-<div class="card" id="loginCard">
+<div class="card host-login-card" id="loginCard">
 <h2>Host Login</h2><p class="notice">This panel is for the host only. Create/sign in with an Email/Password account.</p>
 <div class="row"><div class="field"><label>Email</label><input autocomplete="email" id="email" type="email"/></div><div class="field"><label>Password</label><input autocomplete="new-password" id="password" type="password"/></div></div>
 <div class="notice" style="margin-top:12px"><b>Host registration</b><br/>For a new Host Account, click <b>Create Host Account</b> below. You will be required to complete all Host details <b>before the host account and host request are created</b>.</div>
@@ -166,6 +199,7 @@
 <div class="hidden" id="selectedResultTables" style="margin-top:12px">
 <div class="tablewrap"><h3>🏆 Prize Winners</h3><table><thead><tr><th>Question</th><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Prize</th></tr></thead><tbody id="historyWinners"></tbody></table></div>
 <div class="tablewrap" style="margin-top:12px"><h3>🚫 Disqualified Participants</h3><table><thead><tr><th>Name</th><th>Designation</th><th>Place</th><th>Mobile</th><th>Violations</th><th>Status</th></tr></thead><tbody id="historyDisqualified"></tbody></table></div>
+</div>
 </div>
 </div>
 </div>
