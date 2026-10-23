@@ -69,6 +69,28 @@
 .host-login-hero-dynamic .host-hero-art-illustration .art-secondary{position:absolute;right:12%;bottom:22px;display:flex;align-items:center;justify-content:center;width:82px;height:82px;border-radius:22px;background:#fff;border:1px solid #d8e7fb;box-shadow:0 12px 24px rgba(16,63,130,.12);font-size:48px}
 @media(max-width:900px){.host-login-hero-dynamic .host-hero-art-illustration .art-main{width:110px;height:110px;font-size:68px}.host-login-hero-dynamic .host-hero-art-illustration .art-secondary{width:62px;height:62px;font-size:36px}}
 </style>
+
+<style>
+/* Final compact layout correction based on the uploaded current host.html.
+   Appearance only: no IDs, links, authentication, or scripts changed. */
+.host-login-hero-dynamic{min-height:178px!important;padding:14px clamp(16px,2.5vw,36px)!important;gap:10px!important;grid-template-columns:minmax(170px,.85fr) minmax(300px,1.4fr) minmax(170px,.85fr)!important;margin-bottom:0!important}
+.host-login-hero-dynamic .host-hero-art{height:160px!important;min-height:150px!important}
+.host-login-hero-dynamic .host-hero-art-illustration .art-main{width:112px;height:112px;font-size:68px;border-radius:26px}
+.host-login-hero-dynamic .host-hero-art-illustration .art-secondary{width:62px;height:62px;font-size:36px;bottom:8px}
+.host-login-hero-dynamic .host-login-hero-copy h2{font-size:clamp(32px,3.5vw,48px)!important;margin-bottom:5px!important}
+.host-login-hero-dynamic .host-login-hero-copy strong{font-size:clamp(18px,1.8vw,24px)!important;margin-bottom:8px!important}
+.host-login-hero-dynamic .host-login-hero-copy p{font-size:15px!important;line-height:1.45!important}
+.host-page-shell>.container{max-width:1000px!important;padding:0 22px!important}
+.host-login-card{margin:18px auto 0!important;padding:24px clamp(20px,2.5vw,32px)!important;border-radius:20px!important}
+.host-login-card>h2{font-size:clamp(25px,2.4vw,32px)!important;margin-bottom:14px!important}
+.host-login-card>h2:before{width:48px;height:48px;font-size:23px}
+.host-login-card .notice{padding:12px 16px!important;line-height:1.5!important}
+.host-login-card input,.host-login-card select{min-height:46px!important;padding:10px 13px!important}
+.host-login-card button{min-height:43px!important;padding:10px 17px!important}
+@media(max-width:900px){.host-login-hero-dynamic{grid-template-columns:100px 1fr 100px!important;min-height:155px!important;padding:12px 10px!important}.host-login-hero-dynamic .host-hero-art{height:130px!important;min-height:120px!important}.host-login-hero-dynamic .host-hero-art-illustration .art-main{width:88px;height:88px;font-size:54px}.host-login-hero-dynamic .host-hero-art-illustration .art-secondary{width:50px;height:50px;font-size:29px}.host-page-shell>.container{padding:0 14px!important}}
+@media(max-width:600px){.host-login-hero-dynamic{grid-template-columns:1fr!important;min-height:0!important;padding:22px 16px!important}.host-login-hero-dynamic .host-hero-art{display:none!important}.host-login-hero-dynamic .host-login-hero-copy h2{font-size:34px!important}.host-login-card{margin-top:14px!important;padding:20px 16px!important}.host-login-card .row{display:flex;flex-direction:column;gap:12px}}
+</style>
+
 </head>
 <body>
 <nav class="host-site-nav" aria-label="Main navigation">
