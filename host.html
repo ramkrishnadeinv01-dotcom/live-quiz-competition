@@ -234,6 +234,31 @@ body:has(.host-page-shell #loginCard:not(.hidden)) .host-login-card #registratio
 }
 </style>
 
+<style id="host-portal-contrast-fix">
+/* Final contrast override for the logged-in Host dashboard only. */
+body #hostMenu:not(.hidden) > .host-hero {
+  background: linear-gradient(115deg,#eaf7ff 0%,#d7edff 55%,#b9e1ff 100%) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  color: #102b60 !important;
+}
+body #hostMenu:not(.hidden) > .host-hero h2 {
+  color: #092967 !important;
+  -webkit-text-fill-color: #092967 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+body #hostMenu:not(.hidden) > .host-hero p {
+  color: #234c7f !important;
+  -webkit-text-fill-color: #234c7f !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+</style>
 </head>
 <body>
 <nav class="host-site-nav" aria-label="Main navigation">
