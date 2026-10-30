@@ -53,7 +53,7 @@ body#studentBody{background:radial-gradient(ellipse at 0% 28%,#dceeff 0,transpar
     <a href="host.html">▣ <span>Host</span></a>
     <a href="administrator.html">⬟ <span>Administrator</span></a>
     <a href="other-results.html">▥ <span>Results</span></a>
-    <a href="hindi-pakhwada-result.html">▤ <span>Hindi Pakhwada</span></a>
+    <a href="./hindi-pakhwada-result.html?v=20261030-navfix">▤ <span>Hindi Pakhwada</span></a>
   </nav>
   <span id="connection" class="badge participant-connection">Connecting…</span>
 </header>
@@ -78,8 +78,8 @@ body#studentBody{background:radial-gradient(ellipse at 0% 28%,#dceeff 0,transpar
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0">
       <p class="muted" style="margin:0 0 8px"><b>Checking a result from an examination conducted outside this portal?</b></p>
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-        <button id="directOtherResultBtn" type="button" style="background:#7c3aed">📊 RESULT OF OTHER EXAM — SEARCH BY MOBILE NUMBER</button>
-        <button id="directHindiPakhwadaResultBtn" type="button" style="background:#b45309">🏅 HINDI PAKHWADA 2026 RESULT</button>
+        <a id="directOtherResultBtn" href="./other-result.html?v=20261030-navfix" role="button" style="background:linear-gradient(105deg,#6555ff,#4430ce);display:flex;align-items:center;justify-content:center;gap:10px;flex:1;min-height:58px;padding:13px 18px;border-radius:13px;color:#fff;font-size:14px;font-weight:900;line-height:1.35;text-decoration:none;box-shadow:0 7px 16px #123b6b20">📊 RESULT OF OTHER EXAM — SEARCH BY MOBILE NUMBER</a>
+        <a id="directHindiPakhwadaResultBtn" href="./hindi-pakhwada-result.html?v=20261030-navfix" role="button" style="background:linear-gradient(105deg,#f32c79,#cf0754);display:flex;align-items:center;justify-content:center;gap:10px;flex:1;min-height:58px;padding:13px 18px;border-radius:13px;color:#fff;font-size:14px;font-weight:900;line-height:1.35;text-decoration:none;box-shadow:0 7px 16px #123b6b20">🏅 HINDI PAKHWADA 2026 RESULT</a>
       </div>
     </div>
     <p id="joinMsg"></p>
@@ -159,8 +159,7 @@ function quickParticipantContinue(){
   document.getElementById('participantWelcome').textContent=`Welcome, ${name} • ${designation} • ${place}`;
   document.getElementById('connection').textContent='Ready';
 }
-document.getElementById('directOtherResultBtn').onclick=function(){location.href='other-result.html';};
-document.getElementById('directHindiPakhwadaResultBtn').onclick=function(){location.href='hindi-pakhwada-result.html';};
+
 </script>
-<script type="module" src="student.js?v=20261008-71"></script>
+<script type="module" src="student.js?v=20261030-navfix"></script>
 </body></html>
