@@ -13,39 +13,16 @@ function msg(t,cls="status"){const e=$("msg");e.textContent=t;e.className=cls;}
 function profileApproved(){return isAdmin()||profile?.status==="approved";}
 function parseDate(v){if(v instanceof Date && !Number.isNaN(v.getTime()))return v.toISOString().slice(0,10); if(typeof v==="number"){const d=new Date(Math.round((v-25569)*86400*1000));if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10);} const s=String(v??"").trim(); if(!s)return ""; let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;m=s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);return m?`${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`:s;}
 
-
-function numericCell(value, label) {
-  if (value === null || value === undefined || String(value).trim() === "") {
-    return "";
-  }
-
-  const raw = String(value).trim();
-  const normalized = raw.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
-
-  const absentValues = [
-    "not appeared",
-    "absent",
-    "did not appear",
-    "not attended",
-    "na",
-    "n/a"
-  ];
-
-  if (absentValues.includes(normalized)) {
-    return "Not appeared";
-  }
-
-  const n = Number(raw);
-
-  if (!Number.isFinite(n)) {
-    throw new Error(
-      `${label} must be a valid number or an absence status; received "${raw}".`
-    );
-  }
-
+function numericCell(value,label){
+  if(value===null||value===undefined||String(value).trim()==="")return "";
+  const raw=String(value).trim();
+  const normalized=raw.toLowerCase().replace(/[_-]+/g," ").replace(/\s+/g," ");
+  if(["not appeared","absent","did not appear","not attended","na","n/a"].includes(normalized))return "Not appeared";
+  const n=Number(raw);
+  if(!Number.isFinite(n))throw new Error(`${label} must be a valid number or absence status; received "${raw}".`);
   return n;
 }
-
+function cleanHeader(v){return String(v??"").trim().replace(/\s+/g," ").toLowerCase();}
 const aliases={publicationid:["publication id","publicationid","result id"],examname:["exam name","examination name","exam"],examdate:["exam date","date of exam","date"],rollno:["roll no","roll no.","roll number","roll"],mobile:["mobile number","mobile","phone number","phone"],name:["name","student name","candidate name","candidate/student name","participant"],designation:["designation","post"],place:["place of posting","place","posting place"],total:["total marks","full marks","total"],obtained:["obtained marks","marks obtained","marks","score"],percentage:["percentage","%","percent"],rank:["overall rank","rank","position"],status:["result / status","result/status","result","status"],remarks:["remarks","remark"]};
 function getVal(row,map,key){for(const a of aliases[key]){const idx=map[cleanHeader(a)];if(idx!==undefined)return row[idx];}return "";}
 function detectSubjects(headers){
@@ -112,11 +89,30 @@ async function readExcel(file){
  const seen=new Set(); for(const r of out){const k=phoneDigits(r.mobile);if(seen.has(k))throw new Error(`Duplicate mobile number found in the same publication: ${r.mobile}`);seen.add(k);} return out;
 }
 function preview(){const body=$("previewRows");body.innerHTML=parsedRows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.publicationId)}</td><td>${esc(r.examName)}</td><td>${esc(r.examDate)}</td><td>${esc(r.rollNo)}</td><td>${esc(r.mobile)}</td><td>${esc(r.name)}</td><td>${esc(r.obtainedMarks)}/${esc(r.totalMarks)}</td><td>${esc(r.subjects?.length||0)}</td><td>${esc(r.rank)}</td><td>${esc(r.status)}</td></tr>`).join("");$("previewSummary").innerHTML=`<b>${parsedRows.length}</b> result record(s) ready for publication. Publication ID: <span class="badge2">${esc(parsedRows[0].publicationId)}</span> — ${esc(parsedRows[0].examName)} — <b>${esc(parsedRows[0].subjects?.length||0)} subjects detected</b>`;$("previewCard").classList.remove("hidden");$("publishBtn").disabled=!allowed;}
-async function publish(){if(!allowed||!parsedRows.length)return;const pub=parsedRows[0].publicationId;const existing=await get(ref(db,`hindiPakhwadaPublications/${pub}`));if(existing.exists()){if(!confirm(`Publication ID ${pub} already exists.\n\nReplace the existing published result set with these ${parsedRows.length} records?\n\nThe old records will be removed.`))return;}try{$("publishBtn").disabled=true;msg("Publishing results…");if(existing.exists()){const old=existing.val()||{};for(const [rid,meta] of Object.entries(old.resultIndex||{})){if(meta?.phoneHash)await remove(ref(db,`hindiPakhwadaResults/${meta.phoneHash}/${rid}`));}}const resultIndex={};const now=Date.now();for(const r of parsedRows){const ph=await sha256(phoneDigits(r.mobile));resultIndex[r.resultId]={phoneHash:ph,name:r.name,rollNo:r.rollNo};await set(ref(db,`hindiPakhwadaResults/${ph}/${r.resultId}`),{...r,phoneHash:ph,publishedAt:serverTimestamp(),publishedBy:user.uid});}const meta={publicationId:pub,examName:parsedRows[0].examName,examDate:parsedRows[0].examDate,recordCount:parsedRows.length,publishedAt:now,publishedBy:user.uid,resultIndex};await set(ref(db,`hindiPakhwadaPublications/${pub}`),meta);msg(`✓ ${parsedRows.length} result(s) published successfully. Candidates can now search using their mobile number.`,`status live`);await loadPublished();}catch(e){console.error(e);msg(`Publication failed: ${e.message||e}`);}finally{$("publishBtn").disabled=!allowed;}}
+async function publish(){if(!allowed||!parsedRows.length)return;const pub=parsedRows[0].publicationId;const existing=await get(ref(db,`hindiPakhwadaPublications/${pub}`));if(existing.exists()){if(!confirm(`Publication ID ${pub} already exists.
+
+Replace the existing published result set with these ${parsedRows.length} records?
+
+The old records will be removed.`))return;}try{$("publishBtn").disabled=true;msg("Publishing results…");if(existing.exists()){const old=existing.val()||{};for(const [rid,meta] of Object.entries(old.resultIndex||{})){if(meta?.phoneHash)await remove(ref(db,`hindiPakhwadaResults/${meta.phoneHash}/${rid}`));}}const resultIndex={};const now=Date.now();for(const r of parsedRows){const ph=await sha256(phoneDigits(r.mobile));resultIndex[r.resultId]={phoneHash:ph,name:r.name,rollNo:r.rollNo};await set(ref(db,`hindiPakhwadaResults/${ph}/${r.resultId}`),{...r,phoneHash:ph,publishedAt:serverTimestamp(),publishedBy:user.uid});}const meta={publicationId:pub,examName:parsedRows[0].examName,examDate:parsedRows[0].examDate,recordCount:parsedRows.length,publishedAt:now,publishedBy:user.uid,resultIndex};await set(ref(db,`hindiPakhwadaPublications/${pub}`),meta);msg(`✓ ${parsedRows.length} result(s) published successfully. Candidates can now search using their mobile number.`,`status live`);await loadPublished();}catch(e){console.error(e);msg(`Publication failed: ${e.message||e}`);}finally{$("publishBtn").disabled=!allowed;}}
 async function loadPublished(){const body=$("publishedRows");const sel=$("deletePublicationSelect");try{const snap=await get(ref(db,"hindiPakhwadaPublications"));const vals=snap.val()||{};const arr=Object.values(vals).sort((a,b)=>(Number(b.publishedAt)||0)-(Number(a.publishedAt)||0));if(sel)sel.innerHTML='<option value="">Select a publication to delete</option>'+arr.map(x=>`<option value="${esc(x.publicationId)}">${esc(x.publicationId)} — ${esc(x.examName)} (${esc(x.recordCount||0)} records)</option>`).join("");if(!arr.length){body.innerHTML='<tr><td colspan="6">No published result sets yet.</td></tr>';return;}body.innerHTML=arr.map(x=>`<tr><td>${esc(x.publicationId)}</td><td>${esc(x.examName)}</td><td>${esc(x.examDate)}</td><td>${esc(x.recordCount||0)}</td><td>${esc(x.publishedAt?new Date(x.publishedAt).toLocaleString("en-IN"):"")}</td><td><button class="danger deletePub" data-id="${esc(x.publicationId)}">🗑 DELETE</button></td></tr>`).join("");document.querySelectorAll('.deletePub').forEach(b=>b.onclick=()=>deletePublication(b.dataset.id));}catch(e){body.innerHTML=`<tr><td colspan="6">Unable to load: ${esc(e.message)}</td></tr>`;}}
-async function deletePublication(pub){if(!allowed)return;const snap=await get(ref(db,`hindiPakhwadaPublications/${pub}`));if(!snap.exists()){msg(`Publication ${pub} was not found.`);return;}const meta=snap.val()||{};const ok=confirm(`DELETE PUBLISHED RESULT\n\nPublication ID: ${pub}\nExam: ${meta.examName||""}\nRecords: ${meta.recordCount||0}\n\nThis will remove the publication and ALL candidate results in it.\n\nThis action cannot be undone. Continue?`);if(!ok)return;try{msg(`Deleting ${pub}…`);for(const [rid,m] of Object.entries(meta.resultIndex||{})){if(m?.phoneHash)await remove(ref(db,`hindiPakhwadaResults/${m.phoneHash}/${rid}`));}await remove(ref(db,`hindiPakhwadaPublications/${pub}`));await loadPublished();if($("deletePublicationSelect"))$("deletePublicationSelect").value="";if($("deleteSelectedPublicationBtn"))$("deleteSelectedPublicationBtn").disabled=true;msg(`✓ Publication ${pub} and its ${meta.recordCount||0} candidate result(s) were deleted.`);}catch(e){msg(`Delete failed: ${e.message||e}`);}}
+async function deletePublication(pub){if(!allowed)return;const snap=await get(ref(db,`hindiPakhwadaPublications/${pub}`));if(!snap.exists()){msg(`Publication ${pub} was not found.`);return;}const meta=snap.val()||{};const ok=confirm(`DELETE PUBLISHED RESULT
+
+Publication ID: ${pub}
+Exam: ${meta.examName||""}
+Records: ${meta.recordCount||0}
+
+This will remove the publication and ALL candidate results in it.
+
+This action cannot be undone. Continue?`);if(!ok)return;try{msg(`Deleting ${pub}…`);for(const [rid,m] of Object.entries(meta.resultIndex||{})){if(m?.phoneHash)await remove(ref(db,`hindiPakhwadaResults/${m.phoneHash}/${rid}`));}await remove(ref(db,`hindiPakhwadaPublications/${pub}`));await loadPublished();if($("deletePublicationSelect"))$("deletePublicationSelect").value="";if($("deleteSelectedPublicationBtn"))$("deleteSelectedPublicationBtn").disabled=true;msg(`✓ Publication ${pub} and its ${meta.recordCount||0} candidate result(s) were deleted.`);}catch(e){msg(`Delete failed: ${e.message||e}`);}}
 $("deleteSelectedPublicationBtn").onclick=async()=>{const pub=$("deletePublicationSelect")?.value;if(pub)await deletePublication(pub);};$("deletePublicationSelect").onchange=()=>{$("deleteSelectedPublicationBtn").disabled=!allowed||!$("deletePublicationSelect").value;};
-$("downloadTemplateBtn").onclick=()=>{const a=document.createElement("a");a.href="Other_Exam_Result_Upload_Template.xlsx";a.download="Other_Exam_Result_Upload_Template.xlsx";document.body.appendChild(a);a.click();a.remove();};
+$("downloadTemplateBtn").onclick=()=>{
+  const a=document.createElement("a");
+  a.href="Hindi_Pakhwada_2026_Result_Upload_Template_CORRECTED.xlsx";
+  a.download="Hindi_Pakhwada_2026_Result_Upload_Template.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+};
 $("previewBtn").onclick=async()=>{try{const f=$("resultFile").files?.[0];if(!f)throw new Error("Please choose an Excel file first.");msg("Reading Excel file…");parsedRows=await readExcel(f);preview();msg(`✓ Preview ready: ${parsedRows.length} record(s). Check the preview, then click Publish Results.`);}catch(e){parsedRows=[];$("previewCard").classList.add("hidden");$("publishBtn").disabled=true;msg(`Excel validation failed: ${e.message||e}`);}};
 $("publishBtn").onclick=publish;$("backBtn").onclick=()=>location.href="host.html";
 onAuthStateChanged(auth,async u=>{user=u||null;allowed=false;$("authStatus").textContent=user?(isAdmin()?"Administrator signed in":"Signed in"):"Not signed in";if(!user){msg("Please sign in to the Host Portal first.","status blocked");return;}try{const s=await get(ref(db,`hosts/${user.uid}`));profile=s.exists()?s.val():null;allowed=profileApproved();if(!allowed){msg("Your Host account is not approved to publish results.","status blocked");return;}msg("✓ Host permission verified. Select your Excel result file.");await loadPublished();}catch(e){msg(`Access check failed: ${e.message||e}`);}});
