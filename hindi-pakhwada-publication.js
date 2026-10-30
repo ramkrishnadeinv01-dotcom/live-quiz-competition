@@ -13,8 +13,39 @@ function msg(t,cls="status"){const e=$("msg");e.textContent=t;e.className=cls;}
 function profileApproved(){return isAdmin()||profile?.status==="approved";}
 function parseDate(v){if(v instanceof Date && !Number.isNaN(v.getTime()))return v.toISOString().slice(0,10); if(typeof v==="number"){const d=new Date(Math.round((v-25569)*86400*1000));if(!Number.isNaN(d.getTime()))return d.toISOString().slice(0,10);} const s=String(v??"").trim(); if(!s)return ""; let m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)return `${m[3]}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;m=s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);return m?`${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`:s;}
 
-function numericCell(value,label){if(value===null||value===undefined||String(value).trim()==="")return "";const n=Number(value);if(!Number.isFinite(n))throw new Error(`${label} must be a valid number; received "${String(value)}".`);return n;}
-function cleanHeader(v){return String(v??"").trim().replace(/\s+/g," ").toLowerCase();}
+
+function numericCell(value, label) {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "";
+  }
+
+  const raw = String(value).trim();
+  const normalized = raw.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+
+  const absentValues = [
+    "not appeared",
+    "absent",
+    "did not appear",
+    "not attended",
+    "na",
+    "n/a"
+  ];
+
+  if (absentValues.includes(normalized)) {
+    return "Not appeared";
+  }
+
+  const n = Number(raw);
+
+  if (!Number.isFinite(n)) {
+    throw new Error(
+      `${label} must be a valid number or an absence status; received "${raw}".`
+    );
+  }
+
+  return n;
+}
+
 const aliases={publicationid:["publication id","publicationid","result id"],examname:["exam name","examination name","exam"],examdate:["exam date","date of exam","date"],rollno:["roll no","roll no.","roll number","roll"],mobile:["mobile number","mobile","phone number","phone"],name:["name","student name","candidate name","candidate/student name","participant"],designation:["designation","post"],place:["place of posting","place","posting place"],total:["total marks","full marks","total"],obtained:["obtained marks","marks obtained","marks","score"],percentage:["percentage","%","percent"],rank:["overall rank","rank","position"],status:["result / status","result/status","result","status"],remarks:["remarks","remark"]};
 function getVal(row,map,key){for(const a of aliases[key]){const idx=map[cleanHeader(a)];if(idx!==undefined)return row[idx];}return "";}
 function detectSubjects(headers){
