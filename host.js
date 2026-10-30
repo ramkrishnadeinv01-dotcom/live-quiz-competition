@@ -709,7 +709,7 @@ function bindHostPortalButtons(){
     openMcqBtn:()=>location.href='host-mcq.html',
     openGeneralBtn:()=>location.href='host-general.html',
     openOtherResultsBtn:()=>location.href='other-results.html',
-    openHindiResultsBtn:()=>location.href='other-results.html?hindiPakhwada=1',
+    openHindiResultsBtn:()=>location.href='hindi-pakhwada-publication.html',
     openOtherResultsManageBtn:()=>location.href='other-results.html#manage',
     openMcqResultsBtn:()=>location.href='host-mcq-results.html',
     homeLogoutBtn:async()=>{clearHostRegistrationFields();await signOut(auth);},
