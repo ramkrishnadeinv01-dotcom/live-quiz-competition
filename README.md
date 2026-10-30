@@ -54,3 +54,13 @@ V57 fix: Administrator Page launcher is always visible on Host Portal Home. Clic
 
 
 V70 fixes: participant MCQ submission permission handling; approved-host room listing; robust MCQ create/save errors; restored direct athlete-wise live MCQ result access from Host Panel.
+
+## Independent result publication modules (30 October 2026)
+
+- **Other Exam Result Publication** uses only `otherExamResults` and `otherExamPublications`.
+- **Hindi Pakhwada 2026 Result Publication** now has its own page (`hindi-pakhwada-publication.html`), publisher script (`hindi-pakhwada-publication.js`), and participant lookup script. It uses only `hindiPakhwadaResults` and `hindiPakhwadaPublications`.
+- The Host Portal opens the two publication pages independently; the old `?hindiPakhwada=1` shared-page switch has been removed.
+- Numeric Excel cells are validated before publication. Blank cells remain blank, and invalid numeric values are rejected with a row/field-specific message instead of being written as `NaN`.
+- `database.rules.json` includes the corresponding dedicated Hindi Pakhwada rules. Deploy the updated Realtime Database rules along with the website files.
+
+Existing records under the former `otherExamResults` / `otherExamPublications` paths are not deleted or automatically moved by this change. If Hindi Pakhwada records were already successfully published there, they require a one-time migration to the new Hindi-specific paths before they will appear in the new Hindi result lookup.

@@ -80,6 +80,16 @@
     "otherExamPublications": {
       ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
       ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+    },
+    "hindiPakhwadaResults": {
+      "$phoneHash": {
+        ".read": "true",
+        ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+      }
+    },
+    "hindiPakhwadaPublications": {
+      ".read": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
+      ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
     }
   }
 }
