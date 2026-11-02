@@ -268,10 +268,13 @@ async function drawOfficialMarksheet(d,r){
     rounded(x,prizeY,prizeW,prizeH,12,bg,accent,2.5);
     ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=accent;
     ctx.font=font(25,true);ctx.fillText(`${rankHindi[rank]} पुरस्कार विजेता`,x+prizeW/2,prizeY+27);
-    ctx.fillStyle=C.red;ctx.font=font(24,true);ctx.fillText('बधाई हो!',x+prizeW/2,prizeY+57);
     const subjects=[...new Set(wins[rank])];
-    const sentence=subjects.length?`आपने ${subjects.join(' / ')} में ${rankHindi[rank]} पुरस्कार प्राप्त किया है।`:`आपने ${rankHindi[rank]} पुरस्कार श्रेणी में स्थान प्राप्त किया है।`;
-    wrappedCell(sentence,x+prizeW/2,prizeY+88,prizeW-26,18,14,true,C.ink,2);
+    const sentence=subjects.length
+      ? `बधाई हो! आपने ${subjects.join(' / ')} में ${rankHindi[rank]} पुरस्कार जीता है।`
+      : `इस श्रेणी में कोई पुरस्कार दर्ज नहीं है।`;
+    // Replace the old separate "बधाई हो!" label with the complete,
+    // participant-specific prize sentence in the same lower box area.
+    wrappedCell(sentence,x+prizeW/2,prizeY+76,prizeW-28,20,14,true,C.ink,3);
   }
 
   // Original disclaimer retained at the foot of page 1.
