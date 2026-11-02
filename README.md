@@ -64,3 +64,12 @@ V70 fixes: participant MCQ submission permission handling; approved-host room li
 - `database.rules.json` includes the corresponding dedicated Hindi Pakhwada rules. Deploy the updated Realtime Database rules along with the website files.
 
 Existing records under the former `otherExamResults` / `otherExamPublications` paths are not deleted or automatically moved by this change. If Hindi Pakhwada records were already successfully published there, they require a one-time migration to the new Hindi-specific paths before they will appear in the new Hindi result lookup.
+
+
+## Advanced Version 2.0 — Phase 1 Foundation (2 November 2026)
+
+- Added `advanced-v2.html`, a premium dark-navy portal control-centre landing page.
+- Added `academic-section/index.html` as a separate companion website foundation.
+- The new launch page links to the existing Participant, Host and Administrator pages; it does not replace their existing routes or authentication.
+- Academic Section pages are currently visual foundations only. Upload/download, mock-test, scoring, and academic-host workflows are scheduled for later phases.
+- Existing quiz, MCQ, General Exam, Other Exam Result, Hindi Pakhwada publication, and marksheet files are preserved unchanged.
