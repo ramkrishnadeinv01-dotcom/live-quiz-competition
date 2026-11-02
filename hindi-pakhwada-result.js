@@ -145,40 +145,59 @@ async function drawOfficialMarksheet(d,r){
   labelValue('पदनाम :',r.designation,78,350,710);
   labelValue('कार्यालय / विभाग :',r.placeOfPosting,835,350,680);
 
-  // Table layout: fixed-width name and marks columns prevent overlap.
+  // Table layout: three distinct header levels prevent the merged title
+  // from colliding with the First / Second / Third rank labels.
   const x0=55, tableY=391;
-  const widths=[58,222,128,359,359,359];
+  const widths=[58,205,145,359,359,359];
   const xs=[x0];
   widths.forEach(w=>xs.push(xs[xs.length-1]+w));
-  const groupH=43, subH=55, rowH=69;
+  const groupH=34, rankH=36, subH=50, rowH=69;
   const tableW=widths.reduce((a,b)=>a+b,0);
-  const dataY=tableY+groupH+subH;
+  const dataY=tableY+groupH+rankH+subH;
   const tableBottom=dataY+5*rowH;
 
-  // Header backgrounds.
-  ctx.fillStyle=C.navy;ctx.fillRect(x0,tableY,tableW,groupH+subH);
+  // Header backgrounds: merged rank title, rank labels, then subheadings.
+  ctx.fillStyle=C.navy;
+  ctx.fillRect(x0,tableY,tableW,groupH+rankH+subH);
+
   ctx.fillStyle='#e5efff';
-  ctx.fillRect(xs[0],tableY,widths[0],groupH+subH);
-  ctx.fillRect(xs[1],tableY,widths[1],groupH+subH);
-  ctx.fillRect(xs[2],tableY,widths[2],groupH+subH);
+  ctx.fillRect(xs[0],tableY,widths[0],groupH+rankH+subH);
+  ctx.fillRect(xs[1],tableY,widths[1],groupH+rankH+subH);
+  ctx.fillRect(xs[2],tableY,widths[2],groupH+rankH+subH);
 
+  // One merged heading across all three rank groups.
+  const rankAreaX=xs[3], rankAreaW=widths[3]+widths[4]+widths[5];
   ctx.fillStyle=C.navy2;
-  for(let g=3;g<6;g++)ctx.fillRect(xs[g],tableY,widths[g],groupH);
-  ctx.fillStyle='#edf3ff';
-  for(let g=3;g<6;g++)ctx.fillRect(xs[g],tableY+groupH,widths[g],subH);
+  ctx.fillRect(rankAreaX,tableY,rankAreaW,groupH);
 
-  // Header labels.
-  fitOne('क्र. सं.',xs[0]+widths[0]/2,tableY+groupH+subH/2,widths[0]-8,19,15,true,C.navy);
-  fitOne('विषय',xs[1]+widths[1]/2,tableY+groupH+subH/2,widths[1]-10,23,18,true,C.navy);
-  wrappedCell('प्राप्तांक (50 में से)\n(अधिकारी द्वारा)',xs[2]+widths[2]/2,tableY+groupH+subH/2,widths[2]-12,19,15,true,C.navy,2);
-  fitOne('सर्वाधिक अंक प्राप्त करने वाले शीर्ष 3 अधिकारी',xs[3]+(tableW-widths[0]-widths[1]-widths[2])/2,tableY+groupH/2,tableW-widths[0]-widths[1]-widths[2]-12,23,17,true,C.white);
+  // Separate rank-label row.
+  for(let g=3;g<6;g++){
+    ctx.fillStyle=C.navy;
+    ctx.fillRect(xs[g],tableY+groupH,widths[g],rankH);
+    ctx.fillStyle='#edf3ff';
+    ctx.fillRect(xs[g],tableY+groupH+rankH,widths[g],subH);
+  }
+
+  // First three columns span all header levels.
+  fitOne('क्र. सं.',xs[0]+widths[0]/2,tableY+(groupH+rankH+subH)/2,widths[0]-8,19,15,true,C.navy);
+  fitOne('विषय',xs[1]+widths[1]/2,tableY+(groupH+rankH+subH)/2,widths[1]-10,23,18,true,C.navy);
+  wrappedCell('प्राप्तांक\\n(50 में से)',xs[2]+widths[2]/2,tableY+(groupH+rankH+subH)/2,widths[2]-12,20,15,true,C.navy,2);
+
+  // Merged title is now isolated in its own row.
+  fitOne(
+    'सर्वाधिक अंक प्राप्त करने वाले शीर्ष 3 अधिकारी',
+    rankAreaX+rankAreaW/2,
+    tableY+groupH/2,
+    rankAreaW-24,
+    22,17,true,C.white
+  );
 
   const rankLabels=['प्रथम','द्वितीय','तृतीय'];
   for(let j=0;j<3;j++){
     const gx=xs[3+j],gw=widths[3+j],nameW=260,marksW=gw-nameW;
-    fitOne(rankLabels[j],gx+gw/2,tableY+groupH/2,gw-10,23,18,true,C.white);
-    fitOne('अधिकारी का नाम',gx+nameW/2,tableY+groupH+subH/2,nameW-8,19,15,true,C.navy);
-    wrappedCell('अंक\n(50 में से)',gx+nameW+marksW/2,tableY+groupH+subH/2,marksW-8,18,14,true,C.navy,2);
+    fitOne(rankLabels[j],gx+gw/2,tableY+groupH+rankH/2,gw-10,22,18,true,C.white);
+    fitOne('अधिकारी का नाम',gx+nameW/2,tableY+groupH+rankH+subH/2,nameW-8,19,15,true,C.navy);
+    wrappedCell('अंक\\n(50 में से)',gx+nameW+marksW/2,tableY+groupH+rankH+subH/2,marksW-8,18,14,true,C.navy,2);
   }
 
   const subjectHindi={
@@ -220,15 +239,24 @@ async function drawOfficialMarksheet(d,r){
     }
   }
 
-  // Table grid.
+  // Table grid. Keep the three-rank title genuinely merged.
   ctx.strokeStyle=C.line;ctx.lineWidth=1.6;
-  for(let x of xs){ctx.beginPath();ctx.moveTo(x,tableY);ctx.lineTo(x,tableBottom);ctx.stroke();}
-  ctx.beginPath();ctx.moveTo(x0,tableY);ctx.lineTo(x0+tableW,tableY);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x0,tableY+groupH);ctx.lineTo(x0+tableW,tableY+groupH);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(x0, dataY);ctx.lineTo(x0+tableW,dataY);ctx.stroke();
+  for(let i=0;i<=3;i++){
+    const x=xs[i];ctx.beginPath();ctx.moveTo(x,tableY);ctx.lineTo(x,tableBottom);ctx.stroke();
+  }
+  for(let i=4;i<=6;i++){
+    const x=xs[i];ctx.beginPath();ctx.moveTo(x,tableY+groupH);ctx.lineTo(x,tableBottom);ctx.stroke();
+  }
+  // Header separators only within the rank area; first three cells are merged vertically.
+  [tableY+groupH,tableY+groupH+rankH,dataY].forEach((y,index)=>{
+    ctx.beginPath();
+    ctx.moveTo(index===2?x0:rankAreaX,y);
+    ctx.lineTo(x0+tableW,y);
+    ctx.stroke();
+  });
   for(let i=1;i<=5;i++){const y=dataY+i*rowH;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x0+tableW,y);ctx.stroke();}
-  // Name/marks separators inside each rank group.
-  for(let j=0;j<3;j++){const gx=xs[3+j]+260;ctx.beginPath();ctx.moveTo(gx,tableY+groupH);ctx.lineTo(gx,tableBottom);ctx.stroke();}
+  // Name/marks separators begin at the subheading row, not through the merged title.
+  for(let j=0;j<3;j++){const gx=xs[3+j]+260;ctx.beginPath();ctx.moveTo(gx,tableY+groupH+rankH);ctx.lineTo(gx,tableBottom);ctx.stroke();}
   ctx.strokeStyle=C.navy;ctx.lineWidth=2.5;ctx.strokeRect(x0,tableY,tableW,tableBottom-tableY);
 
   // Total and remarks band.
