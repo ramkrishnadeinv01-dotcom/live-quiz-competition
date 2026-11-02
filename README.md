@@ -73,3 +73,14 @@ Existing records under the former `otherExamResults` / `otherExamPublications` p
 - The new launch page links to the existing Participant, Host and Administrator pages; it does not replace their existing routes or authentication.
 - Academic Section pages are currently visual foundations only. Upload/download, mock-test, scoring, and academic-host workflows are scheduled for later phases.
 - Existing quiz, MCQ, General Exam, Other Exam Result, Hindi Pakhwada publication, and marksheet files are preserved unchanged.
+
+
+## Advanced Version 2.0 — Phase 2: Participant Experience
+
+This release adds a premium participant overview to the existing Participant Panel:
+- Participant profile summary populated from the current session details.
+- Quick links to the independent Other Examination Results and Hindi Pakhwada 2026 result pages.
+- Responsive overview cards and assessment/result service summary.
+- Existing assignment, quiz, MCQ, general examination, and result workflows are retained.
+
+No Firebase schema, database rules, result publication paths, or examination logic were changed. The Academic Section remains a separate companion website and is not modified in this phase.

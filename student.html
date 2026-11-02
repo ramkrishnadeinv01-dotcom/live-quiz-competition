@@ -3,6 +3,23 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css?v=20261008-69"><style>
 .dashboard-tabs{display:flex;gap:8px;margin-bottom:18px}.tab{border:1px solid #ccd5e1;background:#eef3f8;padding:12px 20px;border-radius:10px;font-weight:700}.tab.active{background:#1769e0;color:#fff}.assignment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.assignment-card{text-align:left;padding:20px;border:1px solid #d9e1ea;border-radius:14px;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:8px}.assignment-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}.assignment-card span{font-size:30px}.assignment-card b{font-size:18px}.assignment-card small{color:#64748b}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}.modal-card{background:#fff;width:min(520px,100%);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modal-card input{width:100%;box-sizing:border-box;margin-top:8px;padding:13px;border:1px solid #ccd5e1;border-radius:8px;font-size:18px}.modal-card .row{display:flex;gap:10px}.modal-card button{margin-top:0}
 </style>
+<style id="advanced-v2-phase2">
+.p2-overview{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin:0 0 18px}
+.p2-welcome{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:25px 28px;border-radius:20px;background:linear-gradient(110deg,#071f52,#104b91 62%,#0878b9);color:#fff;box-shadow:0 14px 32px #0b397326;overflow:hidden;position:relative}
+.p2-welcome:after{content:"";position:absolute;width:230px;height:230px;border-radius:50%;right:-65px;top:-125px;background:#ffffff10}
+.p2-kicker{font-size:10px;letter-spacing:2px;font-weight:900;color:#9dd7ff}.p2-welcome h2{margin:6px 0;color:#fff!important;font-size:clamp(21px,2.6vw,30px)!important}.p2-welcome p{margin:0;color:#d7eaff;font-size:13px;max-width:620px}
+.p2-avatar{width:68px;height:68px;flex:0 0 68px;border-radius:20px;display:grid;place-items:center;font-size:34px;color:#bde9ff;background:linear-gradient(145deg,#ffffff28,#ffffff0c);border:1px solid #ffffff35;box-shadow:inset 0 1px #ffffff25}
+.p2-profile{padding:19px 20px;background:#fff;border:1px solid #d8e8fb;border-radius:18px;box-shadow:0 8px 22px #164e8d0b}
+.p2-profile-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px;font-size:10px;letter-spacing:1.4px;font-weight:900;color:#5c7494}
+.p2-session{letter-spacing:0;text-transform:none;color:#08764b;font-size:11px}.p2-session i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#12b981;margin-right:5px}
+.p2-profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px 12px}.p2-profile-grid div{min-width:0}.p2-profile-grid small{display:block;color:#8294aa;font-size:9px;font-weight:900;letter-spacing:.7px;margin-bottom:4px}.p2-profile-grid b{display:block;color:#14365f;font-size:13px;overflow-wrap:anywhere}
+.p2-metrics{display:grid;grid-template-columns:1fr;gap:9px}.p2-metric{display:flex;align-items:center;gap:13px;padding:12px 15px;border:1px solid #dce9f8;border-radius:15px;background:linear-gradient(110deg,#f4f9ff,#fff)}.p2-metric>span{width:39px;height:39px;display:grid;place-items:center;border-radius:12px;background:#e6f2ff;font-size:20px}.p2-metric b{display:block;color:#123b70;font-size:20px;line-height:1.15}.p2-metric small{color:#71859e;font-size:11px}
+.p2-result-shortcuts{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.p2-shortcut{display:flex;align-items:center;gap:13px;padding:15px 17px;border-radius:15px;text-decoration:none;color:#fff;box-shadow:0 8px 18px #17395b17;transition:transform .16s,box-shadow .16s}
+.p2-shortcut:hover{transform:translateY(-2px);box-shadow:0 12px 24px #17395b25}.p2-shortcut>span{font-size:25px}.p2-shortcut div{flex:1;min-width:0}.p2-shortcut b{display:block;font-size:13px}.p2-shortcut small{display:block;font-size:10px;opacity:.88;margin-top:3px}.p2-shortcut em{font-style:normal;font-size:20px}.p2-other{background:linear-gradient(110deg,#5145d8,#7668f2)}.p2-hindi{background:linear-gradient(110deg,#d91e67,#f15b83)}
+@media(max-width:800px){.p2-overview{grid-template-columns:1fr}.p2-metrics{grid-template-columns:repeat(3,1fr)}.p2-metric{align-items:flex-start;flex-direction:column}.p2-result-shortcuts{grid-template-columns:1fr}}
+@media(max-width:520px){.p2-welcome{padding:20px}.p2-avatar{width:52px;height:52px;flex-basis:52px}.p2-profile-grid{grid-template-columns:1fr 1fr}.p2-metrics{grid-template-columns:1fr}.p2-metric{flex-direction:row;align-items:center}}
+</style>
 <style id="participant-approved-design">
 body#studentBody{background:radial-gradient(ellipse at 0% 28%,#dceeff 0,transparent 30%),radial-gradient(ellipse at 100% 35%,#e0efff 0,transparent 28%),linear-gradient(180deg,#f8fbff,#eaf4ff 100%);color:#12315b;min-height:100vh}
 #studentBody .participant-topbar{position:relative;top:auto;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:12px clamp(16px,2.4vw,36px);background:linear-gradient(100deg,#041d3d,#062c58 60%,#064b9e);box-shadow:0 5px 18px #062b5829}
@@ -92,6 +109,30 @@ body#studentBody{background:radial-gradient(ellipse at 0% 28%,#dceeff 0,transpar
         <button id="participantSignOut" class="danger">SIGN OUT</button>
       </div>
     </div>
+    <section class="p2-overview" aria-label="Participant overview">
+      <div class="p2-welcome">
+        <div><span class="p2-kicker">YOUR LEARNING SPACE</span><h2>Welcome to your examination workspace</h2><p>Choose an assignment, review your examination performance, or open a published result service.</p></div>
+        <div class="p2-avatar" aria-hidden="true">✦</div>
+      </div>
+      <div class="p2-profile">
+        <div class="p2-profile-heading"><span>PARTICIPANT PROFILE</span><span class="p2-session"><i></i> Session active</span></div>
+        <div class="p2-profile-grid">
+          <div><small>PARTICIPANT NAME</small><b id="p2ProfileName">—</b></div>
+          <div><small>DESIGNATION</small><b id="p2ProfileDesignation">—</b></div>
+          <div><small>PLACE OF POSTING</small><b id="p2ProfilePlace">—</b></div>
+          <div><small>MOBILE NUMBER</small><b id="p2ProfilePhone">—</b></div>
+        </div>
+      </div>
+      <div class="p2-metrics">
+        <div class="p2-metric"><span>🧩</span><div><b>03</b><small>Assessment modes</small></div></div>
+        <div class="p2-metric"><span>📄</span><div><b>02</b><small>Published result services</small></div></div>
+        <div class="p2-metric"><span>🔐</span><div><b>01</b><small>Active participant session</small></div></div>
+      </div>
+      <div class="p2-result-shortcuts">
+        <a href="./other-result.html?v=20261103-phase2" class="p2-shortcut p2-other"><span>▤</span><div><b>Other Examination Results</b><small>Find published results using your mobile number</small></div><em>↗</em></a>
+        <a href="./hindi-pakhwada-result.html?v=20261103-phase2" class="p2-shortcut p2-hindi"><span>🏅</span><div><b>Hindi Pakhwada 2026 Result</b><small>Open your personalised marksheet lookup</small></div><em>↗</em></a>
+      </div>
+    </section>
     <div class="card">
       <div class="dashboard-tabs">
         <button id="assignmentTab" class="tab active">📚 Assignment</button>
@@ -157,6 +198,7 @@ function quickParticipantContinue(){
   document.getElementById('dashboardCard').classList.remove('hidden');
   document.getElementById('quizCard').classList.add('hidden');
   document.getElementById('participantWelcome').textContent=`Welcome, ${name} • ${designation} • ${place}`;
+  [['p2ProfileName',name],['p2ProfileDesignation',designation],['p2ProfilePlace',place],['p2ProfilePhone',phone]].forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.textContent=value||'—';});
   document.getElementById('connection').textContent='Ready';
 }
 

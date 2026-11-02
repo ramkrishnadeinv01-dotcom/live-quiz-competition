@@ -38,6 +38,8 @@ function saveParticipantSession(){
 function showDashboard(p){
  $("joinCard").classList.add("hidden");$("dashboardCard").classList.remove("hidden");$("quizCard").classList.add("hidden");
  $("participantWelcome").textContent=`Welcome, ${p.name} • ${p.designation} • ${p.placeOfPosting}`;
+ const profileFields={p2ProfileName:p.name,p2ProfileDesignation:p.designation,p2ProfilePlace:p.placeOfPosting,p2ProfilePhone:p.phone};
+ Object.entries(profileFields).forEach(([id,value])=>{const el=$(id);if(el)el.textContent=value||"—";});
  $("connection").textContent="Ready";
 }
 function openRoomModal(type){
