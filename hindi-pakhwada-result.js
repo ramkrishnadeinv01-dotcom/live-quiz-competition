@@ -84,6 +84,26 @@ async function drawOfficialMarksheet(d,r){
     }
     return out;
   }
+  function headerText(text,x,y,w,h,size=21,min=14,color=C.white,bold=true){
+    const t=String(text??'').trim();
+    if(!t)return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x+3,y+2,Math.max(1,w-6),Math.max(1,h-4));
+    ctx.clip();
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillStyle=color;
+    let s=size;
+    ctx.font=font(s,bold);
+    while(s>min && ctx.measureText(t).width>w-16){
+      s-=1;
+      ctx.font=font(s,bold);
+    }
+    ctx.fillText(t,x+w/2,y+h/2);
+    ctx.restore();
+  }
+
   function wrappedCell(text,cx,cy,maxW,size=19,min=15,bold=true,color=C.ink,maxLines=2){
     const t=String(text??'').trim();if(!t)return;
     ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=color;
@@ -151,7 +171,7 @@ async function drawOfficialMarksheet(d,r){
   const widths=[58,205,145,359,359,359];
   const xs=[x0];
   widths.forEach(w=>xs.push(xs[xs.length-1]+w));
-  const groupH=34, rankH=36, subH=50, rowH=69;
+  const groupH=42, rankH=42, subH=50, rowH=66;
   const tableW=widths.reduce((a,b)=>a+b,0);
   const dataY=tableY+groupH+rankH+subH;
   const tableBottom=dataY+5*rowH;
@@ -178,26 +198,25 @@ async function drawOfficialMarksheet(d,r){
     ctx.fillRect(xs[g],tableY+groupH+rankH,widths[g],subH);
   }
 
-  // First three columns span all header levels.
-  fitOne('क्र. सं.',xs[0]+widths[0]/2,tableY+(groupH+rankH+subH)/2,widths[0]-8,19,15,true,C.navy);
-  fitOne('विषय',xs[1]+widths[1]/2,tableY+(groupH+rankH+subH)/2,widths[1]-10,23,18,true,C.navy);
-  wrappedCell('प्राप्तांक\\n(50 में से)',xs[2]+widths[2]/2,tableY+(groupH+rankH+subH)/2,widths[2]-12,20,15,true,C.navy,2);
+  // First three columns span all header levels. Their text is clipped
+  // strictly to the complete merged cell.
+  headerText('क्र. सं.',xs[0],tableY,widths[0],groupH+rankH+subH,19,14,C.navy);
+  headerText('विषय',xs[1],tableY,widths[1],groupH+rankH+subH,23,17,C.navy);
+  headerText('प्राप्तांक (50 में से)',xs[2],tableY,widths[2],groupH+rankH+subH,19,14,C.navy);
 
-  // Merged title is now isolated in its own row.
-  fitOne(
+  // Row 1: one merged heading only. No rank label is drawn in this row.
+  headerText(
     'सर्वाधिक अंक प्राप्त करने वाले शीर्ष 3 अधिकारी',
-    rankAreaX+rankAreaW/2,
-    tableY+groupH/2,
-    rankAreaW-24,
-    22,17,true,C.white
+    rankAreaX,tableY,rankAreaW,groupH,22,15,C.white
   );
 
+  // Row 2: First / Second / Third rank labels, each in its own cell.
   const rankLabels=['प्रथम','द्वितीय','तृतीय'];
   for(let j=0;j<3;j++){
     const gx=xs[3+j],gw=widths[3+j],nameW=260,marksW=gw-nameW;
-    fitOne(rankLabels[j],gx+gw/2,tableY+groupH+rankH/2,gw-10,22,18,true,C.white);
-    fitOne('अधिकारी का नाम',gx+nameW/2,tableY+groupH+rankH+subH/2,nameW-8,19,15,true,C.navy);
-    wrappedCell('अंक\\n(50 में से)',gx+nameW+marksW/2,tableY+groupH+rankH+subH/2,marksW-8,18,14,true,C.navy,2);
+    headerText(rankLabels[j],gx,tableY+groupH,gw,rankH,22,17,C.white);
+    headerText('अधिकारी का नाम',gx,tableY+groupH+rankH,nameW,subH,19,14,C.navy);
+    headerText('अंक (50 में से)',gx+nameW,tableY+groupH+rankH,marksW,subH,18,13,C.navy);
   }
 
   const subjectHindi={
