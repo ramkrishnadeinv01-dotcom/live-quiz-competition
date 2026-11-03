@@ -43,14 +43,15 @@ async function readExcel(file){
  if(HINDI_MODE){
   if(rows.length<3)throw new Error("The Hindi Pakhwada workbook has no candidate rows.");
   const headers=rows[1].map(x=>String(x??"").trim()); const map={}; headers.forEach((h,i)=>map[cleanHeader(h)]=i);
-  const idx=(name)=>map[cleanHeader(name)]; const required=["Participant Mobile Number (Required)","Officer Name","Designation","Roll No. / Serial No.","Office / Department","Total Marks (/250)"];
+  const idx=(name)=>map[cleanHeader(name)]; const required=["Participant Mobile Number (Required)","Officer Name","Designation","Roll No. / Serial No.","Office / Department","Total Marks (/400)"];
   for(const h of required)if(idx(h)===undefined)throw new Error(`Missing required column: ${h}`);
   const subjects=[
-   {name:"Hindi Typing",marks:"Hindi Typing Marks (/50)"},
-   {name:"Hindi Translation",marks:"Hindi Translation Marks (/50)"},
-   {name:"Hindi Noting & Drafting",marks:"Hindi Noting & Drafting Marks (/50)"},
-   {name:"Hindi Essay Writing",marks:"Hindi Essay Writing Marks (/50)"},
-   {name:"Hindi Proofreading",marks:"Hindi Proofreading Marks (/50)"}
+   {name:"Hindi Typing",marks:"Hindi Typing Marks (/50)",max:50},
+   {name:"Hindi Translation",marks:"Hindi Translation Marks (/50)",max:50},
+   {name:"Hindi Noting & Drafting",marks:"Hindi Noting & Drafting Marks (/50)",max:50},
+   {name:"Hindi Essay Writing",marks:"Hindi Essay Writing Marks (/100)",max:100},
+   {name:"हिंदी श्रुतलेख",marks:"हिंदी श्रुतलेख Marks (/100)",max:100},
+   {name:"अधिकाधिक कार्य हिंदी में करना",marks:"अधिकाधिक कार्य हिंदी में करना Marks (/50)",max:50}
   ];
   const out=[]; for(let i=2;i<rows.length;i++){const row=rows[i]; if(!row.some(x=>String(x??"").trim()))continue;
    const name=String(row[idx("Officer Name")]??"").trim(); if(/sample officer/i.test(name)||/sample row only/i.test(String(row[idx("Remarks")]??"")))continue;
@@ -59,16 +60,16 @@ async function readExcel(file){
    for(const sub of subjects){
     if(idx(sub.marks)===undefined)throw new Error(`Missing required column: ${sub.marks}`);
     const rankData=[]; for(let rank=1;rank<=3;rank++){
-     const nm=`${sub.name} Rank ${rank} Officer Name`, mk=`${sub.name} Rank ${rank} Marks (/50)`;
+     const nm=`${sub.name} Rank ${rank} Officer Name`, mk=`${sub.name} Rank ${rank} Marks (/${sub.max})`;
      if(idx(nm)===undefined||idx(mk)===undefined)throw new Error(`Missing subject-rank columns for ${sub.name}, Rank ${rank}. Please use the supplied corrected template.`);
      rankData.push({rank, name:String(row[idx(nm)]??"").trim(), marks:numericCell(row[idx(mk)],`Row ${i+1} ${sub.name} Rank ${rank} marks`)});
     }
     const own=numericCell(row[idx(sub.marks)],`Row ${i+1} ${sub.name} marks`);
     subjectRanks.push({subject:sub.name, marks:own, ranks:rankData});
-    subjectResults.push({subject:sub.name,marks:own,rank:rankData.filter(x=>x.name).map(x=>`Rank ${x.rank}: ${x.name} (${x.marks}/50)`).join("; ")});
+    subjectResults.push({subject:sub.name,marks:own,rank:rankData.filter(x=>x.name).map(x=>`Rank ${x.rank}: ${x.name} (${x.marks}/${sub.max})`).join("; ")});
    }
-   const total=numericCell(row[idx("Total Marks (/250)")],`Row ${i+1} total marks`); const resultId=`r${String(i-1).padStart(5,"0")}`;
-   out.push({resultId,publicationId:HINDI_PUBLICATION_ID,examName:HINDI_EXAM_NAME,examDate:parseDate(idx("Exam Date (YYYY-MM-DD)")===undefined?"":row[idx("Exam Date (YYYY-MM-DD)")]),rollNo:String(row[idx("Roll No. / Serial No.")]??""),mobile,name,designation:String(row[idx("Designation")]??""),placeOfPosting:String(row[idx("Office / Department")]??""),totalMarks:250,obtainedMarks:Number.isFinite(total)?total:"",percentage:Number.isFinite(total)?(total/250*100).toFixed(2)+"%":"",rank:"",overallGrade:"",status:"Published",remarks:String(row[idx("Remarks")]??""),subjects:subjectResults,subjectRanks});
+   const total=numericCell(row[idx("Total Marks (/400)")],`Row ${i+1} total marks`); const resultId=`r${String(i-1).padStart(5,"0")}`;
+   out.push({resultId,publicationId:HINDI_PUBLICATION_ID,examName:HINDI_EXAM_NAME,examDate:parseDate(idx("Exam Date (YYYY-MM-DD)")===undefined?"":row[idx("Exam Date (YYYY-MM-DD)")]),rollNo:String(row[idx("Roll No. / Serial No.")]??""),mobile,name,designation:String(row[idx("Designation")]??""),placeOfPosting:String(row[idx("Office / Department")]??""),totalMarks:400,obtainedMarks:Number.isFinite(total)?total:"",percentage:Number.isFinite(total)?(total/400*100).toFixed(2)+"%":"",rank:"",overallGrade:"",status:"Published",remarks:String(row[idx("Remarks")]??""),subjects:subjectResults,subjectRanks});
   }
   if(!out.length)throw new Error("No real participant rows found. Replace or delete the yellow sample row, then upload again.");
   const seen=new Set();for(const r of out){const k=phoneDigits(r.mobile);if(seen.has(k))throw new Error(`Duplicate mobile number found: ${r.mobile}`);seen.add(k);}return out;

@@ -11,7 +11,7 @@ function render(){
 }
 function ensureJspdf(){return new Promise((res,rej)=>{if(window.jspdf)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s)});}
 function drawMarksheet(d,r){const W=210,M=12;d.setFillColor(59,7,100);d.rect(0,0,W,34,'F');d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(18);d.text('HINDI PAKHWADA 2026 RESULT',M,13);d.setFontSize(9);d.setFont('helvetica','normal');d.text('Hindi Pakhwada Examination / Marksheet',M,21);d.setFontSize(8);d.text(`Publication ID: ${r.publicationId||'—'}`,M,28);let y=45;d.setTextColor(30,41,59);d.setFont('helvetica','bold');d.setFontSize(16);d.text(String(r.examName||'Other Examination'),M,y);y+=9;d.setFont('helvetica','normal');d.setFontSize(9);d.text(`Exam Date: ${r.examDate||'—'}    Roll No: ${r.rollNo||'—'}`,M,y);y+=8;d.setFont('helvetica','bold');d.setFontSize(10);d.text(`Name: ${r.name||'—'}`,M,y);d.setFont('helvetica','normal');d.text(`Class / Designation: ${r.designation||'—'}`,105,y);y+=6;d.text(`School / Place: ${r.placeOfPosting||'—'}`,M,y);y+=10;
- if(r.subjects?.length){d.setFillColor(59,7,100);d.rect(M,y-5,W-2*M,8,'F');d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(8);d.text('SUBJECT',M+3,y);d.text('MARKS',105,y);d.text('GRADE',137,y);d.text('SUBJECT RANK',163,y);y+=8; r.subjects.forEach((x,idx)=>{if(y>270){d.addPage();y=20;} if(idx%2===0){d.setFillColor(248,250,252);d.rect(M,y-5,W-2*M,8,'F');}d.setTextColor(30,41,59);d.setFont('helvetica','normal');d.text(String(x.subject||'—'),M+3,y);d.text(String(x.marks||'—'),105,y);d.text(String(x.grade||'—'),137,y);d.text(String(x.rank||'—'),163,y);y+=8;}); }
+ if(r.subjects?.length){d.setFillColor(59,7,100);d.rect(M,y-5,W-2*M,8,'F');d.setTextColor(255,255,255);d.setFont('helvetica','bold');d.setFontSize(8);d.text('SUBJECT',M+3,y);d.text('MARKS',105,y);d.text('GRADE',137,y);d.text('SUBJECT RANK',163,y);y+=8; r.subjects.forEach((x,idx)=>{if(y>270){d.addPage();y=20;} if(idx%2===0){d.setFillColor(248,250,252);d.rect(M,y-5,W-2*M,8,'F');}d.setTextColor(30,41,59);d.setFont('helvetica','normal');d.text(String(x.subject||'—'),M+3,y);d.text(`${x.marks??'—'}/${({'Hindi Essay Writing':100,'हिंदी श्रुतलेख':100}[x.subject]||50)}`,105,y);d.text(String(x.grade||'—'),137,y);d.text(String(x.rank||'—'),163,y);y+=8;}); }
  y+=5;
  const boxH=30;
  d.setFillColor(238,242,255);d.roundedRect(M,y-5,W-2*M,boxH,2,2,'F');
@@ -171,10 +171,10 @@ async function drawOfficialMarksheet(d,r){
   const widths=[58,205,145,359,359,359];
   const xs=[x0];
   widths.forEach(w=>xs.push(xs[xs.length-1]+w));
-  const groupH=42, rankH=42, subH=50, rowH=66;
+  const groupH=42, rankH=42, subH=50, rowH=52;
   const tableW=widths.reduce((a,b)=>a+b,0);
   const dataY=tableY+groupH+rankH+subH;
-  const tableBottom=dataY+5*rowH;
+  const tableBottom=dataY+6*rowH;
 
   // Header backgrounds: merged rank title, rank labels, then subheadings.
   ctx.fillStyle=C.navy;
@@ -225,8 +225,10 @@ async function drawOfficialMarksheet(d,r){
     'hindi noting & drafting':'हिंदी नोटिंग एवं प्रारूप लेखन',
     'hindi noting and drafting':'हिंदी नोटिंग एवं प्रारूप लेखन',
     'hindi essay writing':'हिंदी निबंध लेखन',
-    'hindi proofreading':'हिंदी शुद्धलेखन',
-    'hindi proof reading':'हिंदी शुद्धलेखन',
+    'हिंदी श्रुतलेख':'हिंदी श्रुतलेख',
+    'अधिकाधिक कार्य हिंदी में करना':'अधिकाधिक कार्य हिंदी में करना',
+    
+    
     'hindi typing test':'हिंदी टाइपिंग'
   };
   const clean=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase();
@@ -234,7 +236,7 @@ async function drawOfficialMarksheet(d,r){
   const subjectResults=Array.isArray(r.subjects)?r.subjects:[];
   const subjectRows=[
     'Hindi Typing','Hindi Translation','Hindi Noting & Drafting',
-    'Hindi Essay Writing','Hindi Proofreading'
+    'Hindi Essay Writing','हिंदी श्रुतलेख','अधिकाधिक कार्य हिंदी में करना'
   ];
 
   // Body rows with consistent vertical alignment and wrapped official names.
@@ -273,7 +275,7 @@ async function drawOfficialMarksheet(d,r){
     ctx.lineTo(x0+tableW,y);
     ctx.stroke();
   });
-  for(let i=1;i<=5;i++){const y=dataY+i*rowH;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x0+tableW,y);ctx.stroke();}
+  for(let i=1;i<=6;i++){const y=dataY+i*rowH;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x0+tableW,y);ctx.stroke();}
   // Name/marks separators begin at the subheading row, not through the merged title.
   for(let j=0;j<3;j++){const gx=xs[3+j]+260;ctx.beginPath();ctx.moveTo(gx,tableY+groupH+rankH);ctx.lineTo(gx,tableBottom);ctx.stroke();}
   ctx.strokeStyle=C.navy;ctx.lineWidth=2.5;ctx.strokeRect(x0,tableY,tableW,tableBottom-tableY);
@@ -289,7 +291,7 @@ async function drawOfficialMarksheet(d,r){
     if(vals.length)total=vals.reduce((a,b)=>a+b,0);
   }
   ctx.fillStyle=C.ink;ctx.font=font(24,true);
-  ctx.fillText(`${total===undefined||total===null?'':total} / 250`,275,totalY+27);
+  ctx.fillText(`${total===undefined||total===null?'':total} / 400`,275,totalY+27);
   ctx.fillStyle=C.navy;ctx.font=font(22,true);ctx.fillText('टिप्पणी :',650,totalY+27);
   ctx.fillStyle=C.ink;ctx.font=font(19,false);
   const remarks=String(r.remarks??'').trim();
