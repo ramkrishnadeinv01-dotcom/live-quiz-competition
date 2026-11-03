@@ -240,7 +240,7 @@ async function drawOfficialMarksheet(d,r){
   ];
 
   // Body rows with consistent vertical alignment and wrapped official names.
-  for(let i=0;i<5;i++){
+  for(let i=0;i<6;i++){
     const y=dataY+i*rowH;
     ctx.fillStyle=i%2===0?'#fffdf7':'#f1f6ff';
     ctx.fillRect(x0,y,tableW,rowH);
@@ -280,9 +280,10 @@ async function drawOfficialMarksheet(d,r){
   for(let j=0;j<3;j++){const gx=xs[3+j]+260;ctx.beginPath();ctx.moveTo(gx,tableY+groupH+rankH);ctx.lineTo(gx,tableBottom);ctx.stroke();}
   ctx.strokeStyle=C.navy;ctx.lineWidth=2.5;ctx.strokeRect(x0,tableY,tableW,tableBottom-tableY);
 
-  // Total and remarks band.
+  // Total and remarks band. Remarks are wrapped so the complete sentence
+  // entered in the Excel 'Remarks' column appears in the टिप्पणी area.
   const totalY=tableBottom+13;
-  rounded(55,totalY,1490,54,10,'#e8f2ff',C.line,2);
+  rounded(55,totalY,1490,96,10,'#e8f2ff',C.line,2);
   ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=C.navy;ctx.font=font(23,true);
   ctx.fillText('कुल प्राप्तांक :',80,totalY+27);
   let total=r.obtainedMarks;
@@ -293,9 +294,12 @@ async function drawOfficialMarksheet(d,r){
   ctx.fillStyle=C.ink;ctx.font=font(24,true);
   ctx.fillText(`${total===undefined||total===null?'':total} / 400`,275,totalY+27);
   ctx.fillStyle=C.navy;ctx.font=font(22,true);ctx.fillText('टिप्पणी :',650,totalY+27);
-  ctx.fillStyle=C.ink;ctx.font=font(19,false);
   const remarks=String(r.remarks??'').trim();
-  if(remarks)ctx.fillText(remarks.slice(0,62),770,totalY+27);
+  if(remarks){
+    ctx.fillStyle=C.ink;ctx.font=font(18,false);ctx.textAlign='left';
+    const remarkLines=wrapWords(remarks,735,18,false,1000);
+    remarkLines.forEach((line,i)=>ctx.fillText(line,770,totalY+18+i*18));
+  }
 
   // Subject-wise prize panels: same rank 1/2/3 information as the former sheet.
   const wins={1:[],2:[],3:[]};
@@ -308,7 +312,7 @@ async function drawOfficialMarksheet(d,r){
       }
     });
   });
-  const prizeY=totalY+70, prizeH=112, prizeGap=18, prizeW=(1490-2*prizeGap)/3;
+  const prizeY=totalY+110, prizeH=112, prizeGap=18, prizeW=(1490-2*prizeGap)/3;
   const prizeColors=[['#fff0cf','#b7791f'],['#edf1f8','#64748b'],['#fce8df','#a64b27']];
   const rankHindi={1:'प्रथम',2:'द्वितीय',3:'तृतीय'};
   for(let rank=1;rank<=3;rank++){
