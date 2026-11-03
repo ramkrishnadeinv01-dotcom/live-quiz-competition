@@ -15,7 +15,7 @@ const keyForParticipant=()=>String(participant?.phone||"").replace(/\D/g,"");
 
 function hideExam(){
   $("question").textContent="";$("options").innerHTML="";$("qNo").textContent="Question";
-  $("nextBtn").disabled=true;$("finishBtnWrap")?.classList.add("hidden");
+  $("nextBtn").disabled=true;$("previousBtn").disabled=true;$("previewBtn").classList.add("hidden");$("submitLastBtn").classList.add("hidden");
 }
 function showError(t){
   $("status").className="status blocked";$("status").textContent=t;hideExam();
@@ -72,8 +72,11 @@ function renderQuestion(){
     $("nextBtn").disabled=false;
     await persistLive(false);
   });
-  $("nextBtn").disabled=!selected;
-  $("nextBtn").textContent=idx===questions.length-1?"SUBMIT EXAM":"NEXT";
+  $("previousBtn").disabled=idx===0;
+  $("nextBtn").classList.toggle("hidden",idx===questions.length-1);
+  $("previewBtn").classList.toggle("hidden",idx!==questions.length-1);
+  $("submitLastBtn").classList.toggle("hidden",idx!==questions.length-1);
+  $("nextBtn").disabled=false; // Candidates may skip a question and return using Previous/Preview.
 }
 function countResults(){
   let correct=0,wrong=0,answered=0;
@@ -94,7 +97,9 @@ async function finish(auto=false,confirmed=false){
   // Freeze the exam controls immediately while the final submission is being saved.
   clearInterval(timer);timer=null;
   $("nextBtn").disabled=true;
-  $("finishBtnWrap")?.classList.add("hidden");
+  $("previousBtn").disabled=true;
+  $("previewBtn").disabled=true;
+  $("submitLastBtn").disabled=true;
   document.querySelectorAll(".mcq-option").forEach(el=>{el.disabled=true;el.style.pointerEvents="none";});
   $("status").className="status";
   $("status").textContent="Submitting your examination. Please wait…";
@@ -150,7 +155,9 @@ async function finish(auto=false,confirmed=false){
     $("message").innerHTML="";
     $("options").innerHTML="";
     $("nextBtn").disabled=true;
-    $("finishBtnWrap")?.classList.add("hidden");
+    $("previousBtn").disabled=true;
+    $("previewBtn").classList.add("hidden");
+    $("submitLastBtn").classList.add("hidden");
     showExamComplete();
   }catch(e){
     submitting=false;
@@ -159,7 +166,7 @@ async function finish(auto=false,confirmed=false){
     // Allow another attempt only when the final write really failed.
     $("nextBtn").disabled=false;
     document.querySelectorAll(".mcq-option").forEach(el=>{el.disabled=false;el.style.pointerEvents="auto";});
-    if(idx===questions.length-1)$("finishBtnWrap")?.classList.remove("hidden");
+    renderQuestion();
   }
 }
 async function activateRoom(r){
@@ -177,6 +184,19 @@ function setExamFrozen(){
   document.querySelectorAll("button,input,select,textarea").forEach(el=>{el.disabled=true;});
   document.querySelectorAll(".mcq-option").forEach(el=>{el.style.pointerEvents="none";});
 }
+function showPreview(){
+  if(finalized||submitting||!questions.length)return;
+  if(document.getElementById("answerPreviewModal"))return;
+  const answered=questions.filter(q=>!!answers[q.id]).length;
+  const wrap=document.createElement("div");wrap.id="answerPreviewModal";wrap.className="submit-modal-backdrop";
+  const rows=questions.map((q,i)=>{const a=answers[q.id]||"Not answered";return `<button type="button" class="preview-question ${answers[q.id]?"answered":"unanswered"}" data-index="${i}"><b>Q${i+1}.</b> ${esc(String(q.text||"").slice(0,110))} <span>${esc(a)}</span></button>`;}).join("");
+  wrap.innerHTML=`<div class="submit-modal preview-modal" role="dialog" aria-modal="true"><h2>Review Your Answers</h2><p>Answered: <b>${answered}</b> / ${questions.length} &nbsp; | &nbsp; Unanswered: <b>${questions.length-answered}</b></p><div class="preview-list">${rows}</div><div class="row"><button type="button" id="previewReturn" class="secondary">RETURN TO EXAM</button><button type="button" id="previewSubmit" class="success">SUBMIT EXAM</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelectorAll(".preview-question").forEach(b=>b.onclick=async()=>{idx=Number(b.dataset.index);wrap.remove();await persistLive(false);renderQuestion();});
+  $("previewReturn").onclick=()=>wrap.remove();
+  $("previewSubmit").onclick=()=>{wrap.remove();showSubmitConfirm();};
+}
+
 function showSubmitConfirm(){
   if(finalized||submitting)return;
   if(document.getElementById("submitConfirmModal"))return;
@@ -211,7 +231,9 @@ async function init(){
     roomUnsub=onValue(ref(db,`rooms/${room}`),async s=>{const live=s.val();if(!live)return showError("Room is no longer available.");$("roomCode").textContent=room;$("examTitle").textContent=live.mcqTitle||"MCQ Examination";await activateRoom(live);});
   }catch(e){showError(`Unable to load examination: ${e?.message||e}`);}
 }
-$("nextBtn").onclick=async()=>{if(finalized||submitting)return;if(idx<questions.length-1){idx++;await persistLive(false);renderQuestion();}else showSubmitConfirm();};
-$("finishBtn")?.addEventListener("click",()=>showSubmitConfirm());
+$("previousBtn").onclick=async()=>{if(finalized||submitting||idx<=0)return;idx--;await persistLive(false);renderQuestion();};
+$("nextBtn").onclick=async()=>{if(finalized||submitting||idx>=questions.length-1)return;idx++;await persistLive(false);renderQuestion();};
+$("previewBtn").onclick=()=>showPreview();
+$("submitLastBtn").onclick=()=>showSubmitConfirm();
 $("backBtn").onclick=()=>location.href="student.html";
 init();
