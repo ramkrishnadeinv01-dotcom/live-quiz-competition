@@ -53,8 +53,10 @@ async function readExcel(file){
    {name:"हिंदी श्रुतलेख",marks:"हिंदी श्रुतलेख Marks (/100)",max:100},
    {name:"अधिकाधिक कार्य हिंदी में करना",marks:"अधिकाधिक कार्य हिंदी में करना Marks (/50)",max:50}
   ];
-  const out=[]; for(let i=2;i<rows.length;i++){const row=rows[i]; if(!row.some(x=>String(x??"").trim()))continue;
-   const name=String(row[idx("Officer Name")]??"").trim(); if(/sample officer/i.test(name)||/sample row only/i.test(String(row[idx("Remarks")]??"")))continue;
+  const out=[]; for(let i=2;i<rows.length;i++){const row=rows[i];
+   const name=String(row[idx("Officer Name")]??"").trim();
+   const rawMobile=row[idx("Participant Mobile Number (Required)")];
+   if(!name && !String(rawMobile??"").trim())continue; if(/sample officer/i.test(name)||/sample row only/i.test(String(row[idx("Remarks")]??"")))continue;
    const mobile=normalizePhone(row[idx("Participant Mobile Number (Required)")]); if(phoneDigits(mobile).length<10)throw new Error(`Row ${i+1}: enter a valid 10-digit participant mobile number.`);
    const subjectRanks=[]; const subjectResults=[];
    for(const sub of subjects){
