@@ -100,29 +100,30 @@ async function publish(){
   $("publishBtn").disabled=true;
   msg("Checking publication access and existing records…");
   existing=await get(ref(db,`hindiPakhwadaPublications/${pub}`));
+  const old=existing.exists()?(existing.val()||{}):{};
+  const oldIndex={...(old.resultIndex||{})};
+  const oldCount=Number(old.recordCount)||Object.keys(oldIndex).length;
   if(existing.exists()){
-   if(!confirm(`Publication ID ${pub} already exists.\\n\\nReplace the existing published result set with these ${parsedRows.length} records?\\n\\nThe old records will be removed.`)){
-    msg("Publication cancelled. No records were changed.");
+   if(!confirm(`Publication ID ${pub} already exists.\n\nADD these ${parsedRows.length} new records to the existing publication?\n\nThe existing ${oldCount} records will be PRESERVED. The publication will contain ${oldCount+parsedRows.length} records after this upload.`)){
+    msg("Upload cancelled. No records were changed.");
     return;
    }
   }
-  msg("Publishing results…");
-  if(existing.exists()){
-   const old=existing.val()||{};
-   for(const [rid,meta] of Object.entries(old.resultIndex||{})){
-    if(meta?.phoneHash)await remove(ref(db,`hindiPakhwadaResults/${meta.phoneHash}/${rid}`));
-   }
-  }
-  const resultIndex={};
+  msg("Adding results to the publication…");
+  const resultIndex={...oldIndex};
   const now=Date.now();
-  for(const r of parsedRows){
+  const batchKey=now.toString(36);
+  for(let i=0;i<parsedRows.length;i++){
+   const r=parsedRows[i];
    const ph=await sha256(phoneDigits(r.mobile));
-   resultIndex[r.resultId]={phoneHash:ph,name:r.name,rollNo:r.rollNo};
-   await set(ref(db,`hindiPakhwadaResults/${ph}/${r.resultId}`),{...r,phoneHash:ph,publishedAt:serverTimestamp(),publishedBy:user.uid});
+   // Batch-specific keys prevent later uploads from overwriting earlier result rows.
+   const rid=`${batchKey}_${String(i).padStart(5,"0")}`;
+   resultIndex[rid]={phoneHash:ph,name:r.name,rollNo:r.rollNo};
+   await set(ref(db,`hindiPakhwadaResults/${ph}/${rid}`),{...r,resultId:rid,phoneHash:ph,publishedAt:serverTimestamp(),publishedBy:user.uid});
   }
-  const meta={publicationId:pub,examName:parsedRows[0].examName,examDate:parsedRows[0].examDate,recordCount:parsedRows.length,publishedAt:now,publishedBy:user.uid,resultIndex};
+  const meta={...old,publicationId:pub,examName:old.examName||parsedRows[0].examName,examDate:old.examDate||parsedRows[0].examDate,recordCount:oldCount+parsedRows.length,publishedAt:now,publishedBy:user.uid,resultIndex};
   await set(ref(db,`hindiPakhwadaPublications/${pub}`),meta);
-  msg(`✓ ${parsedRows.length} result(s) published successfully. Candidates can now search using their mobile number.`,"status live");
+  msg(`✓ ${parsedRows.length} new result(s) added successfully. Existing records were preserved. Total records in this publication: ${meta.recordCount}. Candidates can search using their mobile number.`,"status live");
   await loadPublished();
  }catch(e){
   console.error(e);
