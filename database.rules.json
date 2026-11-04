@@ -93,11 +93,11 @@
     },
     "academicMaterials": {
       ".read": "auth != null",
-      ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
     },
     "academicOlympiadTests": {
       ".read": "auth != null",
-      ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
     }
   }
 }

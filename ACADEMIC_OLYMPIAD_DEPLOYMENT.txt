@@ -1,0 +1,34 @@
+ACADEMIC & OLYMPIAD MODULE — ADMIN-ONLY SECURITY UPDATE
+Base: live-quiz-competition-main (18)
+
+ACCESS POLICY:
+- Only the configured administrator account can open the Academic Resource Manager.
+- Only that administrator can create, update, or delete academicMaterials and academicOlympiadTests records.
+- Only that administrator can upload, replace, or delete PDFs under academic-materials/{adminUid}/.
+- PDF uploads are restricted to PDF content type and a maximum size of 15 MB.
+- Authenticated participants can read academic resource records and download PDFs.
+
+ADMIN ACCOUNT:
+- The rule checks the administrator email configured in the existing project:
+  ramkrishnadeinv.01@gmail.com
+- Uploads are stored under the administrator's own UID path. Do not manually change that path.
+
+DEPLOYMENT:
+1. Back up your current GitHub repository and Firebase Realtime Database/Storage rules.
+2. Upload the website files from this ZIP to the repository root, preserving existing files.
+3. Firebase Console > Realtime Database > Rules: merge the academicMaterials and academicOlympiadTests rules from database.rules.json into the currently deployed rules. Do not blindly replace unrelated rules.
+4. Firebase Console > Storage > Rules: merge the academic-materials match block from storage.rules into the currently deployed Storage rules. Do not replace unrelated Storage rules.
+5. Keep Email/Password authentication enabled for the administrator. Participant anonymous authentication can remain enabled.
+
+SECURITY LIMITATION — PRACTICE TESTS:
+- This module is a practice-test feature, not a secure/high-stakes examination system.
+- Correct answers are included in the test data read by the participant browser for automatic client-side scoring. A determined user can inspect browser data.
+- Firebase Spark has no trusted server-side scoring through Cloud Functions. Do not use these mock tests for confidential assessments or prizes requiring tamper-proof scoring.
+- To make answer keys confidential on Spark, automatic scoring must be removed or answers must be checked manually by the administrator. A trusted backend is required for tamper-resistant automatic scoring.
+
+VALIDATION:
+- Admin-only client gate added.
+- Realtime Database academic writes restricted to configured administrator.
+- Storage upload/update/delete restricted to configured administrator, own UID folder, PDF content type and 15 MB.
+- Existing non-academic database rules retained.
+- Live Firebase deployment/browser tests not performed.
