@@ -174,8 +174,46 @@ $("mcqAssignment").onclick=()=>openRoomModal("mcq");
 $("generalAssignment").onclick=()=>openRoomModal("general");
 $("roomCancelBtn").onclick=closeRoomModal;
 $("roomContinueBtn").onclick=()=>enterAssignment($("roomContinueBtn").dataset.type);
-$("assignmentTab").onclick=()=>{ $("assignmentTab").classList.add("active");$("resultTab").classList.remove("active");$("assignmentPanel").classList.remove("hidden");$("resultPanel").classList.add("hidden"); };
-$("resultTab").onclick=()=>{ $("resultTab").classList.add("active");$("assignmentTab").classList.remove("active");$("resultPanel").classList.remove("hidden");$("assignmentPanel").classList.add("hidden"); };
+function activateParticipantTab(which){
+ const tabs={assignment:["assignmentTab","assignmentPanel"],academic:["academicTab","academicPanel"],result:["resultTab","resultPanel"]};
+ Object.entries(tabs).forEach(([key,[tab,panel]])=>{$(tab).classList.toggle("active",key===which);$(panel).classList.toggle("hidden",key!==which);});
+}
+$("assignmentTab").onclick=()=>activateParticipantTab("assignment");
+$("academicTab").onclick=()=>activateParticipantTab("academic");
+$("resultTab").onclick=()=>activateParticipantTab("result");
+
+function academicSafeUrl(value){try{const u=new URL(String(value||""),location.href);return ["https:","http:"].includes(u.protocol)?u.href:"";}catch{return "";}}
+const academicSubjects=["Mathematics","Science","English","Social Studies","Environmental Studies","Computer","General Knowledge","Reasoning","Hindi","Bengali"];
+function fillAcademicSubjects(){const cls=$("academicNotesClass").value;const sel=$("academicNotesSubject");sel.innerHTML='<option value="">Select subject</option>'+academicSubjects.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");sel.disabled=!cls;$("academicNotesChapter").innerHTML='<option value="">All chapters</option>';$("academicNotesChapter").disabled=true;$("academicNotesList").innerHTML="";$("academicNotesStatus").textContent=cls?"Choose a subject to continue.":"Select a class to begin.";}
+$("academicNotesClass")?.addEventListener("change",fillAcademicSubjects);
+$("academicNotesSubject")?.addEventListener("change",async()=>{
+ const cls=$("academicNotesClass").value,subject=$("academicNotesSubject").value,chapters=new Set();
+ $("academicNotesChapter").innerHTML='<option value="">All chapters</option>';$("academicNotesChapter").disabled=!subject;
+ if(!cls||!subject)return;
+ try{const snap=await get(ref(db,"academicMaterials"));const all=snap.val()||{};Object.values(all).forEach(m=>{if(m&&String(m.class||m.className)===cls&&String(m.subject||"")===subject&&(m.status||"published")==="published"&&m.chapter)chapters.add(String(m.chapter));});
+ $("academicNotesChapter").innerHTML='<option value="">All chapters</option>'+[...chapters].sort().map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");}catch(e){console.error(e);$("academicNotesStatus").textContent="Unable to load chapter list. Please try again.";}
+});
+$("academicFindNotes")?.addEventListener("click",async()=>{
+ const cls=$("academicNotesClass").value,subject=$("academicNotesSubject").value,chapter=$("academicNotesChapter").value;
+ const status=$("academicNotesStatus"),list=$("academicNotesList");list.innerHTML="";
+ if(!cls||!subject){status.textContent="Please select both class and subject.";return;}
+ status.textContent="Searching published study materials…";
+ try{const snap=await get(ref(db,"academicMaterials"));const all=snap.val()||{};const items=Object.entries(all).map(([id,m])=>({id,...m})).filter(m=>m&&String(m.class||m.className)===cls&&String(m.subject||"")===subject&&(m.status||"published")==="published"&&(!chapter||String(m.chapter||"")===chapter));
+ if(!items.length){status.textContent="No study materials have been published for this selection yet.";return;}
+ status.textContent=`${items.length} study material(s) found.`;
+ list.innerHTML=items.map(m=>{const url=academicSafeUrl(m.downloadUrl||m.fileUrl||m.url||"");return `<div class="academic-result"><div><b>${esc(m.title||m.chapter||"Study Material")}</b><small>${esc(m.class||m.className||cls)} • ${esc(m.subject||subject)}${m.chapter?" • "+esc(m.chapter):""}</small></div>${url?`<a href="${esc(url)}" target="_blank" rel="noopener">DOWNLOAD ↗</a>`:"<small>File link unavailable</small>"}</div>`;}).join("");
+ }catch(e){console.error(e);status.textContent="Could not load study materials. Please try again later.";}
+});
+$("olympiadFindTests")?.addEventListener("click",async()=>{
+ const cls=$("olympiadClass").value,subject=$("olympiadSubject").value,status=$("olympiadStatus"),list=$("olympiadTestList");list.innerHTML="";
+ if(!cls||!subject){status.textContent="Please select both class and subject.";return;}
+ status.textContent="Searching published Olympiad mock tests…";
+ try{const snap=await get(ref(db,"academicOlympiadTests"));const all=snap.val()||{};const items=Object.entries(all).map(([id,t])=>({id,...t})).filter(t=>t&&String(t.class||t.className)===cls&&String(t.subject||"")===subject&&(t.status||"published")==="published");
+ if(!items.length){status.textContent="No mock test is available for this class and subject yet.";return;}
+ status.textContent=`${items.length} mock test(s) available.`;
+ list.innerHTML=items.map(t=>{const url=academicSafeUrl(t.testUrl||t.url||t.link||"");return `<div class="academic-result"><div><b>${esc(t.title||"Olympiad Mock Test")}</b><small>${esc(t.class||t.className||cls)} • ${esc(t.subject||subject)}${t.questionCount?" • "+esc(t.questionCount)+" questions":""}</small></div>${url?`<a href="${esc(url)}" target="_blank" rel="noopener">START TEST ↗</a>`:"<small>Test link unavailable</small>"}</div>`;}).join("");
+ }catch(e){console.error(e);status.textContent="Could not load mock tests. Please try again later.";}
+});
 $("participantSignOut").onclick=()=>{ sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");location.reload(); };
 $("viewResultBtn").onclick=async()=>{
  const code=$("resultRoomCode").value.trim().toUpperCase();
