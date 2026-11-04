@@ -1,0 +1,27 @@
+OLYMPIAD UPGRADE — INCLUDED IN THIS ZIP
+
+This upgrade preserves the Academic & Olympiad Hub and class/subject-based MCQ workflow, and adds:
+- Admin-managed Olympiad rooms with generated OLY- room codes.
+- Public or Private access selection per room.
+- Private approved roster (Name, Mobile, Class; one participant per line).
+- Class/subject match check at join.
+- 1–100 question editor and Excel/CSV bulk import/template.
+- Duration, positive marks and negative marks.
+- Manual start and scheduled start (scheduled start is activated while the admin Host Portal manager is open and polling).
+- Live attempt status/score table and Excel export.
+- Close, restart (clears attempts), and delete room controls.
+- Private rooms hidden from the public test listing; participants use Join Private Test with Room Code.
+
+DEPLOYMENT
+1. Extract this ZIP and upload the CONTENTS of live-quiz-competition-main to the ROOT of the GitHub Pages repository, merging/overwriting matching files. Do not create another nested folder.
+2. Keep firebase-config.js from your own existing repository; do not replace it if your project config differs.
+3. Merge database.rules.json into Firebase Realtime Database Rules, preserving all existing unrelated rules. New path required: academicOlympiadAttempts. Publish.
+4. Keep academicMaterials and academicOlympiadTests rules already published.
+5. Keep existing Firebase Storage rules and the academic-materials PDF rule already published.
+6. Confirm Anonymous Authentication is enabled for participant entry.
+7. Wait for GitHub Pages deployment to finish, then hard-refresh the site.
+
+SECURITY LIMITATIONS
+- academicOlympiadTests is readable by authenticated users under the current rule set. Correct answers are stored in the test record, so technically skilled participants can inspect answer keys. This implementation is practice-grade, not tamper-resistant/high-stakes exam security.
+- Mobile number is self-entered, not OTP-verified. Private roster matching is a basic access gate, not strong identity verification.
+- Scheduled start is client-orchestrated while the admin manager page remains open. A trusted backend is needed for server-enforced scheduling and secure scoring.
