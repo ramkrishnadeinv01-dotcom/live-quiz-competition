@@ -51,13 +51,35 @@ async function registerParticipant(){
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return setJoinMessage("Please enter a valid email address.","status blocked");
  if(phone.replace(/\D/g,"").length<10)return setJoinMessage("Please enter a valid mobile number.","status blocked");
  const btn=$("participantRegisterBtn");btn.disabled=true;
- try{await persistAuth();if(auth.currentUser)await signOut(auth);const cred=await createUserWithEmailAndPassword(auth,email,password);
-   const draft={email,name,designation,placeOfPosting,phone,status:"email_verification_pending",createdAt:serverTimestamp()};
-   await set(ref(db,`participantRegistrationDrafts/${cred.user.uid}`),draft);
-   const actionCodeSettings={url:`${location.origin}${location.pathname}?participantVerification=complete`,handleCodeInApp:false};
-   await sendEmailVerification(cred.user,actionCodeSettings);
-   setJoinMessage("Registration started. An activation link has been sent to your email. Click the link to verify your email; only then will your request be sent to the Administrator.","status success");
- }catch(e){const code=e?.code||"";setJoinMessage(code==="auth/email-already-in-use"?"This email already has an account. Please use Existing Participant Login or Forgot Password.":e.message||String(e),"status blocked");}finally{btn.disabled=false;}
+ try{
+   await persistAuth();
+   if(auth.currentUser) await signOut(auth);
+   let user=null, createdNew=false;
+   try{const cred=await createUserWithEmailAndPassword(auth,email,password);user=cred.user;createdNew=true;}
+   catch(createErr){
+     if(createErr?.code!=="auth/email-already-in-use" && createErr?.code!=="auth/email-already-exists") throw createErr;
+     // A Host account and a Participant profile can share one Firebase identity.
+     // Sign in to the existing identity; never create a duplicate Auth user.
+     const existing=await signInWithEmailAndPassword(auth,email,password);user=existing.user;
+   }
+   const draft={email,name,designation,placeOfPosting,phone,status:"email_verification_pending",createdAt:serverTimestamp(),accountType:createdNew?"new-participant":"existing-account-add-participant-role"};
+   await set(ref(db,`participantRegistrationDrafts/${user.uid}`),draft);
+   if(!user.emailVerified){
+     const actionCodeSettings={url:`${location.origin}${location.pathname}?participantVerification=complete`,handleCodeInApp:false};
+     await sendEmailVerification(user,actionCodeSettings);
+     setJoinMessage(createdNew?"An activation link has been sent. Verify your email; your participant request will then be submitted to the Administrator.":"This email already belongs to an existing account (for example, a Host account). We have linked the participant request to that same account. An activation link has been sent; verify the email to submit the participant request.","status success");
+   }else{
+     const profile={...draft,status:"pending",emailVerified:true,requestedAt:serverTimestamp(),updatedAt:serverTimestamp()};
+     await set(ref(db,`participants/${user.uid}`),profile);
+     await update(ref(db,`participantRegistrationDrafts/${user.uid}`),{status:"submitted",submittedAt:serverTimestamp()});
+     setJoinMessage("Your email is already verified. Your Participant profile request has been submitted to the Administrator for approval. You may continue using this same email account for your Host role.","status success");
+     await signOut(auth);
+   }
+ }catch(e){
+   const code=e?.code||"";
+   if(code==="auth/wrong-password"||code==="auth/invalid-credential") setJoinMessage("This email is already registered. To add the Participant role, enter the password of that existing account. The same email account can have both Host and Participant profiles.","status blocked");
+   else setJoinMessage(e.message||String(e),"status blocked");
+ }finally{btn.disabled=false;}
 }
 async function loginParticipant(){const email=$("participantLoginEmail").value.trim().toLowerCase(),password=$("participantLoginPassword").value;if(!email||!password)return setJoinMessage("Enter your registered email and password.","status blocked");const btn=$("participantLoginBtn");btn.disabled=true;try{await persistAuth();if(auth.currentUser)await signOut(auth);await signInWithEmailAndPassword(auth,email,password);await reload(auth.currentUser);if(!auth.currentUser.emailVerified){setJoinMessage("Your email is not verified yet. Please open the activation email and click its link.","status blocked");await signOut(auth);}}catch(e){setJoinMessage(e.message||String(e),"status blocked");}finally{btn.disabled=false;}}
 
@@ -203,6 +225,8 @@ function startCountdown(serverOpen,seconds){
 function disable(){answered=true;$("submitBtn").disabled=true;document.querySelectorAll(".option").forEach(b=>b.disabled=true);}
 document.addEventListener("DOMContentLoaded",()=>{
  $("participantRegisterBtn")?.addEventListener("click",registerParticipant);
+ $("showRegisterBtn")?.addEventListener("click",()=>{$("participantLoginFields")?.classList.add("hidden");$("participantRegisterFields")?.classList.remove("hidden");$("backToLoginBtn")?.classList.remove("hidden");setJoinMessage("Create your participant profile. If your email is already registered as a Host, use the same account password to add the Participant role.");});
+ $("backToLoginBtn")?.addEventListener("click",()=>{$("participantRegisterFields")?.classList.add("hidden");$("participantLoginFields")?.classList.remove("hidden");$("backToLoginBtn")?.classList.add("hidden");setJoinMessage("");});
  $("participantLoginBtn")?.addEventListener("click",loginParticipant);
  $("participantForgotBtn")?.addEventListener("click",async()=>{const email=$("participantLoginEmail").value.trim().toLowerCase();if(!email)return setJoinMessage("Enter your email address first.","status blocked");try{await sendPasswordResetEmail(auth,email);setJoinMessage("Password reset email sent. Please check Inbox and Spam/Junk.","status success");}catch(e){setJoinMessage(e.message||String(e),"status blocked");}});
 });

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css?v=20261008-69"><style>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css?v=20261105-v32"><style>
 .dashboard-tabs{display:flex;gap:8px;margin-bottom:18px}.tab{border:1px solid #ccd5e1;background:#eef3f8;padding:12px 20px;border-radius:10px;font-weight:700}.tab.active{background:#1769e0;color:#fff}.assignment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.assignment-card{text-align:left;padding:20px;border:1px solid #d9e1ea;border-radius:14px;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:8px}.assignment-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}.assignment-card span{font-size:30px}.assignment-card b{font-size:18px}.assignment-card small{color:#64748b}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}.modal-card{background:#fff;width:min(520px,100%);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modal-card input{width:100%;box-sizing:border-box;margin-top:8px;padding:13px;border:1px solid #ccd5e1;border-radius:8px;font-size:18px}.modal-card .row{display:flex;gap:10px}.modal-card button{margin-top:0}
 </style>
 <style id="advanced-v2-phase2">
@@ -133,6 +133,9 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 #dashboardCard .p2-quicklinks a:last-child{border:0}#dashboardCard .p2-quicklinks a span{font-size:17px}
 @media(max-width:900px){#studentBody .participant-topbar{grid-template-columns:1fr!important}.participant-brand{justify-content:center}.participant-nav{justify-content:center!important;overflow-x:auto}.participant-connection{justify-self:center}#dashboardCard{grid-template-columns:1fr!important;grid-template-areas:"welcome" "rail" "work" "quick"!important}.p2-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:600px){#studentBody>.container{width:calc(100% - 16px)!important}.participant-nav{justify-content:flex-start!important}.participant-nav a{font-size:10px!important;padding:8px!important}.p2-metrics{grid-template-columns:1fr!important}.p2-metric{flex-direction:row!important;align-items:center!important}.assignment-grid{grid-template-columns:1fr!important}#dashboardCard .assignment-grid{grid-template-columns:1fr!important}#dashboardCard .p2-quicklinks{grid-template-columns:repeat(3,minmax(0,1fr))}.p2-profile-grid{grid-template-columns:1fr 1fr!important}}
+#dashboardCard.hidden,#dashboardCard.hidden *{display:none!important}
+#dashboardCard:not(.hidden){display:grid!important}
+#participantRegisterFields.hidden,#participantLoginFields.hidden{display:none!important}
 </style>
 
 </head>
@@ -158,17 +161,17 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
   <div id="joinCard" class="card">
     <h2>Participant Registration / Login</h2>
     <div class="notice"><b>New participants:</b> Create your profile and verify your email address. Your profile will then be sent to the Administrator for approval. Existing approved participants can sign in below.</div>
-    <div id="participantRegisterFields">
+    <div id="participantRegisterFields" class="hidden">
       <h3>Create Participant Profile</h3>
       <div class="row"><div class="field"><label>Your Name *</label><input id="studentName" autocomplete="name" placeholder="Enter full name"></div><div class="field"><label>Designation *</label><input id="designation" autocomplete="organization-title" placeholder="Enter designation"></div></div>
       <div class="row"><div class="field"><label>Place of Posting *</label><input id="placeOfPosting" autocomplete="organization" placeholder="Enter place of posting"></div><div class="field"><label>Mobile Number *</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" placeholder="Enter mobile number"></div></div>
       <div class="row"><div class="field"><label>Email ID *</label><input id="participantEmail" type="email" autocomplete="email" placeholder="Enter valid email address"></div><div class="field"><label>Password *</label><input id="participantPassword" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters"></div></div>
-      <button id="participantRegisterBtn" class="success" type="button">CREATE PROFILE &amp; SEND ACTIVATION EMAIL</button>
+      <button id="participantRegisterBtn" class="success" type="button">CREATE PROFILE &amp; SEND ACTIVATION EMAIL</button><p style="margin:12px 0 0"><button id="backToLoginBtn" class="secondary hidden" type="button">BACK TO LOGIN</button></p>
     </div>
-    <div style="border-top:1px solid #d8b65b55;margin-top:20px;padding-top:18px" id="participantLoginFields">
+    <div id="participantLoginFields">
       <h3>Existing Participant Login</h3>
       <div class="row"><div class="field"><label>Registered Email ID *</label><input id="participantLoginEmail" type="email" autocomplete="username" placeholder="Enter registered email"></div><div class="field"><label>Password *</label><input id="participantLoginPassword" type="password" autocomplete="current-password" placeholder="Enter password"></div></div>
-      <div class="row"><button id="participantLoginBtn" class="success" type="button">SIGN IN</button><button id="participantForgotBtn" class="secondary" type="button">FORGOT PASSWORD</button></div>
+      <div class="row"><button id="participantLoginBtn" class="success" type="button">SIGN IN</button><button id="participantForgotBtn" class="secondary" type="button">FORGOT PASSWORD</button></div><p style="margin:12px 0 0;color:#d5e2f8">New participant? <button id="showRegisterBtn" class="secondary" type="button">CREATE A NEW PROFILE</button></p>
     </div>
     <p id="joinMsg" role="status" aria-live="polite"></p>
   </div>
@@ -269,6 +272,6 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 </div>
 
 
-<script type="module" src="student.js?v=20261105-v31"></script>
+<script type="module" src="student.js?v=20261105-v32"></script>
 <script type="module" src="academic.js?v=20261104-1"></script>
 </body></html>
