@@ -5,7 +5,7 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 let currentUser=null, selectedRoom="";
-let hostCache=[], roomCache=[], publicationCache=[];
+let hostCache=[], participantCache=[], roomCache=[], publicationCache=[];
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const isAdmin=u=>String(u?.email||"").toLowerCase()===ADMIN_EMAIL;
 async function persist(){try{return await setPersistence(auth,browserLocalPersistence)}catch(e){try{return await setPersistence(auth,indexedDBLocalPersistence)}catch(e2){}}}
@@ -29,6 +29,23 @@ async function loadHosts(){
  if(!admin())return;
  try{const snap=await get(ref(db,"hosts"));const obj=snap.val()||{};hostCache=Object.entries(obj).map(([uid,h])=>({uid,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));renderHosts();}
  catch(e){$("status").textContent=`Unable to load Host requests: ${e.message||e}`;$("hostRequests").innerHTML=`<tr><td colspan="9">Unable to load Host requests.</td></tr>`;}
+}
+
+function renderParticipants(){
+ const body=$("participantRequests"), status=$("participantStatus"); if(!body)return;
+ const q=String($("participantSearch")?.value||"").toLowerCase().trim(), sf=String($("participantStatusFilter")?.value||"").toLowerCase();
+ const arr=participantCache.filter(p=>{const hay=[p.email,p.name,p.participantName,p.designation,p.placeOfPosting,p.phone,p.mobile].join(" ").toLowerCase();return (!q||hay.includes(q))&&(!sf||String(p.status||"pending").toLowerCase()===sf);});
+ const pending=participantCache.filter(p=>String(p.status||"pending").toLowerCase()==="pending").length;
+ if(status)status.textContent=`${pending} pending participant request(s) • ${participantCache.length} participant profile(s) • ${arr.length} shown`;
+ if(!arr.length){body.innerHTML='<tr><td colspan="8" class="empty">No participant requests match the selected filters.</td></tr>';return;}
+ body.innerHTML=arr.map(p=>{const st=String(p.status||"pending").toLowerCase();let opts='<option value="">Select action</option>';if(p.uid!==currentUser.uid){if(st==="pending")opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';else if(st==="approved")opts+='<option value="revoked">Revoke</option>';else opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';opts+='<option value="delete">Delete profile record</option>';}
+ return `<tr><td>${esc(p.email||"")}</td><td><b>${esc(p.name||p.participantName||"")}</b></td><td>${esc(p.designation||"")}</td><td>${esc(p.placeOfPosting||"")}</td><td>${esc(p.phone||p.mobile||"")}</td><td>${statusBadge(st)}</td><td>${fmt(p.requestedAt||p.submittedAt||p.createdAt)}</td><td>${p.uid===currentUser.uid?"—":`<select class="participant-action-select" data-uid="${esc(p.uid)}">${opts}</select>`}</td></tr>`;}).join("");
+ document.querySelectorAll(".participant-action-select").forEach(sel=>sel.onchange=async()=>{const action=sel.value,uid=sel.dataset.uid;sel.value="";if(!action)return;if(action==="delete"){if(!confirm("Delete this Participant profile record? The Firebase Authentication account will NOT be deleted."))return;try{await remove(ref(db,`participants/${uid}`));await loadParticipants();}catch(e){alert(`Delete failed: ${e.message||e}`);}return;}const verb=action==="approved"?"approve":action==="rejected"?"reject":"revoke";if(!confirm(`Are you sure you want to ${verb} this Participant?`))return;try{await update(ref(db,`participants/${uid}`),{status:action,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});await loadParticipants();}catch(e){alert(`Participant access update failed: ${e.message||e}`);}});
+}
+async function loadParticipants(){
+ if(!admin())return;const body=$("participantRequests"),status=$("participantStatus");if(!body)return;
+ try{const snap=await get(ref(db,"participants"));const obj=snap.val()||{};participantCache=Object.entries(obj).map(([uid,p])=>({uid,...(p||{})})).filter(p=>p.emailVerified===true || ["pending","approved","rejected","revoked"].includes(String(p.status||"").toLowerCase())).sort((a,b)=>(Number(b.requestedAt||b.submittedAt||b.createdAt)||0)-(Number(a.requestedAt||a.submittedAt||a.createdAt)||0));renderParticipants();}
+ catch(e){if(status)status.textContent=`Unable to load Participant requests: ${e.message||e}`;body.innerHTML=`<tr><td colspan="8">Unable to load Participant requests: ${esc(e.message||e)}</td></tr>`;}
 }
 
 function roomType(r){if(r?.examType==="general"||r?.generalQuestions)return "General Question";if(r?.mcqQuestions)return "MCQ";if(r?.questions)return "Live Quiz";return "Unknown";}
@@ -101,13 +118,14 @@ async function deletePublication(pub){
  if(!admin())return;const snap=await get(ref(db,`otherExamPublications/${pub}`));if(!snap.exists())return alert("Publication not found.");const meta=snap.val()||{};const ok=confirm(`DELETE OTHER EXAM RESULT\n\nPublication: ${pub}\nExam: ${meta.examName||""}\nRecords: ${meta.recordCount||0}\n\nAll candidate results belonging to this publication will be deleted. This cannot be undone. Continue?`);if(!ok)return;
  try{for(const [rid,m] of Object.entries(meta.resultIndex||{})){if(m?.phoneHash)await remove(ref(db,`otherExamResults/${m.phoneHash}/${rid}`));}await remove(ref(db,`otherExamPublications/${pub}`));await loadOtherPublications();}catch(e){alert(`Delete failed: ${e.message||e}`);}}
 
-function render(u){currentUser=u||null;$("authStatus").textContent=u?(isAdmin(u)?"Administrator signed in":"Not authorized"):"Not signed in";$("adminLoginCard").classList.toggle("hidden",!!u&&isAdmin(u));$("adminApp").classList.toggle("hidden",!(u&&isAdmin(u)));if(u&&isAdmin(u)){loadHosts();loadRooms();loadOtherPublications();}}
+function render(u){currentUser=u||null;$("authStatus").textContent=u?(isAdmin(u)?"Administrator signed in":"Not authorized"):"Not signed in";$("adminLoginCard").classList.toggle("hidden",!!u&&isAdmin(u));$("adminApp").classList.toggle("hidden",!(u&&isAdmin(u)));if(u&&isAdmin(u)){loadHosts();loadParticipants();loadRooms();loadOtherPublications();}}
 $("loginBtn").onclick=async()=>{try{await persist();const email=$("email").value.trim().toLowerCase();if(email!==ADMIN_EMAIL){msg("This page is restricted to the Administrator account.");return;}if(auth.currentUser&&!isAdmin(auth.currentUser)){await signOut(auth);await new Promise(r=>setTimeout(r,200));}await signInWithEmailAndPassword(auth,email,$("password").value);}catch(e){msg(e.message||String(e));}};
 $("forgotBtn").onclick=async()=>{try{const email=$("email").value.trim().toLowerCase();if(email!==ADMIN_EMAIL){msg("Enter the Administrator email address first.");return;}await sendPasswordResetEmail(auth,email);msg("Password reset link sent. Check Inbox and Spam/Junk folder.");}catch(e){msg(e.message||String(e));}};
-$("refreshBtn").onclick=()=>{loadHosts();loadRooms();loadOtherPublications();};$("logoutBtn").onclick=()=>signOut(auth);$("backBtn").onclick=$("backBtn2").onclick=()=>location.href="host.html";$("manageRoomBtn").onclick=manageRoom;$("closeRoomManager").onclick=()=>$("roomManager").classList.add("hidden");
+$("refreshBtn").onclick=()=>{loadHosts();loadParticipants();loadRooms();loadOtherPublications();};$("logoutBtn").onclick=()=>signOut(auth);$("backBtn").onclick=$("backBtn2").onclick=()=>location.href="host.html";$("manageRoomBtn").onclick=manageRoom;$("closeRoomManager").onclick=()=>$("roomManager").classList.add("hidden");
 ["hostSearch","hostStatusFilter"].forEach(id=>$(id)?.addEventListener("input",renderHosts));
 ["roomSearch","roomTypeFilter","roomStatusFilter"].forEach(id=>$(id)?.addEventListener("input",renderRooms));
 $("publicationSearch")?.addEventListener("input",renderPublications);
-$("refreshHostsBtn")?.addEventListener("click",loadHosts);
+$("refreshHostsBtn")?.addEventListener("click",loadHosts);$("refreshParticipantsBtn")?.addEventListener("click",loadParticipants);
+["participantSearch","participantStatusFilter"].forEach(id=>$(id)?.addEventListener("input",renderParticipants));
 $("deleteAllResultsHint")?.addEventListener("click",()=>alert("Permanent deletion is performed publication-by-publication using the Delete Result Set button."));
 onAuthStateChanged(auth,u=>{if(u&&!isAdmin(u)){currentUser=null;$("authStatus").textContent="Not authorized";$("adminLoginCard").classList.remove("hidden");$("adminApp").classList.add("hidden");return;}render(u);});
