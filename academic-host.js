@@ -26,11 +26,12 @@ function getLatestResultRows(){
   if(nested.length){flat.push(...nested);continue;}
   if(typeof node.status==='string'||node.name||node.score!==undefined)flat.push({uid:participantUid,attemptId:'legacy',...node});
  }
- // One visible row per participant identity. A submitted attempt always wins
- // over a stale IN PROGRESS shell, then the most recent submitted attempt wins.
+ // One visible row per participant identity. Choose the most recently
+ // active attempt: a newer reattempt in progress must supersede an older submission.
  const identity=a=>String(a.mobile||a.phone||a.uid||'').replace(/\D/g,'')||String(a.name||a.uid||'').trim().toLowerCase();
  const latest=new Map();
- for(const a of flat){const key=identity(a),prev=latest.get(key);const submitted=a.status==='SUBMITTED',prevSubmitted=prev?.status==='SUBMITTED';const stamp=Number(a.submittedAt||a.joinedAt||0),prevStamp=Number(prev?.submittedAt||prev?.joinedAt||0);if(!prev||(submitted&&!prevSubmitted)||(submitted===prevSubmitted&&stamp>=prevStamp))latest.set(key,a);}
+ const activityStamp=a=>Number(a.lastActivityAt||a.submittedAt||a.joinedAt||0);
+ for(const a of flat){const key=identity(a),prev=latest.get(key);if(!prev||activityStamp(a)>=activityStamp(prev))latest.set(key,a);}
  return [...latest.values()].sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0)||(Number(a.timeTaken)||0)-(Number(b.timeTaken)||0));
 }
 function renderAttempts(){

@@ -3,7 +3,7 @@ import{getAuth,signInAnonymously}from'https://www.gstatic.com/firebasejs/12.19.0
 import{getDatabase,ref,get,set,update,push}from'https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js';
 import{firebaseConfig}from'./firebase-config.js';
 const app=getApps().length?getApp():initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
-let test=null,testId=null,uid=null,timer=null,started=0,submitted=false,attemptId=null;
+let test=null,testId=null,uid=null,timer=null,started=0,submitted=false,attemptId=null,progressWrite=Promise.resolve();
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cleanMobile=v=>String(v||'').replace(/\D/g,'');
 $('pClass').innerHTML='<option value="">Select class</option>'+Array.from({length:12},(_,i)=>`<option>Class ${i+1}</option>`).join('');
@@ -44,10 +44,19 @@ function renderExam(){
  $('joinPanel').classList.add('hidden');$('examPanel').classList.remove('hidden');
  $('testTitle').textContent=test.title;$('testMeta').textContent=`${test.className} · ${test.subject} · ${qs.length} questions · ${test.durationMinutes} minutes`;
  $('testArea').classList.remove('hidden');$('testArea').innerHTML=qs.map((q,i)=>`<div class="q"><b>${i+1}. ${esc(q.question)}</b>${['A','B','C','D'].map(k=>`<label><input type="radio" name="q${i}" value="${k}"> ${k}. ${esc(q.options?.[k]||'')}</label>`).join('')}</div>`).join('');
+ $('testArea').addEventListener('change',onAnswerChanged);
  $('testResult').innerHTML='';$('submitBtn').classList.remove('hidden');$('submitBtn').disabled=false;
  let remain=Number(test.durationMinutes||30)*60;
  const tick=()=>{$('timer').textContent=`${String(Math.floor(remain/60)).padStart(2,'0')}:${String(remain%60).padStart(2,'0')}`;if(remain<=0){submit(true);return;}remain--;};
  tick();timer=setInterval(tick,1000);$('submitBtn').onclick=()=>submit(false);
+}
+function onAnswerChanged(){
+ if(submitted)return;
+ const result=collectResult();
+ // Queue writes so rapid answer changes cannot let an older snapshot overwrite a newer one.
+ progressWrite=progressWrite.then(()=>update(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{
+  ...result,status:'IN PROGRESS',lastActivityAt:Date.now()
+ })).catch(e=>{console.warn('Live progress update failed:',e);$('testResult').innerHTML=`<p class="status">Your answer is selected, but live progress could not be synchronized. Check your connection.</p>`;});
 }
 function collectResult(){
  const qs=test.questions||[];let answered=0,correct=0,wrong=0;const answers={};
@@ -61,7 +70,8 @@ async function submit(auto=false){
  submitted=true;if(timer)clearInterval(timer);
  const result=collectResult();
  try{
-  await update(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{...result,status:'SUBMITTED',submittedAt:Date.now()});
+  await progressWrite;
+  await update(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{...result,status:'SUBMITTED',submittedAt:Date.now(),lastActivityAt:Date.now()});
   document.querySelectorAll('#testArea input').forEach(x=>x.disabled=true);
   $('testArea').classList.add('hidden');$('submitBtn').classList.add('hidden');
   $('testResult').innerHTML=`<section class="result-summary"><h2>Examination submitted successfully</h2><p>Your question paper has been closed.</p><p>Please check your result by clicking the button below.</p><button class="btn" id="checkResultBtn" type="button">Check Result</button></section>`;
