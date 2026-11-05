@@ -2,6 +2,7 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Quiz — Student Panel</title><link rel="stylesheet" href="styles.css?v=20261105-v32"><style>
 .dashboard-tabs{display:flex;gap:8px;margin-bottom:18px}.tab{border:1px solid #ccd5e1;background:#eef3f8;padding:12px 20px;border-radius:10px;font-weight:700}.tab.active{background:#1769e0;color:#fff}.assignment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.assignment-card{text-align:left;padding:20px;border:1px solid #d9e1ea;border-radius:14px;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:8px}.assignment-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}.assignment-card span{font-size:30px}.assignment-card b{font-size:18px}.assignment-card small{color:#64748b}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}.modal-card{background:#fff;width:min(520px,100%);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modal-card input{width:100%;box-sizing:border-box;margin-top:8px;padding:13px;border:1px solid #ccd5e1;border-radius:8px;font-size:18px}.modal-card .row{display:flex;gap:10px}.modal-card button{margin-top:0}
+@media(max-width:700px){#studentAnalyticsContent>div:first-child{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
 <style id="advanced-v2-phase2">
 .p2-overview{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin:0 0 18px}
@@ -206,9 +207,11 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
         <div class="p2-metric"><span>📄</span><div><b>02</b><small>Published result services</small></div></div>
         <div class="p2-metric"><span>🔐</span><div><b>01</b><small>Active participant session</small></div></div>
       </div>
-      <div class="p2-result-shortcuts">
-        <a href="./other-result.html?v=20261103-phase2" class="p2-shortcut p2-other"><span>▤</span><div><b>Other Examination Results</b><small>Find published results using your mobile number</small></div><em>↗</em></a>
-        <a href="./hindi-pakhwada-result.html?v=20261103-phase2" class="p2-shortcut p2-hindi"><span>🏅</span><div><b>Hindi Pakhwada 2026 Result</b><small>Open your personalised marksheet lookup</small></div><em>↗</em></a>
+      <div class="p2-result-shortcuts" id="studentAnalyticsPanel" style="display:block!important;grid-area:rail;">
+        <section class="card" style="margin:0;border:1px solid #d8b65b88;background:linear-gradient(145deg,#102d58,#071a36);color:#fff">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><span class="p2-kicker">YOUR LEARNING INSIGHTS</span><h2 style="margin:5px 0;color:#ffe2a0">My Academic Performance</h2><p style="margin:0;color:#d7e3f5">Your submitted Olympiad examinations are analysed automatically.</p></div><button id="refreshStudentAnalytics" class="secondary" type="button">↻ Refresh</button></div>
+          <div id="studentAnalyticsContent" style="margin-top:16px"><p class="muted">Loading your examination history…</p></div>
+        </section>
       </div>
     </section>
     <div class="card">
@@ -272,6 +275,6 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 </div>
 
 
-<script type="module" src="student.js?v=20261105-v32"></script>
+<script type="module" src="student.js?v=20261106-v35"></script>
 <script type="module" src="academic.js?v=20261104-1"></script>
 </body></html>

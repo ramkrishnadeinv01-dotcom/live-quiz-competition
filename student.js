@@ -100,6 +100,34 @@ function showDashboard(p){
  Object.entries(profileFields).forEach(([id,value])=>{const el=$(id);if(el)el.textContent=value||"—";});
  $("connection").textContent="Ready";
 }
+async function renderStudentAnalytics(uid){
+ const target=$("studentAnalyticsContent");if(!target||!uid)return;
+ target.innerHTML='<p style="color:#d7e3f5">Analysing your submitted examinations…</p>';
+ const [attemptSnap,testSnap]=await Promise.all([get(ref(db,`academicOlympiadAttempts`)),get(ref(db,'academicOlympiadTests'))]);
+ const allAttempts=attemptSnap.val()||{},tests=testSnap.val()||{},records=[];
+ for(const [testId,users] of Object.entries(allAttempts)){
+  const own=users?.[uid];if(!own)continue;
+  const list=own.status?[own]:Object.values(own).filter(x=>x&&typeof x==='object');
+  for(const a of list)if(a.status==='SUBMITTED')records.push({...a,testId,test:tests[testId]||{}});
+ }
+ records.sort((a,b)=>(Number(a.submittedAt)||0)-(Number(b.submittedAt)||0));
+ if(!records.length){target.innerHTML='<div style="padding:16px;border:1px dashed #d8b65b88;border-radius:12px;color:#d7e3f5"><b>No completed Olympiad examination yet.</b><p style="margin:6px 0 0">After you submit your first Olympiad examination, your overall, subject-wise and chapter-wise analysis will appear here.</p></div>';return;}
+ let totalCorrect=0,totalAnswered=0,totalQuestions=0,totalScore=0;const subjects={},chapters={},trend=[];
+ for(const a of records){const qs=Array.isArray(a.test.questions)?a.test.questions:[],answers=a.answers||{};const subject=String(a.subject||a.test.subject||'Unspecified');const sub=subjects[subject]||(subjects[subject]={correct:0,answered:0,questions:0,exams:0});sub.correct+=Number(a.correct||0);sub.answered+=Number(a.answered||0);sub.questions+=qs.length||Number(a.answered||0)+Number(a.unanswered||0);sub.exams++;totalCorrect+=Number(a.correct||0);totalAnswered+=Number(a.answered||0);totalQuestions+=qs.length||Number(a.answered||0)+Number(a.unanswered||0);totalScore+=Number(a.score||0);
+  qs.forEach((q,i)=>{const chapter=String(q.chapter||q.chapterName||q.topic||q.unit||'Chapter not tagged');const key=`${subject}|||${chapter}`;const c=chapters[key]||(chapters[key]={subject,chapter,correct:0,answered:0,questions:0});const chosen=String(answers[String(i)]||'').toUpperCase();if(chosen){c.answered++;if(chosen===String(q.correct||'').toUpperCase())c.correct++;}c.questions++;});
+  trend.push({label:a.test.title||`Exam ${trend.length+1}`,score:Number(a.score||0),correct:Number(a.correct||0),answered:Number(a.answered||0),date:a.submittedAt?new Date(Number(a.submittedAt)).toLocaleDateString('en-IN'):'—'});
+ }
+ const pct=(n,d)=>d?Math.round(n/d*100):0,overall=pct(totalCorrect,totalAnswered);const subjectRows=Object.entries(subjects).map(([name,x])=>({name,...x,pct:pct(x.correct,x.answered)})).sort((a,b)=>a.pct-b.pct);const chapterRows=Object.values(chapters).filter(x=>x.answered>0).map(x=>({...x,pct:pct(x.correct,x.answered)})).sort((a,b)=>a.pct-b.pct);const weak=chapterRows.filter(x=>x.answered>=3&&x.pct<60).slice(0,6);const fmt=x=>`${x}%`;
+ const metric=(n,l)=>`<div style="padding:12px;border:1px solid #d8b65b66;border-radius:12px;background:#0b2345"><b style="font-size:24px;color:#ffe2a0">${n}</b><div style="font-size:11px;color:#d7e3f5">${l}</div></div>`;
+ const bar=(label,value,subtext)=>`<div style="margin:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;color:#fff;font-size:13px"><b>${esc(label)}</b><b>${fmt(value)}</b></div><div style="height:8px;background:#263f60;border-radius:20px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${value}%;background:${value>=75?'#22c55e':value>=60?'#60a5fa':'#f59e0b'}"></div></div><small style="color:#b8c9df">${esc(subtext)}</small></div>`;
+ const latest=trend.slice(-6);const maxScore=Math.max(1,...latest.map(x=>x.score));
+ target.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">${metric(records.length,'Exams completed')}${metric(fmt(overall),'Overall accuracy')}${metric(totalCorrect,'Correct answers')}${metric(totalQuestions,'Questions reviewed')}</div>
+ <div style="margin-top:18px"><h3 style="color:#ffe2a0;margin:0 0 8px">Performance trend</h3><div style="display:flex;align-items:end;gap:8px;height:130px;padding:10px;background:#0b2345;border-radius:12px">${latest.map((x,i)=>`<div title="${esc(x.label)}: ${x.score}" style="flex:1;min-width:0;text-align:center"><div style="height:${Math.max(5,Math.round((Math.max(0,x.score)/maxScore)*88))}px;background:#d8b65b;border-radius:6px 6px 0 0"></div><small style="display:block;color:#d7e3f5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${i+1}</small></div>`).join('')}</div><small style="color:#b8c9df">Last ${latest.length} submitted examinations · bars show score magnitude</small></div>
+ <div style="margin-top:18px"><h3 style="color:#ffe2a0;margin:0 0 8px">Subject-wise analysis</h3>${subjectRows.map(x=>bar(x.name,x.pct,`${x.correct}/${x.answered} correct · ${x.exams} exam(s)`)).join('')}</div>
+ <div style="margin-top:18px"><h3 style="color:#ffe2a0;margin:0 0 8px">Chapter-wise analysis</h3>${chapterRows.length?chapterRows.map(x=>bar(`${x.subject} — ${x.chapter}`,x.pct,`${x.correct}/${x.answered} correct`)).join(''):'<p style="color:#d7e3f5">Chapter-level details will appear when questions are tagged with chapter names.</p>'}</div>
+ <div style="margin-top:18px"><h3 style="color:#ffe2a0;margin:0 0 8px">Focus areas & recommendations</h3>${weak.length?weak.map(x=>`<div style="padding:10px;margin:7px 0;border-left:4px solid #f59e0b;background:#172e4d;border-radius:8px;color:#fff"><b>${esc(x.subject)} — ${esc(x.chapter)}</b><div style="color:#d7e3f5;font-size:12px">${x.pct}% accuracy across ${x.answered} answered questions. Revise this chapter and attempt a focused practice test.</div></div>`).join(''):'<p style="color:#d7e3f5">No repeated weak chapter has been identified yet. Keep attempting examinations to build a reliable analysis.</p>'}</div>
+ <div style="margin-top:18px"><h3 style="color:#ffe2a0;margin:0 0 8px">Examination history</h3><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;color:#fff;font-size:12px"><thead><tr><th style="text-align:left;padding:7px">Examination</th><th>Date</th><th>Score</th><th>Correct</th></tr></thead><tbody>${records.slice().reverse().map(a=>`<tr style="border-top:1px solid #ffffff22"><td style="padding:7px">${esc(a.test.title||a.testId)}</td><td>${a.submittedAt?new Date(Number(a.submittedAt)).toLocaleDateString('en-IN'):'—'}</td><td>${Number(a.score||0)}</td><td>${Number(a.correct||0)}/${Number(a.answered||0)}</td></tr>`).join('')}</tbody></table></div></div>`;
+}
 function openRoomModal(type){
  $("roomModal").classList.remove("hidden");
  $("assignmentRoomCode").value="";$("roomModalMsg").textContent="";
