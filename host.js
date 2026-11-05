@@ -132,6 +132,7 @@ function openAdminModal(){
   const m=$("adminModal");
   if(m){m.classList.remove("hidden");m.setAttribute("aria-hidden","false");}
   loadHostRequests();
+  loadParticipantRequests();
 }
 function closeAdminModal(){
   const m=$("adminModal");
@@ -168,6 +169,61 @@ async function loadHostRequests(){
     });
   }catch(e){console.error(e);status.textContent=`Unable to load host requests: ${e.message||e}`;}
 }
+async function loadParticipantRequests(){
+  if(!isAdmin())return;
+  const body=$("participantRequests"), status=$("participantAdminStatus");
+  if(!body)return;
+  try{
+    const snap=await get(ref(db,"participants"));
+    const profiles=snap.val()||{};
+    const arr=Object.entries(profiles)
+      .map(([id,p])=>({uid:id,...(p||{})}))
+      .filter(p=>p.emailVerified===true || p.status==="pending" || p.status==="approved" || p.status==="rejected" || p.status==="revoked")
+      .sort((a,b)=>(Number(b.requestedAt||b.submittedAt||b.createdAt)||0)-(Number(a.requestedAt||a.submittedAt||a.createdAt)||0));
+    const pending=arr.filter(p=>String(p.status||"pending").toLowerCase()==="pending").length;
+    status.textContent=`${pending} pending participant request(s) • ${arr.length} participant profile(s) total.`;
+    if(!arr.length){body.innerHTML='<tr><td colspan="8">No verified participant requests yet.</td></tr>';return;}
+    body.innerHTML=arr.map(p=>{
+      const st=String(p.status||"pending").toLowerCase();
+      const cls=st==="approved"?"green":st==="pending"?"yellow":"red";
+      let opts='<option value="">Select Action</option>';
+      if(st==="pending"){opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';}
+      else if(st==="approved"){opts+='<option value="revoked">Revoke</option>';}
+      else {opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';}
+      opts+='<option value="__delete__">Delete Request</option>';
+      const when=p.requestedAt||p.submittedAt||p.createdAt;
+      const whenText=when?new Date(Number(when)).toLocaleString("en-IN",{timeZone:"Asia/Kolkata"}):"—";
+      return `<tr><td>${esc(p.email||"")}</td><td>${esc(p.name||p.participantName||"")}</td><td>${esc(p.designation||"")}</td><td>${esc(p.placeOfPosting||"")}</td><td>${esc(p.phone||"")}</td><td><span class="badge ${cls}">${esc(st.toUpperCase())}</span></td><td>${esc(whenText)}</td><td><select class="participantActionSelect" data-uid="${esc(p.uid)}">${opts}</select></td></tr>`;
+    }).join("");
+    document.querySelectorAll(".participantActionSelect").forEach(sel=>sel.onchange=async()=>{
+      const action=sel.value, participantUid=sel.dataset.uid; sel.value=""; if(!action)return;
+      if(action==="__delete__")await deleteParticipantRequest(participantUid);
+      else await setParticipantStatus(participantUid,action);
+    });
+  }catch(e){
+    console.error("Unable to load participant requests",e);
+    status.textContent=`Unable to load participant requests: ${e.message||e}`;
+    body.innerHTML='<tr><td colspan="8">Unable to load participant requests. Check Realtime Database permissions.</td></tr>';
+  }
+}
+async function setParticipantStatus(participantUid,status){
+  if(!isAdmin()||!participantUid)return;
+  const label=status==="approved"?"approve":status==="revoked"?"revoke":"reject";
+  if(!confirm(`Are you sure you want to ${label} this participant?`))return;
+  try{
+    await update(ref(db,`participants/${participantUid}`),{status,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});
+    await loadParticipantRequests();
+  }catch(e){alert(`Participant status update failed: ${e.message||e}`);}
+}
+async function deleteParticipantRequest(participantUid){
+  if(!isAdmin()||!participantUid||participantUid===uid)return;
+  if(!confirm("Delete this participant request/profile record? The Firebase Authentication login account will NOT be deleted."))return;
+  try{
+    await remove(ref(db,`participants/${participantUid}`));
+    await loadParticipantRequests();
+  }catch(e){alert(`Participant request deletion failed: ${e.message||e}`);}
+}
+
 async function setHostStatus(hostUid,status){
   if(!isAdmin()||!hostUid)return;
   const label=status==="approved"?"approve":status==="revoked"?"revoke":"reject";
