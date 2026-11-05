@@ -350,7 +350,8 @@ $("viewResultBtn").onclick=async()=>{
  $("resultSummary").className="status";
  $("resultSummary").textContent="No result found for this participant in this room.";
 };
-const saved=JSON.parse(sessionStorage.getItem("quizParticipant")||"null"); if(saved)showDashboard(saved);
+// Always start on the participant login form. Do not restore the dashboard automatically from sessionStorage.
+const saved=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
 const autoResultParams=new URLSearchParams(location.search);
 const autoResultRoom=String(autoResultParams.get("resultRoom")||"").trim().toUpperCase();
 const autoResultPhone=String(autoResultParams.get("resultPhone")||"").trim();
