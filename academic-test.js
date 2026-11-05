@@ -1,5 +1,5 @@
 import{initializeApp,getApps,getApp}from'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
-import{getAuth,signInAnonymously}from'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
 import{getDatabase,ref,get,set,update,push}from'https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js';
 import{firebaseConfig}from'./firebase-config.js';
 const app=getApps().length?getApp():initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
@@ -7,7 +7,16 @@ let test=null,testId=null,uid=null,timer=null,started=0,submitted=false,attemptI
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cleanMobile=v=>String(v||'').replace(/\D/g,'');
 $('pClass').innerHTML='<option value="">Select class</option>'+Array.from({length:12},(_,i)=>`<option>Class ${i+1}</option>`).join('');
-async function init(){try{const cred=await signInAnonymously(auth);uid=cred.user.uid}catch(e){$('joinStatus').textContent='Unable to connect. Please refresh and try again.'}}init();
+async function init(){try{
+ // Wait until Firebase restores the persisted login before deciding whether
+ // anonymous authentication is needed; otherwise a signed-in participant could
+ // accidentally be switched to a different anonymous UID on page load.
+ const current=await new Promise(resolve=>{
+  const stop=onAuthStateChanged(auth,user=>{stop();resolve(user||null);});
+ });
+ if(current && !current.isAnonymous){uid=current.uid;return;}
+ const cred=await signInAnonymously(auth);uid=cred.user.uid;
+ }catch(e){$('joinStatus').textContent='Unable to connect. Please refresh and try again.'}}init();
 $('joinBtn').onclick=async()=>{try{
  if(!uid)throw Error('Please wait for the connection to complete.');
  const name=$('pName').value.trim(),mobile=cleanMobile($('pMobile').value),className=$('pClass').value,subject=$('pSubject').value.trim(),code=$('pCode').value.trim().toUpperCase();

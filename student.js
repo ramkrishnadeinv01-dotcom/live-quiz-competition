@@ -103,12 +103,17 @@ function showDashboard(p){
 async function renderStudentAnalytics(uid){
  const target=$("studentAnalyticsContent");if(!target||!uid)return;
  target.innerHTML='<p style="color:#d7e3f5">Analysing your submitted examinations…</p>';
- const [attemptSnap,testSnap]=await Promise.all([get(ref(db,`academicOlympiadAttempts`)),get(ref(db,'academicOlympiadTests'))]);
- const allAttempts=attemptSnap.val()||{},tests=testSnap.val()||{},records=[];
- for(const [testId,users] of Object.entries(allAttempts)){
-  const own=users?.[uid];if(!own)continue;
-  const list=own.status?[own]:Object.values(own).filter(x=>x&&typeof x==='object');
-  for(const a of list)if(a.status==='SUBMITTED')records.push({...a,testId,test:tests[testId]||{}});
+ // Read the published test index, then read only this participant's attempt node
+ // under each test. Reading the entire attempts root is denied by the project's
+ // per-user Firebase rules and caused the dashboard to remain stuck on loading.
+ const testSnap=await get(ref(db,'academicOlympiadTests'));
+ const tests=testSnap.val()||{},records=[];
+ for(const [testId,test] of Object.entries(tests)){
+  const ownSnap=await get(ref(db,`academicOlympiadAttempts/${testId}/${uid}`));
+  if(!ownSnap.exists())continue;
+  const own=ownSnap.val();
+  const list=own?.status?[own]:Object.values(own||{}).filter(x=>x&&typeof x==='object');
+  for(const a of list)if(a.status==='SUBMITTED')records.push({...a,testId,test:test||{}});
  }
  records.sort((a,b)=>(Number(a.submittedAt)||0)-(Number(b.submittedAt)||0));
  if(!records.length){target.innerHTML='<div style="padding:16px;border:1px dashed #d8b65b88;border-radius:12px;color:#d7e3f5"><b>No completed Olympiad examination yet.</b><p style="margin:6px 0 0">After you submit your first Olympiad examination, your overall, subject-wise and chapter-wise analysis will appear here.</p></div>';return;}
