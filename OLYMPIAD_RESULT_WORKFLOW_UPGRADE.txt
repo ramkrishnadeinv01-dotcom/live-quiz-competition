@@ -1,0 +1,33 @@
+OLYMPIAD RESULT WORKFLOW UPGRADE — 05 NOV 2026
+
+This package is based on the user's latest uploaded repository (version 19).
+
+UPDATED FILES
+- academic-test.js
+- academic-test.html
+- academic-host.js
+- academic-host.html
+
+PARTICIPANT FLOW
+1. On manual Submit Examination, a confirmation prompt asks whether to submit. Cancel keeps the exam open; confirm submits.
+2. After successful save, the question area and submit button are hidden. The participant sees a success message and Check Result button.
+3. Clicking Check Result displays the summary and question-wise review, and automatically downloads a PDF. A Download Detailed Result PDF button remains available.
+4. On entering the same room again using the same anonymous-auth browser identity, if a previous SUBMITTED attempt exists, the participant is asked whether to reattempt.
+5. Each reattempt is stored as a separate child record below academicOlympiadAttempts/{testId}/{uid}/{attemptId}; it no longer overwrites the previous attempt.
+
+HOST FLOW
+1. Load the room from the room dropdown. The status message now reports listener success/errors.
+2. Live results listener supports both legacy records at academicOlympiadAttempts/{testId}/{uid} and new nested attempt records.
+3. Host sees the latest attempt per participant in the live table and can open View Detail.
+4. Download Summary + Detailed Excel exports two sheets; Download Question-wise Details exports a question-wise sheet.
+
+FIREBASE RULES
+No Firebase rules changes are included. Existing rules in the latest uploaded repository already permit the authenticated participant to read/write their own UID branch and permit the configured admin to read the test attempt branch. If your deployed rules differ from the uploaded database.rules.json, the host listener may still show a permission error; the page now displays the actual listener error in the room status.
+
+IMPORTANT
+- Reattempt history is stored per anonymous Firebase Auth UID. If a student clears browser data, changes browser/device, or uses a different browser profile, Firebase may assign a different anonymous UID and the previous-attempt prompt may not be detected. The current setup does not verify identity by OTP.
+- Detailed PDF generation uses jsPDF from a CDN; the browser must be online and able to load cdnjs.
+- Auto-download starts only after the participant clicks Check Result, as requested. Browser download settings may ask for permission.
+- Existing legacy attempts have no stored answer map, so detailed answer sheets for those older attempts may be incomplete. New attempts save each selected answer.
+- Client-side scoring/answer review is for practice use, not tamper-resistant high-stakes exams.
+- ZIP integrity and JavaScript syntax were checked. Live Firebase/browser testing has not been performed.
