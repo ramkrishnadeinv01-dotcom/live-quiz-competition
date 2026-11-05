@@ -157,7 +157,7 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 <div class="container">
   <div id="joinCard" class="card">
     <h2>Participant Login</h2>
-    <div class="notice"><b>Please enter your details first.</b> After continuing, you will see the Assignment and Result menu. Room Code will be requested only when you choose an assignment.</div>
+    <div class="notice"><b>Please enter your details first.</b> After entering all details and pressing Continue, your complete Participant Dashboard, including examination results, will become available. Room Code will be requested only when you choose an assignment.</div>
     <div class="row" style="margin-top:12px">
       <div class="field"><label>Your Name *</label><input id="studentName" autocomplete="off" placeholder="Enter full name"></div>
       <div class="field"><label>Designation *</label><input id="designation" autocomplete="off" placeholder="e.g. Statistical Officer"></div>
@@ -167,13 +167,6 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
       <div class="field"><label>Mobile Number *</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="13" autocomplete="off" placeholder="10-digit mobile number"></div>
     </div>
     <button id="participantContinueBtn" class="success" style="margin-top:14px" type="button" onclick="quickParticipantContinue()">CONTINUE</button>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0">
-      <p class="muted" style="margin:0 0 8px"><b>Checking a result from an examination conducted outside this portal?</b></p>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-        <a id="directOtherResultBtn" href="./other-result.html?v=20261030-navfix" role="button" style="background:linear-gradient(105deg,#6555ff,#4430ce);display:flex;align-items:center;justify-content:center;gap:10px;flex:1;min-height:58px;padding:13px 18px;border-radius:13px;color:#fff;font-size:14px;font-weight:900;line-height:1.35;text-decoration:none;box-shadow:0 7px 16px #123b6b20">📊 RESULT OF OTHER EXAM — SEARCH BY MOBILE NUMBER</a>
-        <a id="directHindiPakhwadaResultBtn" href="./hindi-pakhwada-result.html?v=20261030-navfix" role="button" style="background:linear-gradient(105deg,#f32c79,#cf0754);display:flex;align-items:center;justify-content:center;gap:10px;flex:1;min-height:58px;padding:13px 18px;border-radius:13px;color:#fff;font-size:14px;font-weight:900;line-height:1.35;text-decoration:none;box-shadow:0 7px 16px #123b6b20">🏅 HINDI PAKHWADA 2026 RESULT</a>
-      </div>
-    </div>
     <p id="joinMsg"></p>
   </div>
 
