@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getDatabase, ref, get, runTransaction, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signOut, reload, getIdToken, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getDatabase, ref, get, set, runTransaction, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 
@@ -14,7 +14,53 @@ window.addEventListener("popstate", () => {
 });
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
-const authReady=signInAnonymously(auth).catch(e=>{console.error("Participant anonymous authentication failed",e);return null;});
+let authUser=null, participantProfile=null;
+const authReady=Promise.resolve(true);
+onAuthStateChanged(auth,u=>{authUser=u||null;handleParticipantAuth(u).catch(e=>{console.error(e);msg(`Account check failed: ${e.message||e}`);});});
+async function persistAuth(){await setPersistence(auth,browserLocalPersistence);}
+const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
+function setJoinMessage(t,cls="status"){const el=$("joinMsg");if(el){el.textContent=t;el.className=cls;}}
+async function handleParticipantAuth(user){
+ if(!user){authUser=null;participantProfile=null;showLogin();return;}
+ if(user.isAnonymous){await signOut(auth);return;}
+ try{await reload(user);await getIdToken(user,true);}catch(e){console.warn("Unable to refresh participant auth state",e);}
+ if(!user.emailVerified){showLogin();setJoinMessage("Please verify your email using the activation link sent to your inbox, then sign in.","status blocked");return;}
+ const profileRef=ref(db,`participants/${user.uid}`);let snap=await get(profileRef);
+ if(!snap.exists()){
+   const draftSnap=await get(ref(db,`participantRegistrationDrafts/${user.uid}`));
+   if(draftSnap.exists()){
+     const draft=draftSnap.val()||{};const profile={...draft,email:user.email,status:"pending",emailVerified:true,requestedAt:serverTimestamp(),updatedAt:serverTimestamp()};
+     await set(profileRef,profile);await update(ref(db,`participantRegistrationDrafts/${user.uid}`),{status:"submitted",submittedAt:serverTimestamp()});snap=await get(profileRef);
+   }
+ }
+ participantProfile=snap.exists()?snap.val():null;
+ if(!participantProfile){showLogin();setJoinMessage("No participant registration was found for this account. Please create your profile.","status blocked");return;}
+ if(participantProfile.status!=="approved"){
+   showLogin();const status=participantProfile.status||"pending";
+   setJoinMessage(status==="rejected"?"Your participant request was not approved. Please contact the Administrator.":status==="revoked"?"Your participant access has been revoked. Please contact the Administrator.":"Your email is verified and your participant request has been submitted. Please wait for Administrator approval.","status blocked");
+   return;
+ }
+ const participant={uid:user.uid,email:user.email,name:participantProfile.name,designation:participantProfile.designation,placeOfPosting:participantProfile.placeOfPosting,phone:participantProfile.phone};
+ sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";
+}
+function showLogin(){const j=$("joinCard"),d=$("dashboardCard"),q=$("quizCard");if(j)j.classList.remove("hidden");if(d)d.classList.add("hidden");if(q)q.classList.add("hidden");$("connection").textContent="Sign in required";sessionStorage.removeItem("quizParticipant");}
+async function registerParticipant(){
+ const name=$("studentName").value.trim(),designation=$("designation").value.trim(),placeOfPosting=$("placeOfPosting").value.trim(),phone=$("phoneNumber").value.trim(),email=$("participantEmail").value.trim().toLowerCase(),password=$("participantPassword").value;
+ if(!name||!designation||!placeOfPosting||!phone||!email||!password)return setJoinMessage("Please complete all registration fields.","status blocked");
+ if(password.length<6)return setJoinMessage("Password must contain at least 6 characters.","status blocked");
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return setJoinMessage("Please enter a valid email address.","status blocked");
+ if(phone.replace(/\D/g,"").length<10)return setJoinMessage("Please enter a valid mobile number.","status blocked");
+ const btn=$("participantRegisterBtn");btn.disabled=true;
+ try{await persistAuth();if(auth.currentUser)await signOut(auth);const cred=await createUserWithEmailAndPassword(auth,email,password);
+   const draft={email,name,designation,placeOfPosting,phone,status:"email_verification_pending",createdAt:serverTimestamp()};
+   await set(ref(db,`participantRegistrationDrafts/${cred.user.uid}`),draft);
+   const actionCodeSettings={url:`${location.origin}${location.pathname}?participantVerification=complete`,handleCodeInApp:false};
+   await sendEmailVerification(cred.user,actionCodeSettings);
+   setJoinMessage("Registration started. An activation link has been sent to your email. Click the link to verify your email; only then will your request be sent to the Administrator.","status success");
+ }catch(e){const code=e?.code||"";setJoinMessage(code==="auth/email-already-in-use"?"This email already has an account. Please use Existing Participant Login or Forgot Password.":e.message||String(e),"status blocked");}finally{btn.disabled=false;}
+}
+async function loginParticipant(){const email=$("participantLoginEmail").value.trim().toLowerCase(),password=$("participantLoginPassword").value;if(!email||!password)return setJoinMessage("Enter your registered email and password.","status blocked");const btn=$("participantLoginBtn");btn.disabled=true;try{await persistAuth();if(auth.currentUser)await signOut(auth);await signInWithEmailAndPassword(auth,email,password);await reload(auth.currentUser);if(!auth.currentUser.emailVerified){setJoinMessage("Your email is not verified yet. Please open the activation email and click its link.","status blocked");await signOut(auth);}}catch(e){setJoinMessage(e.message||String(e),"status blocked");}finally{btn.disabled=false;}}
+
 const $=id=>document.getElementById(id);
 let room="",studentKey="",selected="",questionNo=0,openedAt=0,answered=false,timer,violationCount=0,lastViolationAt=0;
 let questionTimerSeconds=30;
@@ -25,16 +71,6 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
 function normalizePhone(v){v=v.trim().replace(/[\s()-]/g,"");if(/^\+91\d{10}$/.test(v))return v;if(/^91\d{10}$/.test(v))return "+"+v;if(/^\d{10}$/.test(v))return "+91"+v;return "";}
 function phoneKey(phone){return phone.replace(/\D/g,"");}
-function saveParticipantSession(){
- const phone=normalizePhone($("phoneNumber").value);
- const name=$("studentName").value.trim();
- const designation=$("designation").value.trim();
- const placeOfPosting=$("placeOfPosting").value.trim();
- if(!phone)return msg("Enter a valid 10-digit Indian mobile number.");
- if(!name||!designation||!placeOfPosting)return msg("Please fill Name, Designation, Place of Posting and Mobile Number.");
- sessionStorage.setItem("quizParticipant",JSON.stringify({name,designation,placeOfPosting,phone}));
- showDashboard({name,designation,placeOfPosting,phone});
-}
 function showDashboard(p){
  $("joinCard").classList.add("hidden");$("dashboardCard").classList.remove("hidden");$("quizCard").classList.add("hidden");
  $("participantWelcome").textContent=`Welcome, ${p.name} • ${p.designation} • ${p.placeOfPosting}`;
@@ -52,7 +88,7 @@ function openRoomModal(type){
 function closeRoomModal(){$("roomModal").classList.add("hidden");}
 async function enterAssignment(type){
  const signedIn=await authReady;
- if(!signedIn){$("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="Participant sign-in is unavailable. Please enable Anonymous sign-in in Firebase Authentication.";return;}
+ if(!signedIn||!authUser||!participantProfile||participantProfile.status!=="approved"){$("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="Only an approved participant can join an assignment. Please sign in with your approved account.";return;}
  const code=$("assignmentRoomCode").value.trim().toUpperCase();
  if(!/^[A-Z0-9]{6}$/.test(code)){ $("roomModalMsg").className="status blocked";$("roomModalMsg").textContent="Enter a valid 6-character room code.";return; }
  const rs=await get(ref(db,`rooms/${code}`));
@@ -69,7 +105,7 @@ async function enterAssignment(type){
 }
 async function joinExistingQuiz(code,p){
  const signedIn=await authReady;
- if(!signedIn){alert("Participant sign-in is unavailable. Please enable Anonymous sign-in in Firebase Authentication.");return;}
+ if(!signedIn||!authUser||!participantProfile||participantProfile.status!=="approved"){alert("Only an approved participant can join an assignment.");return;}
  room=code; const phone=p.phone;
  studentKey=phoneKey(phone);
  const rs=await get(ref(db,`rooms/${room}`)); if(!rs.exists())return alert("Room not found."); const r=rs.val()||{};
@@ -166,8 +202,9 @@ function startCountdown(serverOpen,seconds){
 }
 function disable(){answered=true;$("submitBtn").disabled=true;document.querySelectorAll(".option").forEach(b=>b.disabled=true);}
 document.addEventListener("DOMContentLoaded",()=>{
- const btn=$("participantContinueBtn");
- if(btn) btn.addEventListener("click",saveParticipantSession);
+ $("participantRegisterBtn")?.addEventListener("click",registerParticipant);
+ $("participantLoginBtn")?.addEventListener("click",loginParticipant);
+ $("participantForgotBtn")?.addEventListener("click",async()=>{const email=$("participantLoginEmail").value.trim().toLowerCase();if(!email)return setJoinMessage("Enter your email address first.","status blocked");try{await sendPasswordResetEmail(auth,email);setJoinMessage("Password reset email sent. Please check Inbox and Spam/Junk.","status success");}catch(e){setJoinMessage(e.message||String(e),"status blocked");}});
 });
 $("quizAssignment").onclick=()=>openRoomModal("quiz");
 $("mcqAssignment").onclick=()=>openRoomModal("mcq");
@@ -181,7 +218,7 @@ function activateParticipantTab(which){
 $("assignmentTab").onclick=()=>activateParticipantTab("assignment");
 $("resultTab").onclick=()=>activateParticipantTab("result");
 if($("academicTab"))$("academicTab").onclick=()=>activateParticipantTab("academic");
-$("participantSignOut").onclick=()=>{ sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");location.reload(); };
+$("participantSignOut").onclick=async()=>{if(!confirm("Log out of your participant account? Your saved profile and approval status will remain unchanged."))return;sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");await signOut(auth);showLogin();setJoinMessage("You have been logged out. Your participant profile remains saved.","status success");};
 $("viewResultBtn").onclick=async()=>{
  const code=$("resultRoomCode").value.trim().toUpperCase();
  const resultPhone=$("resultPhoneNumber").value.trim();

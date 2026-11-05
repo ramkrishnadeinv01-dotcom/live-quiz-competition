@@ -156,25 +156,32 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 </section>
 <div class="container">
   <div id="joinCard" class="card">
-    <h2>Participant Login</h2>
-    <div class="notice"><b>Please enter your details first.</b> After entering all details and pressing Continue, your complete Participant Dashboard, including examination results, will become available. Room Code will be requested only when you choose an assignment.</div>
-    <div class="row" style="margin-top:12px">
-      <div class="field"><label>Your Name *</label><input id="studentName" autocomplete="off" placeholder="Enter full name"></div>
-      <div class="field"><label>Designation *</label><input id="designation" autocomplete="off" placeholder="e.g. Statistical Officer"></div>
+    <h2>Participant Registration / Login</h2>
+    <div class="notice"><b>New participants:</b> Create your profile and verify your email address. Your profile will then be sent to the Administrator for approval. Existing approved participants can sign in below.</div>
+    <div id="participantRegisterFields">
+      <h3>Create Participant Profile</h3>
+      <div class="row"><div class="field"><label>Your Name *</label><input id="studentName" autocomplete="name" placeholder="Enter full name"></div><div class="field"><label>Designation *</label><input id="designation" autocomplete="organization-title" placeholder="Enter designation"></div></div>
+      <div class="row"><div class="field"><label>Place of Posting *</label><input id="placeOfPosting" autocomplete="organization" placeholder="Enter place of posting"></div><div class="field"><label>Mobile Number *</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="15" autocomplete="tel" placeholder="Enter mobile number"></div></div>
+      <div class="row"><div class="field"><label>Email ID *</label><input id="participantEmail" type="email" autocomplete="email" placeholder="Enter valid email address"></div><div class="field"><label>Password *</label><input id="participantPassword" type="password" autocomplete="new-password" minlength="6" placeholder="At least 6 characters"></div></div>
+      <button id="participantRegisterBtn" class="success" type="button">CREATE PROFILE &amp; SEND ACTIVATION EMAIL</button>
     </div>
-    <div class="row" style="margin-top:12px">
-      <div class="field"><label>Place of Posting *</label><input id="placeOfPosting" autocomplete="off" placeholder="Enter place of posting"></div>
-      <div class="field"><label>Mobile Number *</label><input id="phoneNumber" type="tel" inputmode="tel" maxlength="13" autocomplete="off" placeholder="10-digit mobile number"></div>
+    <div style="border-top:1px solid #d8b65b55;margin-top:20px;padding-top:18px" id="participantLoginFields">
+      <h3>Existing Participant Login</h3>
+      <div class="row"><div class="field"><label>Registered Email ID *</label><input id="participantLoginEmail" type="email" autocomplete="username" placeholder="Enter registered email"></div><div class="field"><label>Password *</label><input id="participantLoginPassword" type="password" autocomplete="current-password" placeholder="Enter password"></div></div>
+      <div class="row"><button id="participantLoginBtn" class="success" type="button">SIGN IN</button><button id="participantForgotBtn" class="secondary" type="button">FORGOT PASSWORD</button></div>
     </div>
-    <button id="participantContinueBtn" class="success" style="margin-top:14px" type="button" onclick="quickParticipantContinue()">CONTINUE</button>
-    <p id="joinMsg"></p>
+    <p id="joinMsg" role="status" aria-live="polite"></p>
+  </div>
+  <div id="publicResultButtons" class="p2-result-shortcuts" style="margin:0 0 18px">
+    <a href="./other-result.html?v=20261105-v31" class="p2-shortcut p2-other"><span>▤</span><div><b>Other Examination Results</b><small>Find published results using your mobile number</small></div><em>↗</em></a>
+    <a href="./hindi-pakhwada-result.html?v=20261105-v31" class="p2-shortcut p2-hindi"><span>🏅</span><div><b>Hindi Pakhwada 2026 Result</b><small>Open your personalised marksheet lookup</small></div><em>↗</em></a>
   </div>
 
   <div id="dashboardCard" class="hidden">
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <div><h2 style="margin:0">Participant Dashboard</h2><div class="muted" id="participantWelcome"></div></div>
-        <button id="participantSignOut" class="danger">SIGN OUT</button>
+        <button id="participantSignOut" class="danger">LOG OUT</button>
       </div>
     </div>
     <section class="p2-overview" aria-label="Participant overview">
@@ -261,31 +268,7 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
   </div>
 </div>
 
-<script>
-function quickParticipantContinue(){
-  const name=document.getElementById('studentName').value.trim();
-  const designation=document.getElementById('designation').value.trim();
-  const place=document.getElementById('placeOfPosting').value.trim();
-  const raw=document.getElementById('phoneNumber').value.trim();
-  const msg=document.getElementById('joinMsg');
-  const digits=raw.replace(/\D/g,'');
-  if(!name||!designation||!place||digits.length<10){
-    msg.textContent='Please fill Name, Designation, Place of Posting and a valid 10-digit Mobile Number.';
-    msg.className='status blocked';
-    return;
-  }
-  const phone=digits.length===10?'+91'+digits:(digits.length===12&&digits.startsWith('91')?'+'+digits:raw);
-  const participant={name,designation,placeOfPosting:place,phone};
-  sessionStorage.setItem('quizParticipant',JSON.stringify(participant));
-  document.getElementById('joinCard').classList.add('hidden');
-  document.getElementById('dashboardCard').classList.remove('hidden');
-  document.getElementById('quizCard').classList.add('hidden');
-  document.getElementById('participantWelcome').textContent=`Welcome, ${name} • ${designation} • ${place}`;
-  [['p2ProfileName',name],['p2ProfileDesignation',designation],['p2ProfilePlace',place],['p2ProfilePhone',phone]].forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.textContent=value||'—';});
-  document.getElementById('connection').textContent='Ready';
-}
 
-</script>
-<script type="module" src="student.js?v=20261104-academic"></script>
+<script type="module" src="student.js?v=20261105-v31"></script>
 <script type="module" src="academic.js?v=20261104-1"></script>
 </body></html>

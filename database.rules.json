@@ -107,6 +107,19 @@
           ".write": "auth != null && auth.uid === $uid"
         }
       }
+    },
+    "participantRegistrationDrafts": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && auth.uid === $uid && ((!data.exists() && newData.child('status').val() === 'email_verification_pending') || (data.exists() && data.child('status').val() === 'email_verification_pending'))"
+      }
+    },
+    "participants": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (auth.uid === $uid && auth.token.email_verified === true && ((!data.exists() && newData.child('status').val() === 'pending') || (data.exists() && data.child('status').val() === newData.child('status').val()))))"
+      }
     }
   }
 }

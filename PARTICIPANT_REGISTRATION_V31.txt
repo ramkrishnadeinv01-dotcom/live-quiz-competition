@@ -1,0 +1,24 @@
+PARTICIPANT REGISTRATION & APPROVAL — V31
+
+NEW FLOW
+1. New participant enters name, designation, place of posting, mobile number, email and password.
+2. Firebase Authentication creates an Email/Password account and sends a verification email.
+3. A draft profile is retained under participantRegistrationDrafts/{uid}; it is not shown to the Administrator until email verification succeeds.
+4. On return to student.html after verification (or after verified sign-in), the profile is submitted under participants/{uid} with status=pending.
+5. Administrator reviews Participant Registration Requests in the Host Portal's Administrator approval modal and can approve, reject, revoke, or delete the request.
+6. Only email-verified accounts with participants/{uid}/status=approved can open the Participant Dashboard.
+7. Logout signs out but does not delete the Firebase account or participant profile.
+8. Other Examination Results and Hindi Pakhwada 2026 Result shortcuts are displayed immediately below the registration/login form and remain public.
+
+FIREBASE SETUP REQUIRED
+A. Firebase Console > Authentication > Sign-in method: enable Email/Password.
+B. Authentication > Settings > Authorized domains: ensure the GitHub Pages domain (for example, YOUR-USERNAME.github.io) is listed.
+C. Authentication > Templates > Email address verification: customize sender/name/message if desired. The standard Firebase verification action link is used.
+D. Publish the included database.rules.json in Realtime Database > Rules. It adds participant and registration-draft access rules while retaining the existing rules.
+E. In Firebase Authentication, verify that the project's email verification template is enabled and test with an actual mailbox.
+
+SECURITY NOTES
+- Email verification proves control of the email inbox; it does not prove the person's real-world identity. Administrator approval remains required.
+- Participant profile approval is stored in Realtime Database and cannot be self-changed by the participant under these rules.
+- Deleting a participant request record does not delete the Firebase Authentication user account. If permanent account deletion is required, use Firebase Console > Authentication > Users.
+- Existing host approval remains separate. Do not replace the Firebase configuration.
