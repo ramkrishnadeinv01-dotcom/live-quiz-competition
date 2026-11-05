@@ -1,0 +1,14 @@
+OLYMPIAD HOST RESULTS FIX v21
+
+Based on the uploaded live-site ZIP.
+
+Changes:
+1. Host result table now understands both legacy records stored at academicOlympiadAttempts/{testId}/{uid} and multi-attempt records stored at academicOlympiadAttempts/{testId}/{uid}/{attemptId}.
+2. Host table, detail view and both Excel exports use the latest attempt per participant.
+3. If the selected room has no attempts under its own database ID, the host page checks for same-class/same-subject records under other IDs and displays a diagnostic warning. It does NOT automatically merge or move those records because class/subject alone cannot prove which room they belong to.
+4. No Firebase rules, participant pages, ordinary MCQ modules, Hindi Pakhwada modules, or stored data were changed.
+
+Deployment:
+Replace academic-host.js in the repository with this version (or upload the complete ZIP contents). Commit and push, wait for GitHub Pages deployment, then hard refresh the Host Portal (Ctrl+Shift+R). Load room OLY-KDHG again.
+
+Validation performed: ZIP integrity and JavaScript syntax check. Not live-tested against Firebase.
