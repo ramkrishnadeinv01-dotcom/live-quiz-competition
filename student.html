@@ -91,7 +91,51 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 #roomModal .modal-card{background:#081c3c!important;color:#fff;border:1px solid #e0ba60}#roomModal .modal-card h2{color:#ffe2a0!important}
 #quizCard .question{background:#0e2b55!important;color:#fff!important;border-color:#d9b75d!important}#quizCard .timer{background:#e7bd5d;color:#071a37;border-radius:12px;padding:8px 13px;display:inline-block}
 @media(max-width:700px){#studentBody>.container{width:calc(100% - 18px)!important}.participant-hero h1{font-size:30px!important}.p2-profile-grid{grid-template-columns:1fr 1fr}}
-</style></head>
+</style>
+<style id="midnight-elite-layout-v27">
+/* Match the approved reference composition: compact gold masthead, left workspace, right service rail. */
+#studentBody{background:radial-gradient(ellipse at 5% 0%,#12396d 0,transparent 34%),linear-gradient(145deg,#020817,#061a38 60%,#020b1d)!important;color:#f7f2e4!important}
+#studentBody .participant-topbar{display:grid!important;grid-template-columns:minmax(250px,.9fr) 2.1fr auto!important;align-items:center!important;gap:14px!important;padding:9px clamp(14px,2.5vw,34px)!important;min-height:64px!important;border-bottom:2px solid #e9bd58!important;background:linear-gradient(100deg,#020916,#061c3e 60%,#0a2b56)!important}
+.participant-brand{font-family:Georgia,serif!important;font-size:clamp(15px,1.5vw,21px)!important;color:#ffdf8b!important;white-space:normal!important;line-height:1.1}
+.brand-trophy{font-size:30px!important}.participant-nav{justify-content:flex-end!important;gap:3px!important;flex-wrap:nowrap!important;min-width:0}.participant-nav a{font-size:12px!important;padding:9px 10px!important;border-radius:8px!important;border-bottom:1px solid #d5ad50!important;white-space:nowrap!important}.participant-nav a.active{background:linear-gradient(135deg,#f6d981,#bf8b2e)!important;color:#07172f!important}
+#studentBody .participant-connection{font-size:10px!important;padding:6px 9px!important;white-space:nowrap}
+#studentBody:has(#dashboardCard:not(.hidden)) .participant-hero{display:none!important}
+#studentBody:has(#dashboardCard:not(.hidden))>.container{width:min(1180px,calc(100% - 32px))!important;margin:15px auto 28px!important}
+#dashboardCard{display:grid!important;grid-template-columns:minmax(0,1.7fr) minmax(300px,.9fr)!important;grid-template-areas:"welcome rail" "work work" "quick quick"!important;gap:12px!important;align-items:stretch}
+#dashboardCard>.card:first-child{display:none!important}
+#dashboardCard .p2-overview{grid-area:welcome;display:grid!important;grid-template-columns:1fr!important;grid-template-areas:"greet" "profile" "metrics"!important;gap:9px!important;margin:0!important;align-content:start}
+#dashboardCard .p2-welcome{grid-area:greet;grid-column:auto!important;min-height:88px!important;padding:17px 20px!important;border:1px solid #e7bd59!important;border-radius:15px!important;background:linear-gradient(110deg,#061a3c,#0a3976 65%,#07569a)!important}
+#dashboardCard .p2-welcome h2{font-family:Georgia,serif!important;font-size:clamp(19px,2.2vw,27px)!important;margin:3px 0!important;color:#ffe5a2!important}
+#dashboardCard .p2-welcome p{font-size:12px!important}.p2-avatar{width:55px!important;height:55px!important;flex-basis:55px!important;border-radius:15px!important}
+#dashboardCard .p2-profile{grid-area:profile;padding:13px 15px!important;border:1px solid #d9b65b!important;border-radius:13px!important;background:linear-gradient(145deg,#0b244a,#061832)!important}
+#dashboardCard .p2-profile-heading{margin-bottom:9px!important;font-size:10px!important;color:#f3d98e!important}.p2-profile-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}.p2-profile-grid small{font-size:8px!important}.p2-profile-grid b{font-size:11px!important;color:#fff!important}
+#dashboardCard .p2-metrics{grid-area:metrics;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+#dashboardCard .p2-metric{padding:9px 10px!important;gap:8px!important;border:1px solid #d6b25788!important;border-radius:12px!important;background:linear-gradient(110deg,#102d58,#071a36)!important}.p2-metric>span{width:30px!important;height:30px!important;font-size:16px!important}.p2-metric b{font-size:16px!important;color:#ffe3a0!important}.p2-metric small{font-size:9px!important;color:#d7e3f5!important}
+#dashboardCard .p2-result-shortcuts{grid-area:rail;grid-column:auto!important;display:flex!important;flex-direction:column!important;gap:9px!important;align-content:start}
+#dashboardCard .p2-shortcut{min-height:65px!important;padding:12px 13px!important;border:1px solid #e7bd59!important;border-radius:13px!important;box-shadow:0 7px 18px #0005!important}.p2-shortcut>span{font-size:22px!important}.p2-shortcut b{font-family:Georgia,serif!important;font-size:13px!important}.p2-shortcut small{font-size:10px!important}
+#dashboardCard>.card:last-child{grid-area:work!important;margin:0!important;padding:14px!important;border:1px solid #d9b65b!important;border-radius:16px!important;background:linear-gradient(145deg,#091f42,#04132b)!important}
+#dashboardCard .dashboard-tabs{display:flex!important;justify-content:space-between!important;gap:7px!important;margin-bottom:13px!important;padding:6px!important;border:1px solid #d9b65b!important;border-radius:12px!important;background:#06152e!important}
+#dashboardCard .tab{flex:1!important;min-height:40px!important;padding:9px 12px!important;border:1px solid #d9b65b55!important;border-radius:9px!important;background:#102b52!important;color:#f9e8bd!important;font-size:13px!important;font-weight:900!important}
+#dashboardCard .tab.active{background:linear-gradient(135deg,#f6d981,#bf8b2e)!important;color:#07172f!important;border-color:#ffe8a0!important}
+#dashboardCard #assignmentPanel h2,#dashboardCard #resultPanel h2,#dashboardCard #academicPanel h2{margin:4px 0 12px!important;font-family:Georgia,serif!important;color:#ffe3a0!important}
+#dashboardCard .assignment-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+#dashboardCard .assignment-card{min-height:142px!important;align-items:center!important;text-align:center!important;padding:15px 12px!important;border:1px solid #e2bd62!important;border-radius:13px!important;background:linear-gradient(145deg,#f8fbff,#dce9ff)!important}
+#dashboardCard .assignment-card span{font-size:27px!important}#dashboardCard .assignment-card b{font-size:14px!important;color:#071d42!important}#dashboardCard .assignment-card small{font-size:10px!important;color:#455d7e!important;line-height:1.4}
+#dashboardCard #resultPanel,#dashboardCard #academicPanel{color:#f6f0df!important}#dashboardCard #resultPanel p,#dashboardCard #academicPanel p{color:#d6e2f4!important}
+#dashboardCard .ac-head{padding:16px!important;border:1px solid #e6bd5c!important;background:linear-gradient(110deg,#061632,#0b4c8b)!important}#dashboardCard .ac-filters{gap:9px!important}#dashboardCard .ac-columns{gap:10px!important}
+#dashboardCard .ac-columns section{background:#0a2449!important;border:1px solid #d9b65b88!important;border-radius:13px!important;padding:13px!important}
+#dashboardCard .ac-columns h3,#dashboardCard .ac-filters label{color:#ffe2a0!important}#dashboardCard .ac-empty{color:#d7e4f7!important}
+#dashboardCard .ac-item{background:#f8fbff!important;border:1px solid #e3bd60!important;border-radius:10px!important}
+#dashboardCard .ac-item b{color:#102a50!important}#dashboardCard .ac-item small,#dashboardCard .ac-item p{color:#526984!important}
+#dashboardCard .ac-filters select,#dashboardCard .ac-filters input{border:1px solid #d9b65b!important;border-radius:9px!important}
+#dashboardCard .p2-quicklinks{grid-area:quick;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;padding:8px;border:1px solid #d9b65b;border-radius:13px;background:linear-gradient(110deg,#020d20,#071d3c)}
+#dashboardCard .p2-quicklinks a{display:flex;min-height:49px;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px;border-right:1px solid #d9b65b55;color:#f7df9b;text-decoration:none;text-align:center;font-size:10px;font-weight:850}
+#dashboardCard .p2-quicklinks a:last-child{border:0}#dashboardCard .p2-quicklinks a span{font-size:17px}
+@media(max-width:900px){#studentBody .participant-topbar{grid-template-columns:1fr!important}.participant-brand{justify-content:center}.participant-nav{justify-content:center!important;overflow-x:auto}.participant-connection{justify-self:center}#dashboardCard{grid-template-columns:1fr!important;grid-template-areas:"welcome" "rail" "work" "quick"!important}.p2-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:600px){#studentBody>.container{width:calc(100% - 16px)!important}.participant-nav{justify-content:flex-start!important}.participant-nav a{font-size:10px!important;padding:8px!important}.p2-metrics{grid-template-columns:1fr!important}.p2-metric{flex-direction:row!important;align-items:center!important}.assignment-grid{grid-template-columns:1fr!important}#dashboardCard .assignment-grid{grid-template-columns:1fr!important}#dashboardCard .p2-quicklinks{grid-template-columns:repeat(3,minmax(0,1fr))}.p2-profile-grid{grid-template-columns:1fr 1fr!important}}
+</style>
+
+</head>
 <body id="studentBody">
 <header class="participant-topbar">
   <a class="participant-brand" href="index.html" aria-label="Live Quiz Competition home"><span class="brand-trophy">🏆</span><span>Live Quiz Competition</span></a>
@@ -195,6 +239,14 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
         <p id="academicStatus" class="muted" aria-live="polite">Loading published academic resources…</p>
       </div>
     </div>
+    <nav class="p2-quicklinks" aria-label="Participant quick access">
+      <a href="student.html"><span>⌂</span>Home</a>
+      <a href="#assignmentPanel" onclick="document.getElementById('assignmentTab').click()"><span>🎯</span>Assignment</a>
+      <a href="#resultPanel" onclick="document.getElementById('resultTab').click()"><span>📊</span>Result</a>
+      <a href="academic-test.html"><span>🏅</span>Olympiad Mock Test</a>
+      <a href="#academicPanel" onclick="document.getElementById('academicTab').click()"><span>📚</span>Study Materials</a>
+      <a href="#resultPanel" onclick="document.getElementById('resultTab').click()"><span>🏆</span>Achievements</a>
+    </nav>
   </div>
 
   <div id="roomModal" class="modal hidden">
