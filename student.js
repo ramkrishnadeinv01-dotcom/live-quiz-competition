@@ -41,7 +41,7 @@ async function handleParticipantAuth(user){
    return;
  }
  const participant={uid:user.uid,email:user.email,name:participantProfile.name,designation:participantProfile.designation,placeOfPosting:participantProfile.placeOfPosting,phone:participantProfile.phone};
- sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";
+ sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";try{await renderStudentAnalytics(user.uid);}catch(analyticsError){console.error("Student analytics failed to load:",analyticsError);const panel=$("studentAnalyticsContent");if(panel)panel.innerHTML=`<div class="status blocked">Unable to load your performance analysis: ${esc(analyticsError.message||analyticsError)}. Please press Refresh to try again.</div>`;}
 }
 function showLogin(){const j=$("joinCard"),d=$("dashboardCard"),q=$("quizCard");if(j)j.classList.remove("hidden");if(d)d.classList.add("hidden");if(q)q.classList.add("hidden");$("connection").textContent="Sign in required";sessionStorage.removeItem("quizParticipant");}
 async function registerParticipant(){
@@ -444,6 +444,21 @@ $("viewResultBtn").onclick=async()=>{
  $("resultSummary").className="status";
  $("resultSummary").textContent="No result found for this participant in this room.";
 };
+const analyticsRefreshButton=$("refreshStudentAnalytics");
+if(analyticsRefreshButton){
+ analyticsRefreshButton.addEventListener("click",async()=>{
+  const user=auth.currentUser;
+  const target=$("studentAnalyticsContent");
+  if(!user||user.isAnonymous||!participantProfile||participantProfile.status!=="approved"){
+   if(target)target.innerHTML='<p class="status blocked">Please sign in with your approved participant account to view your performance.</p>';
+   return;
+  }
+  analyticsRefreshButton.disabled=true;
+  try{await renderStudentAnalytics(user.uid);}
+  catch(e){console.error("Manual student analytics refresh failed:",e);if(target)target.innerHTML=`<div class="status blocked">Unable to load your performance analysis: ${esc(e.message||e)}</div>`;}
+  finally{analyticsRefreshButton.disabled=false;}
+ });
+}
 const saved=JSON.parse(sessionStorage.getItem("quizParticipant")||"null"); if(saved)showDashboard(saved);
 const autoResultParams=new URLSearchParams(location.search);
 const autoResultRoom=String(autoResultParams.get("resultRoom")||"").trim().toUpperCase();
