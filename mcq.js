@@ -1,10 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase,ref,get,update,onValue,serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
-const authReady=signInAnonymously(auth).catch(e=>{console.error("MCQ anonymous authentication failed",e);return null;});
+const authReady=new Promise(resolve=>{const stop=onAuthStateChanged(auth,async user=>{stop();if(user){resolve(user);return;}try{resolve((await signInAnonymously(auth)).user);}catch(e){console.error("MCQ authentication failed",e);resolve(null);}});});
 const params=new URLSearchParams(location.search);
 const room=(params.get("room")||sessionStorage.getItem("mcqRoom")||"").toUpperCase();
 const participant=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
@@ -223,6 +223,8 @@ async function init(){
   $("roomCode").textContent=room;
   if(!participant)return showError("Participant details are missing. Please return to the Participant Panel and enter your details.");
   try{
+    const assignmentId=params.get("assignment");
+    if(assignmentId){if(!signedIn||signedIn.isAnonymous)return showError("Please sign in to your approved participant account before opening this assigned examination.");const a=(await get(ref(db,`testAssignments/${signedIn.uid}/${assignmentId}`))).val();if(!a||a.category!=="mcq"||a.testId!==room||a.participantUid!==signedIn.uid)return showError("This MCQ examination is not assigned to your account.");if(a.dueAt&&Date.now()>a.dueAt)return showError("The deadline for this assigned examination has passed.");}
     const snap=await get(ref(db,`rooms/${room}`));
     if(!snap.exists())return showError("Room not found.");
     const r=snap.val()||{};

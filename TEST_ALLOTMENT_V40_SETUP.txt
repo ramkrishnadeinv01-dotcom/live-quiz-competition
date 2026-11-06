@@ -1,0 +1,23 @@
+V40 — INDIVIDUAL TEST ALLOTMENT
+
+New features:
+- Host Control Centre includes Test Allotment & Assignment.
+- Approved Hosts can select from the limited participant directory and assign an existing Olympiad, MCQ or General Examination.
+- Participant Panel includes My Allotted Tests; students open assigned tests directly without entering a room code.
+- Assignment records are stored under testAssignments/{participantUid}/{assignmentId}.
+- Direct assignment URLs are checked against the signed-in participant UID and the assigned test/category.
+- Existing room-code entry remains available.
+
+IMPORTANT FIREBASE SETUP
+The website's database.rules.json includes two new top-level paths: participantDirectory and testAssignments. Merge these two paths into the existing Firebase Realtime Database Rules (do not replace other existing rules), then publish. Keep a backup first.
+
+Directory behaviour:
+- A participant's own approved account writes a minimal directory entry after successful login.
+- Approved Hosts and Administrator can read the limited directory.
+- It contains UID, email, name, class if available, status and update timestamp only; no password or mobile number.
+
+Operational notes:
+- Existing participants must sign in once after deploying v40 to populate participantDirectory.
+- Hosts can assign only examinations they own (or Administrator can assign any available examination).
+- Olympiad assignments launch the existing academic-test engine; MCQ and General assignments launch their existing room-based engines with assignment validation.
+- Existing room-code workflows remain unchanged.

@@ -19,16 +19,19 @@ async function init(){try{
  }catch(e){$('joinStatus').textContent='Unable to connect. Please refresh and try again.'}}init();
 $('joinBtn').onclick=async()=>{try{
  if(!uid)throw Error('Please wait for the connection to complete.');
- const name=$('pName').value.trim(),mobile=cleanMobile($('pMobile').value),className=$('pClass').value,subject=$('pSubject').value.trim(),code=$('pCode').value.trim().toUpperCase();
- if(!name||mobile.length!==10||!className||!subject||!code)throw Error('Enter your name, valid 10-digit mobile number, class, subject and room code.');
+ const assignmentId=new URLSearchParams(location.search).get('assignment');
+ const savedParticipant=JSON.parse(sessionStorage.getItem('quizParticipant')||'null')||{};
+ const name=$('pName').value.trim()||savedParticipant.name||'',mobile=cleanMobile($('pMobile').value||savedParticipant.phone||''),className=$('pClass').value||'',subject=$('pSubject').value.trim(),code=$('pCode').value.trim().toUpperCase();
+ if(!assignmentId&&(!name||mobile.length!==10||!className||!subject||!code))throw Error('Enter your name, valid 10-digit mobile number, class, subject and room code.');
  $('joinStatus').textContent='Checking room and participant access…';
  const s=await get(ref(db,'academicOlympiadTests')),all=s.val()||{},requestedId=new URLSearchParams(location.search).get('id');
  const found=requestedId&&all[requestedId]?[requestedId,all[requestedId]]:Object.entries(all).find(([id,x])=>x?.roomCode===code);
- if(!found)throw Error('Invalid room code.');
+ if(!found)throw Error('Invalid room code or assigned examination.');
  [testId,test]=found;
- if(test.className!==className||String(test.subject).toLowerCase()!==subject.toLowerCase())throw Error('Your selected class or subject does not match this room.');
+ if(assignmentId){const as=(await get(ref(db,`testAssignments/${uid}/${assignmentId}`))).val();if(!as||as.category!=='olympiad'||as.testId!==testId||as.participantUid!==uid)throw Error('This examination is not assigned to your participant account.');if(as.dueAt&&Date.now()>as.dueAt)throw Error('The deadline for this assigned examination has passed.');$('pName').value=name||as.participantName||'';$('pMobile').value=mobile||'';$('pClass').value=test.className||'';$('pSubject').value=test.subject||'';}
+ else if(test.className!==className||String(test.subject).toLowerCase()!==subject.toLowerCase())throw Error('Your selected class or subject does not match this room.');
  if(test.status!=='LIVE')throw Error(test.status==='CLOSED'?'This examination is closed.':'The examination has not been started by the administrator.');
- if(test.accessMode==='private'){
+ if(!assignmentId&&test.accessMode==='private'){
   const normName=v=>String(v||'').trim().normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase();
   const ok=(test.approvedParticipants||[]).some(p=>cleanMobile(p.mobile)===mobile&&normName(p.name)===normName(name)&&String(p.className||test.className).trim().toLowerCase()===className.trim().toLowerCase());
   if(!ok)throw Error('Access denied. Your name, mobile number and class must match the administrator-approved participant list.');
@@ -81,6 +84,7 @@ async function submit(auto=false){
  try{
   await progressWrite;
   await update(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{...result,status:'SUBMITTED',submittedAt:Date.now(),lastActivityAt:Date.now()});
+  const assignmentId=new URLSearchParams(location.search).get('assignment');if(assignmentId)await update(ref(db,`testAssignments/${uid}/${assignmentId}`),{status:'SUBMITTED',submittedAt:Date.now()});
   document.querySelectorAll('#testArea input').forEach(x=>x.disabled=true);
   $('testArea').classList.add('hidden');$('submitBtn').classList.add('hidden');
   $('testResult').innerHTML=`<section class="result-summary"><h2>Examination submitted successfully</h2><p>Your question paper has been closed.</p><p>Please check your result by clicking the button below.</p><button class="btn" id="checkResultBtn" type="button">Check Result</button></section>`;

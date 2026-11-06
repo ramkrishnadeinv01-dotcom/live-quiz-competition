@@ -752,11 +752,43 @@ onAuthStateChanged(auth,async user=>{
     if(isAdmin(user)){await loadHostRequests();}
     if(isApproved()){
       await loadExistingRooms();
+      await refreshAllotmentLists().catch(console.warn);
       const last=localStorage.getItem("liveQuizLastRoom");
       if(last){const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}
     }
   }catch(e){console.error(e);msg(`Access check failed: ${e.message||e}`);}
 });
+
+
+// Individual examination allotments (v40)
+const allotEsc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+async function refreshAllotmentLists(){
+ if(!isApproved()&&!isAdmin())return;
+ const msgEl=$("allotmentMsg"),cat=$("allotCategory"),testSel=$("allotTest"),partSel=$("allotParticipant");
+ try{
+  const [dirSnap,roomSnap,olympSnap]=await Promise.all([get(ref(db,"participantDirectory")),get(ref(db,"rooms")),get(ref(db,"academicOlympiadTests"))]);
+  const directory=dirSnap.val()||{};partSel.innerHTML='<option value="">Select an approved participant</option>'+Object.entries(directory).filter(([id,p])=>p&&p.status==="approved").map(([id,p])=>`<option value="${allotEsc(id)}">${allotEsc(p.name||p.email)} — ${allotEsc(p.email||"")}${p.className?" — "+allotEsc(p.className):""}</option>`).join("");
+  const renderTests=()=>{const c=cat.value;let arr=[];if(c==="olympiad"){arr=Object.entries(olympSnap.val()||{}).filter(([id,t])=>t&&(!t.hostUid||t.hostUid===uid||isAdmin())).map(([id,t])=>({id,title:t.title||`${t.className||""} ${t.subject||""} Olympiad`,meta:`${t.className||""} · ${t.subject||""}`,type:"olympiad"}));}else{arr=Object.entries(roomSnap.val()||{}).filter(([id,r])=>r&&r.examType===c&&(r.hostUid===uid||isAdmin())).map(([id,r])=>({id,title:r.mcqTitle||r.generalTitle||r.title||id,meta:`${id} · ${String(r.examStatus||"NOT STARTED")}`,type:c}));}testSel.innerHTML='<option value="">Select an examination</option>'+arr.map(t=>`<option value="${allotEsc(t.id)}" data-title="${allotEsc(t.title)}">${allotEsc(t.title)} — ${allotEsc(t.meta)}</option>`).join("");};
+  renderTests();cat.onchange=renderTests;
+  const ownSnap=await get(ref(db,"testAssignments"));let rows=[];Object.entries(ownSnap.val()||{}).forEach(([studentId,items])=>Object.entries(items||{}).forEach(([id,a])=>{if(a&&a.assignedBy===uid)rows.push({...a,studentId,id});}));
+  $("hostAllotmentRows").innerHTML=rows.length?rows.map(a=>`<tr><td>${allotEsc(a.testTitle)}</td><td>${allotEsc(a.category)}</td><td>${allotEsc(a.participantName||a.participantEmail)}</td><td>${a.dueAt?new Date(a.dueAt).toLocaleString("en-IN"):"—"}</td><td>${allotEsc(a.status||"ASSIGNED")}</td></tr>`).join(""):'<tr><td colspan="5">No examinations assigned yet.</td></tr>';
+  if(msgEl)msgEl.textContent=`${Object.keys(directory).length} participant account(s) in directory.`;
+ }catch(e){console.error(e);if(msgEl)msgEl.textContent=`Unable to load allotment lists: ${e.message||e}. Check participantDirectory and testAssignments database rules.`;}
+}
+async function createTestAllotment(){
+ const category=$("allotCategory").value,testId=$("allotTest").value,studentId=$("allotParticipant").value,dueRaw=$("allotDue").value;
+ if(!isApproved()&&!isAdmin())return;
+ if(!testId||!studentId){$("allotmentMsg").textContent="Select an examination and an approved participant.";return;}
+ try{
+  const [pSnap,tSnap]=await Promise.all([get(ref(db,`participantDirectory/${studentId}`)),get(ref(db,category==="olympiad"?`academicOlympiadTests/${testId}`:`rooms/${testId}`))]);
+  if(!pSnap.exists()||pSnap.val().status!=="approved")throw Error("The selected participant is not approved.");if(!tSnap.exists())throw Error("The selected examination no longer exists.");
+  const p=pSnap.val(),t=tSnap.val(),id=crypto.randomUUID();const record={assignmentId:id,category,testId,roomCode:category==="olympiad"?(t.roomCode||""):testId,testTitle:t.title||t.mcqTitle||t.generalTitle||`${t.className||""} ${t.subject||""} ${category.toUpperCase()}`,participantUid:studentId,participantName:p.name||"",participantEmail:p.email||"",assignedBy:uid,assignedByEmail:currentUser.email||"",assignedAt:Date.now(),dueAt:dueRaw?new Date(dueRaw).getTime():null,status:"ASSIGNED",attemptLimit:1};
+  await set(ref(db,`testAssignments/${studentId}/${id}`),record);
+  $("allotmentMsg").textContent="Examination assigned successfully. The participant can now find it under My Allotted Tests.";await refreshAllotmentLists();
+ }catch(e){console.error(e);$("allotmentMsg").textContent=`Assignment failed: ${e.message||e}`;}
+}
+$("createAllotmentBtn")?.addEventListener("click",createTestAllotment);
+$("refreshAllotmentBtn")?.addEventListener("click",refreshAllotmentLists);
 
 // Host Control Centre navigation buttons
 function bindHostPortalButtons(){

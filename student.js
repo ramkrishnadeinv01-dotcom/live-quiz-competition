@@ -41,8 +41,20 @@ async function handleParticipantAuth(user){
    return;
  }
  const participant={uid:user.uid,email:user.email,name:participantProfile.name,designation:participantProfile.designation,placeOfPosting:participantProfile.placeOfPosting,phone:participantProfile.phone};
+ await update(ref(db,`participantDirectory/${user.uid}`),{uid:user.uid,email:user.email,name:participantProfile.name||"",className:participantProfile.className||"",status:participantProfile.status,updatedAt:Date.now()});
  sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";try{await renderStudentAnalytics(user.uid);}catch(analyticsError){console.error("Student analytics failed to load:",analyticsError);const panel=$("studentAnalyticsContent");if(panel)panel.innerHTML=`<div class="status blocked">Unable to load your performance analysis: ${esc(analyticsError.message||analyticsError)}. Please press Refresh to try again.</div>`;}
 }
+async function loadMyAllottedTests(){
+ const box=$("myAllottedTests"),uid=auth.currentUser?.uid;if(!box||!uid)return;
+ box.innerHTML="<p>Loading your assigned examinations…</p>";
+ try{const snap=await get(ref(db,`testAssignments/${uid}`)),items=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
+ if(!items.length){box.innerHTML='<div class="status">No examinations have been allotted to you yet.</div>';return;}
+ box.innerHTML=items.map(a=>{const expired=a.dueAt&&Date.now()>a.dueAt;const status=expired&&a.status==="ASSIGNED"?"OVERDUE":a.status||"ASSIGNED";const canStart=!expired&&["ASSIGNED","IN PROGRESS"].includes(status);return `<article class="card" style="margin:10px 0;padding:16px;border:1px solid #d9b65b;background:#102b50;color:#fff"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${esc(a.testTitle||"Assigned Examination")}</b><span>${esc(status)}</span></div><p style="margin:7px 0;color:#d7e3f5">${esc(String(a.category||"").toUpperCase())} · Assigned ${a.assignedAt?new Date(a.assignedAt).toLocaleDateString("en-IN"):""}${a.dueAt?" · Due "+new Date(a.dueAt).toLocaleString("en-IN"):""}</p>${canStart?`<button type="button" class="success allottedStartBtn" data-id="${esc(a.id)}">${status==="IN PROGRESS"?"Continue Examination":"Start Examination"}</button>`:`<button type="button" disabled class="secondary">${esc(status)}</button>`}</article>`;}).join("");
+ box.querySelectorAll(".allottedStartBtn").forEach(btn=>btn.onclick=()=>startAllottedTest(items.find(a=>a.id===btn.dataset.id)));
+ }catch(e){console.error(e);box.innerHTML=`<div class="status blocked">Unable to load assigned examinations: ${esc(e.message||e)}</div>`;}
+}
+function startAllottedTest(a){if(!a)return;const category=a.category;if(category==="olympiad"){location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="mcq"){location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="general"){location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}alert("Unsupported examination category.");}
+
 function showLogin(){const j=$("joinCard"),d=$("dashboardCard"),q=$("quizCard");if(j)j.classList.remove("hidden");if(d)d.classList.add("hidden");if(q)q.classList.add("hidden");$("connection").textContent="Sign in required";sessionStorage.removeItem("quizParticipant");}
 async function registerParticipant(){
  const name=$("studentName").value.trim(),designation=$("designation").value.trim(),placeOfPosting=$("placeOfPosting").value.trim(),phone=$("phoneNumber").value.trim(),email=$("participantEmail").value.trim().toLowerCase(),password=$("participantPassword").value;
@@ -286,10 +298,12 @@ $("generalAssignment").onclick=()=>openRoomModal("general");
 $("roomCancelBtn").onclick=closeRoomModal;
 $("roomContinueBtn").onclick=()=>enterAssignment($("roomContinueBtn").dataset.type);
 function activateParticipantTab(which){
- const ids={assignment:["assignmentTab","assignmentPanel"],result:["resultTab","resultPanel"],academic:["academicTab","academicPanel"]};
+ const ids={assignment:["assignmentTab","assignmentPanel"],allotted:["allottedTab","allottedPanel"],result:["resultTab","resultPanel"],academic:["academicTab","academicPanel"]};
  Object.entries(ids).forEach(([key,[tab,panel]])=>{const t=$(tab),p=$(panel);if(t)t.classList.toggle("active",key===which);if(p)p.classList.toggle("hidden",key!==which);});
 }
 $("assignmentTab").onclick=()=>activateParticipantTab("assignment");
+$("allottedTab")?.addEventListener("click",()=>{activateParticipantTab("allotted");loadMyAllottedTests();});
+$("refreshAllottedTests")?.addEventListener("click",loadMyAllottedTests);
 $("resultTab").onclick=()=>activateParticipantTab("result");
 if($("academicTab"))$("academicTab").onclick=()=>activateParticipantTab("academic");
 $("participantSignOut").onclick=async()=>{if(!confirm("Log out of your participant account? Your saved profile and approval status will remain unchanged."))return;sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");await signOut(auth);showLogin();setJoinMessage("You have been logged out. Your participant profile remains saved.","status success");};

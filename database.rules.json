@@ -120,6 +120,21 @@
         ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))",
         ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (auth.uid === $uid && auth.token.email_verified === true && ((!data.exists() && newData.child('status').val() === 'pending') || (data.exists() && data.child('status').val() === newData.child('status').val()))))"
       }
+    },
+    "participantDirectory": {
+      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
+      "$uid": {
+        ".write": "auth != null && ((auth.uid === $uid && newData.child('status').val() === root.child('participants').child($uid).child('status').val()) || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))"
+      }
+    },
+    "testAssignments": {
+      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('testAssignments').child($uid).child($assignmentId).child('assignedBy').val() === auth.uid)",
+        "$assignmentId": {
+          ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (root.child('hosts').child(auth.uid).child('status').val() === 'approved' && newData.child('assignedBy').val() === auth.uid))"
+        }
+      }
     }
   }
 }

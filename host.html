@@ -389,6 +389,7 @@ body #hostMenu:not(.hidden) > .host-hero p {
 <h2>Host Control Centre</h2>
 <p>Select the examination mode you want to conduct. Each module opens in its dedicated setup page.</p>
 </section>
+<div class="card" id="testAllotmentCard" style="margin:18px 0;border:2px solid #d9b65b;background:#071b3a;color:#fff"><h2 style="color:#ffe2a0">📌 Test Allotment &amp; Assignment</h2><p style="color:#d7e3f5">Assign an existing Olympiad, MCQ or General Examination to selected approved participants. Assigned students can open it from their Participant Panel without entering a room code.</p><div class="row"><div class="field"><label style="color:#ffe2a0">Examination Category</label><select id="allotCategory"><option value="olympiad">Olympiad</option><option value="mcq">MCQ Examination</option><option value="general">General Examination</option></select></div><div class="field"><label style="color:#ffe2a0">Select Examination</label><select id="allotTest"><option value="">Load examinations…</option></select></div></div><div class="row" style="margin-top:10px"><div class="field"><label style="color:#ffe2a0">Select Participant</label><select id="allotParticipant"><option value="">Load approved participants…</option></select></div><div class="field"><label style="color:#ffe2a0">Due date &amp; time (optional)</label><input id="allotDue" type="datetime-local"/></div></div><div class="row" style="margin-top:12px"><button class="success" id="createAllotmentBtn" type="button">Assign Examination</button><button class="secondary" id="refreshAllotmentBtn" type="button">Refresh Lists</button></div><p id="allotmentMsg" aria-live="polite"></p><h3 style="color:#ffe2a0;margin-top:18px">My Allotments</h3><div style="overflow-x:auto"><table style="width:100%;color:#fff"><thead><tr><th>Examination</th><th>Category</th><th>Participant</th><th>Due</th><th>Status</th></tr></thead><tbody id="hostAllotmentRows"><tr><td colspan="5">No allotments loaded.</td></tr></tbody></table></div></div>
 <div class="host-menu-grid">
 <div class="host-menu-card live"><div class="host-menu-icon">🏆</div><h3>Live Quiz Competition</h3><p>Run the original live quiz with host-controlled questions, prizes, winners, live monitoring and competition controls.</p><button id="openLiveQuizBtn" type="button">Open Live Quiz Competition →</button></div>
 <div class="host-menu-card mcq"><div class="host-menu-icon">📝</div><h3>MCQ Exam Setup</h3><p>Create and manage multiple-choice examinations, schedules, questions, timers and results.</p><button class="success" id="openMcqBtn" type="button">Open MCQ Exam Setup →</button></div>
@@ -490,7 +491,7 @@ body #hostMenu:not(.hidden) > .host-hero p {
 </div>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="host.js?v=20261030-hindi-independent-navfix" type="module"></script>
+<script src="host.js?v=20261106-v4020261030-hindi-independent-navfix" type="module"></script>
 
 <script>
 /* Reuse the existing sign-out control and handler; only relocate its presentation in the Host navigation. */

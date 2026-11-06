@@ -1,9 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import {getAuth,signInAnonymously,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {getDatabase,ref,get,set} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import {firebaseConfig} from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
-const authReady=signInAnonymously(auth).catch(e=>{console.error(e);return null;});
+const authReady=new Promise(resolve=>{const stop=onAuthStateChanged(auth,async user=>{stop();if(user){resolve(user);return;}try{resolve((await signInAnonymously(auth)).user);}catch(e){console.error(e);resolve(null);}});});
 const p=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
 const params=new URLSearchParams(location.search);
 const room=(params.get("room")||sessionStorage.getItem("generalRoom")||"").toUpperCase();
@@ -15,6 +15,7 @@ function hideQuestions(message){$("questions").innerHTML="";rendered=false;show(
 function renderQuestions(keys){if(rendered)return;$("questions").innerHTML=keys.map((k,i)=>`<div class="card"><h3>Question ${i+1}</h3><div class="question">${esc(questions[k].text||"")}</div><textarea id="a_${k}" rows="4" style="width:100%;box-sizing:border-box" placeholder="Write your answer here"></textarea></div>`).join("")+`<div class="card"><button id="submit" class="success">SUBMIT EXAM</button></div>`;$("submit").onclick=()=>submit(keys);rendered=true;}
 async function init(){
  const user=await authReady;if(!user)return show("Participant sign-in failed. Please refresh or contact the host.");
+ const assignmentId=params.get("assignment");if(assignmentId){if(user.isAnonymous)return show("Please sign in to your approved participant account before opening this assigned examination.");const a=(await get(ref(db,`testAssignments/${user.uid}/${assignmentId}`))).val();if(!a||a.category!=="general"||a.testId!==room||a.participantUid!==user.uid)return show("This General Examination is not assigned to your account.");if(a.dueAt&&Date.now()>a.dueAt)return show("The deadline for this assigned examination has passed.");}
  if(!p||!/^[A-Z0-9]{6}$/.test(room))return show("Participant details or room code are missing. Return to Participant Panel and open the exam again.");
  $("room").textContent=room;await refreshExam();setInterval(refreshExam,2000);
 }
@@ -44,6 +45,6 @@ async function submit(keys){if(submitted)return;const btn=$("submit");btn.disabl
  const answers={};keys.forEach(k=>answers[k]=($("a_"+k)?.value||"").trim());if(keys.some(k=>!answers[k]))throw new Error("Please answer every question before submitting.");
  const phone=String(p.phone||"").replace(/\D/g,"");if(!phone)throw new Error("Registered phone number is missing. Return to Participant Panel and enter your details again.");
  const path=ref(db,`rooms/${room}/generalAnswers/${phone}`);if((await get(path)).exists())throw new Error("An answer sheet has already been submitted for this phone number.");
- await set(path,{name:p.name||"",designation:p.designation||"",placeOfPosting:p.placeOfPosting||p.place||"",phone:p.phone||"",answers,submittedAt:Date.now(),authUid:auth.currentUser?.uid||""});submitted=true;show("Exam over, your answer has been successfully submitted. Thank you.");$("questions").querySelectorAll("textarea,button").forEach(x=>x.disabled=true);alert("Exam over, your answer has been successfully submitted. Thank you.");
+ await set(path,{name:p.name||"",designation:p.designation||"",placeOfPosting:p.placeOfPosting||p.place||"",phone:p.phone||"",answers,submittedAt:Date.now(),authUid:auth.currentUser?.uid||""});const assignmentId=params.get("assignment");if(assignmentId)await update(ref(db,`testAssignments/${auth.currentUser.uid}/${assignmentId}`),{status:"SUBMITTED",submittedAt:Date.now()});submitted=true;show("Exam over, your answer has been successfully submitted. Thank you.");$("questions").querySelectorAll("textarea,button").forEach(x=>x.disabled=true);alert("Exam over, your answer has been successfully submitted. Thank you.");
  }catch(e){console.error(e);show(`Submission failed: ${e.message||e}`);btn.disabled=false;btn.textContent="SUBMIT EXAM";}}
 $("back").onclick=()=>location.href="student.html";init();
