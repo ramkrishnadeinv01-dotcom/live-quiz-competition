@@ -1,7 +1,7 @@
 <!doctype html>
 <!DOCTYPE html>
 
-<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Host Portal — Home</title><link href="styles.css?v=20261008-64" rel="stylesheet"/><style>.host-countdown{font-size:46px;font-weight:900;text-align:center;padding:12px 16px;margin:8px 0 14px;border-radius:14px;background:#fff7ed;color:#b42318;border:2px solid #fed7aa;letter-spacing:2px}
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Host Portal — Home</title><link href="styles.css?v=20261106-41" rel="stylesheet"/><style>.host-countdown{font-size:46px;font-weight:900;text-align:center;padding:12px 16px;margin:8px 0 14px;border-radius:14px;background:#fff7ed;color:#b42318;border:2px solid #fed7aa;letter-spacing:2px}
 /* Approved Host Control Centre redesign. Login and internal module styling remain unchanged. */
 body:has(#hostMenu:not(.hidden)) .host-site-nav{
   position:sticky;top:0;z-index:1000;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
@@ -258,6 +258,35 @@ body #hostMenu:not(.hidden) > .host-hero p {
   text-shadow: none !important;
   filter: none !important;
 }
+</style>
+<style id="host-premium-v41">
+/* v41 premium Host Control Centre: visual-only changes; all existing IDs and handlers remain intact. */
+body:has(#hostMenu:not(.hidden)) .host-page-shell{background:radial-gradient(circle at 8% 0%,#e6efff 0,#f5f8ff 34%,#edf3fb 100%)!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero{background:linear-gradient(118deg,#07152f 0%,#102d5b 58%,#174b83 100%)!important;border:1px solid #c9a85b!important;box-shadow:0 18px 42px rgba(5,22,51,.22)!important;padding:clamp(28px,3.4vw,46px)!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero:after{content:'✦  EXAMINATION MANAGEMENT';font-size:12px;letter-spacing:3px;font-weight:900;color:#f6d98a;opacity:.9;bottom:24px;right:32px}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero h2{color:#ffe3a0!important;text-shadow:0 2px 12px rgba(0,0,0,.18)!important;max-width:75%!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero p{color:#e2eaf7!important;max-width:72%!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard{box-sizing:border-box!important;margin:22px 0!important;padding:26px clamp(18px,2.5vw,32px)!important;border:1px solid #c9a85b!important;border-top:5px solid #d8b65f!important;border-radius:22px!important;background:linear-gradient(145deg,#071a36 0%,#102d56 72%,#153d70 100%)!important;color:#f8fafc!important;box-shadow:0 16px 36px rgba(5,24,55,.18)!important;opacity:1!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard h2,body:has(#hostMenu:not(.hidden)) #testAllotmentCard h3{color:#ffdf91!important;font-weight:900!important;letter-spacing:.2px}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard>p{color:#dbe7f7!important;line-height:1.6!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard .field label{color:#f7d98e!important;font-size:12px!important;font-weight:900!important;letter-spacing:.07em!important;text-transform:uppercase!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard input,body:has(#hostMenu:not(.hidden)) #testAllotmentCard select{width:100%!important;min-height:48px!important;box-sizing:border-box!important;background:#fff!important;color:#142b4d!important;border:1px solid #cbd7e8!important;border-radius:12px!important;padding:11px 14px!important;font-weight:650!important;opacity:1!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard input:focus,body:has(#hostMenu:not(.hidden)) #testAllotmentCard select:focus{outline:0!important;border-color:#e4bd62!important;box-shadow:0 0 0 3px rgba(228,189,98,.22)!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard button{min-height:46px!important;border-radius:12px!important;font-weight:850!important;padding:11px 20px!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard #createAllotmentBtn{background:linear-gradient(135deg,#d9b45b,#f2d98e)!important;color:#10264a!important;border:1px solid #f8e7b2!important;box-shadow:0 6px 16px rgba(0,0,0,.16)!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard #refreshAllotmentBtn{background:#eaf1fb!important;color:#18365f!important;border:1px solid #c8d6e9!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard #allotmentMsg{color:#fff1bd!important;font-weight:750!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard>div[style*="overflow-x"]{border:1px solid rgba(223,235,251,.22)!important;border-radius:14px!important;background:#fff!important;overflow-x:auto!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard table{width:100%!important;min-width:620px!important;border-collapse:separate!important;border-spacing:0!important;background:#fff!important;color:#183153!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard th{background:#eaf1fc!important;color:#17345d!important;text-align:left!important;font-size:12px!important;font-weight:900!important;letter-spacing:.06em!important;text-transform:uppercase!important;padding:15px 16px!important;border-bottom:1px solid #d9e3f1!important;white-space:nowrap!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard td{background:#fff!important;color:#203957!important;padding:15px 16px!important;font-size:14px!important;font-weight:650!important;border-bottom:1px solid #e8eef6!important;opacity:1!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard tbody tr:last-child td{border-bottom:0!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card{border:1px solid #d7e1ef!important;border-radius:20px!important;background:linear-gradient(150deg,#fff,#f7faff)!important;box-shadow:0 10px 26px rgba(13,39,79,.09)!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card h3{color:#102b55!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card p{color:#536984!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"]{background:#fff!important;border:1px solid #d8e3f1!important;border-top:4px solid #c9a85b!important;border-radius:20px!important;box-shadow:0 10px 26px rgba(13,39,79,.08)!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"] p{color:#536984!important}
+@media(max-width:650px){body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero:after{display:none!important}body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero h2,body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero p{max-width:100%!important}body:has(#hostMenu:not(.hidden)) #testAllotmentCard{padding:20px 14px!important}body:has(#hostMenu:not(.hidden)) #testAllotmentCard .row{gap:12px!important}}
 </style>
 </head>
 <body>

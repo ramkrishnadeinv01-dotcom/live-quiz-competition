@@ -1,0 +1,7 @@
+V41 - Premium Host Portal visual refinement
+- Based on Individual_Test_Allotment_System_v40.zip
+- Visual-only update to host.html; existing IDs, scripts, Firebase rules, and test workflows are unchanged.
+- Premium navy/gold Host Control Centre hero and allotment panel.
+- Corrected allotment form field contrast and table text visibility.
+- Improved menu card and result management card styling.
+- No Firebase rule changes required.
