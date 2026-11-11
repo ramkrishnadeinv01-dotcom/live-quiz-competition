@@ -1,0 +1,21 @@
+V46 - Allotted Tests management upgrade
+
+Participant Panel > My Allotted Tests now has three sections:
+1. Pending Tasks
+2. Completed Tests
+3. Results of Allotted Tests
+
+Each assignment card shows the examination title, category, room/test identifier, assignment date, due date, and status. Completed tasks show Reattempt Test and Delete completed record. Deleting the assignment does not delete the separate Olympiad attempt history.
+
+Host Portal > Test Allotment & Assignment table now has a Delete action for each assignment. Deleting an allotment removes it from the participant's task list but does not delete submitted attempt/result history.
+
+Olympiad assigned tests allow repeated attempts; each attempt is stored with a new attempt ID. Newly created allotments use attemptLimit 0 (unlimited).
+
+Firebase Realtime Database rules have been updated in database.rules.json to allow:
+- approved host who created an assignment to delete that assignment;
+- participant to mark their own assignment SUBMITTED;
+- participant to delete their own assignment only after it is marked SUBMITTED.
+
+IMPORTANT: Merge the updated testAssignments/$uid/$assignmentId .write rule into the existing Firebase rules before deployment. Do not replace unrelated rules. The complete updated database.rules.json is included for reference.
+
+Validation: JavaScript syntax checked for student.js, host.js, academic-test.js; database.rules.json parses successfully; ZIP integrity checked.

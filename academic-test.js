@@ -85,7 +85,7 @@ $('joinBtn').onclick=async()=>{try{
   else priorList=Object.entries(v||{}).map(([id,a])=>({id,...a})).filter(a=>a&&typeof a==='object');
  }
  const last=priorList.filter(a=>a.status==='SUBMITTED').sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0))[0];
- if(assignment&&last&&Number(assignment.attemptLimit||1)<=priorList.filter(a=>a.status==='SUBMITTED').length)throw Error('You have already used the permitted attempt for this assigned examination.');
+ // Assigned Olympiad examinations allow reattempts; every attempt is stored under a new attemptId.
  if(last&&!assignment&&!confirm('You have already attempted this examination. Do you want to reattempt?')){$('joinStatus').textContent='Your previous result is retained. You may return to the Participant Panel.';return;}
  attemptId=push(ref(db,`academicOlympiadAttempts/${testId}/${uid}`)).key;
  started=Date.now();
