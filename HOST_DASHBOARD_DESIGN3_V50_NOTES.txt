@@ -1,0 +1,17 @@
+WORLD OF EXAM – HOST DASHBOARD DESIGN 3 (V50)
+
+Base: Fresh_Reallotment_Assignment_Archive_v49.zip
+
+Changes in this version:
+1. Reworked the logged-in Host home into a combined Midnight Royal Blue/Gold header and colourful academic module-card dashboard.
+2. Added a welcome panel, host profile display and active host access status.
+3. Added Test Assignment as a dedicated dashboard module card.
+4. Clicking Test Assignment opens host.html?module=assignment, a separate page view showing the existing assignment form, participant/test selectors, allotment table, statuses and Delete actions.
+5. Added Back to Host Dashboard navigation from the assignment page.
+6. Existing host.js, Firebase configuration/rules, assignment data, fresh re-allotment logic, and other module pages are preserved unchanged.
+7. Responsive layout adapts to tablet and mobile screens.
+
+Deployment:
+Upload/replace the website files from this ZIP in the existing GitHub Pages repository. Do not change Firebase database rules for this visual/navigation update. After deployment, sign in as an approved host, verify the dashboard, open Test Assignment, and use Back to Host Dashboard.
+
+Note: This package has been source-inspected and the added inline routing script passed a JavaScript syntax check. A live Firebase/GitHub Pages end-to-end test was not performed here.

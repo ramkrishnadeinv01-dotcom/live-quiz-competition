@@ -414,12 +414,18 @@ body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"] p{col
 <div class="row" style="margin-top:12px"><button class="secondary" id="pendingLogoutBtn" type="button">🚪 Sign Out</button></div>
 </div>
 <div class="hidden" id="hostMenu">
-<section class="host-hero">
+<section class="we-welcome-panel" id="weWelcomePanel">
+  <div class="we-welcome-copy"><span class="we-eyebrow">WORLD OF EXAM · HOST WORKSPACE</span><h1>Welcome to Your <span>Host Dashboard</span></h1><p>Your central workspace to manage examinations, participants, assignments and results.</p></div>
+  <div class="we-host-profile" id="weHostProfile"><div class="we-avatar">♟</div><div class="we-profile-copy"><span class="we-profile-label">HOST PROFILE</span><strong id="weHostName">Welcome, Host</strong><span id="weHostEmail">Signed-in host account</span></div><span class="we-active-pill">● Host Access Active</span></div>
+  <div class="we-academic-art" aria-hidden="true"><span>🎓</span><span>📚</span><span>💻</span></div>
+</section>
+<section class="host-hero we-old-hero">
 <h2>Host Control Centre</h2>
 <p>Select the examination mode you want to conduct. Each module opens in its dedicated setup page.</p>
 </section>
-<div class="card" id="testAllotmentCard" style="margin:18px 0;border:2px solid #d9b65b;background:#071b3a;color:#fff"><h2 style="color:#ffe2a0">📌 Test Allotment &amp; Assignment</h2><p style="color:#d7e3f5">Assign an existing Olympiad, MCQ or General Examination to selected approved participants. Assigned students can open it from their Participant Panel without entering a room code.</p><div class="row"><div class="field"><label style="color:#ffe2a0">Examination Category</label><select id="allotCategory"><option value="olympiad">Olympiad</option><option value="mcq">MCQ Examination</option><option value="general">General Examination</option></select></div><div class="field"><label style="color:#ffe2a0">Select Examination</label><select id="allotTest"><option value="">Load examinations…</option></select></div></div><div class="row" style="margin-top:10px"><div class="field"><label style="color:#ffe2a0">Select Participant</label><select id="allotParticipant"><option value="">Load approved participants…</option></select></div><div class="field"><label style="color:#ffe2a0">Due date &amp; time (optional)</label><input id="allotDue" type="datetime-local"/></div></div><div class="row" style="margin-top:12px"><button class="success" id="createAllotmentBtn" type="button">Assign Examination</button><button class="secondary" id="refreshAllotmentBtn" type="button">Refresh Lists</button></div><p id="allotmentMsg" aria-live="polite"></p><h3 style="color:#ffe2a0;margin-top:18px">My Allotments</h3><div style="overflow-x:auto"><table style="width:100%;color:#fff"><thead><tr><th>Examination</th><th>Category</th><th>Participant</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="hostAllotmentRows"><tr><td colspan="6">No allotments loaded.</td></tr></tbody></table></div></div>
+<div class="card" id="testAllotmentCard" style="margin:18px 0;border:2px solid #d9b65b;background:#071b3a;color:#fff"><h2 style="color:#ffe2a0">📌 Test Allotment &amp; Assignment</h2><p style="color:#d7e3f5">Assign an existing Olympiad, MCQ or General Examination to selected approved participants. Assigned students can open it from their Participant Panel without entering a room code.</p><div class="row"><div class="field"><label style="color:#ffe2a0">Examination Category</label><select id="allotCategory"><option value="olympiad">Olympiad</option><option value="mcq">MCQ Examination</option><option value="general">General Examination</option></select></div><div class="field"><label style="color:#ffe2a0">Select Examination</label><select id="allotTest"><option value="">Load examinations…</option></select></div></div><div class="row" style="margin-top:10px"><div class="field"><label style="color:#ffe2a0">Select Participant</label><select id="allotParticipant"><option value="">Load approved participants…</option></select></div><div class="field"><label style="color:#ffe2a0">Due date &amp; time (optional)</label><input id="allotDue" type="datetime-local"/></div></div><div class="row" style="margin-top:12px"><button class="success" id="createAllotmentBtn" type="button">Assign Examination</button><button class="secondary" id="refreshAllotmentBtn" type="button">Refresh Lists</button></div><p id="allotmentMsg" aria-live="polite"></p><h3 style="color:#ffe2a0;margin-top:18px">My Allotments</h3><div style="overflow-x:auto"><table style="width:100%;color:#fff"><thead><tr><th>Examination</th><th>Category</th><th>Participant</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody id="hostAllotmentRows"><tr><td colspan="6">No allotments loaded.</td></tr></tbody></table></div><div class="we-assignment-back"><button class="secondary" id="backToHostDashboardBtn" type="button">← Back to Host Dashboard</button></div></div>
 <div class="host-menu-grid">
+<div class="host-menu-card assignment"><div class="host-menu-icon">📋</div><h3>Test Assignment</h3><p>Allot existing Olympiad, MCQ and General examinations to approved participants. Review assignment status and manage previous allotments.</p><button id="openTestAssignmentPageBtn" type="button">Open Test Assignment →</button></div>
 <div class="host-menu-card live"><div class="host-menu-icon">🏆</div><h3>Live Quiz Competition</h3><p>Run the original live quiz with host-controlled questions, prizes, winners, live monitoring and competition controls.</p><button id="openLiveQuizBtn" type="button">Open Live Quiz Competition →</button></div>
 <div class="host-menu-card mcq"><div class="host-menu-icon">📝</div><h3>MCQ Exam Setup</h3><p>Create and manage multiple-choice examinations, schedules, questions, timers and results.</p><button class="success" id="openMcqBtn" type="button">Open MCQ Exam Setup →</button></div>
 <div class="host-menu-card general"><div class="host-menu-icon">✍️</div><h3>General Question Exam Setup</h3><p>Set up descriptive/general-question examinations in the dedicated examination module.</p><button class="warning" id="openGeneralBtn" type="button">Open General Exam Setup →</button></div>
@@ -554,4 +560,84 @@ body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"] p{col
 })();
 </script>
 
+
+<style id="world-of-exam-host-dashboard-v50">
+/* Design 3: midnight header + colourful, spacious module cards */
+body:has(#hostMenu:not(.hidden)){background:#f1f5fc!important}
+body:has(#hostMenu:not(.hidden)) .host-site-nav{background:linear-gradient(105deg,#061b3d 0%,#102f70 58%,#174f9e 100%)!important;border-bottom:4px solid #d8ad4e!important;min-height:82px!important;padding:12px clamp(16px,3vw,42px)!important;box-shadow:0 8px 24px rgba(5,25,58,.22)!important}
+body:has(#hostMenu:not(.hidden)) .host-brand{font-size:clamp(17px,1.7vw,25px)!important;color:#fff!important}
+body:has(#hostMenu:not(.hidden)) .host-brand-mark{font-size:36px!important}
+body:has(#hostMenu:not(.hidden)) .host-nav-links a.active{background:linear-gradient(135deg,#f6d77b,#d9a632)!important;color:#09234b!important}
+body:has(#hostMenu:not(.hidden)) .host-page-shell{background:linear-gradient(180deg,#eaf3ff 0%,#f6f8fd 48%,#edf3fb 100%)!important;padding:24px clamp(14px,3vw,48px) 48px!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu{max-width:1500px!important}
+body:has(#hostMenu:not(.hidden)) .we-welcome-panel{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px 24px;padding:30px clamp(22px,3vw,42px);margin:0 0 22px;border:1px solid #b8d4f5;border-radius:26px;background:linear-gradient(115deg,#0a2a62 0%,#1555a8 55%,#6550c8 100%);box-shadow:0 16px 38px rgba(20,65,130,.18);color:#fff}
+body:has(#hostMenu:not(.hidden)) .we-welcome-panel:after{content:"";position:absolute;z-index:-1;width:360px;height:360px;right:3%;top:-220px;border-radius:50%;background:rgba(255,255,255,.09)}
+body:has(#hostMenu:not(.hidden)) .we-welcome-copy{position:relative;z-index:1}
+body:has(#hostMenu:not(.hidden)) .we-eyebrow{display:inline-block;color:#ffdc86;font-size:12px;font-weight:900;letter-spacing:2px;margin-bottom:10px}
+body:has(#hostMenu:not(.hidden)) .we-welcome-copy h1{font-size:clamp(29px,3vw,44px);line-height:1.12;color:#fff!important;margin:0 0 9px;font-weight:900}
+body:has(#hostMenu:not(.hidden)) .we-welcome-copy h1 span{color:#ffd66e}
+body:has(#hostMenu:not(.hidden)) .we-welcome-copy p{font-size:16px;line-height:1.55;color:#e3edff!important;margin:0;max-width:760px}
+body:has(#hostMenu:not(.hidden)) .we-academic-art{grid-column:2;grid-row:1;align-self:center;display:flex;align-items:center;gap:12px;font-size:clamp(38px,5vw,64px);filter:drop-shadow(0 8px 10px rgba(0,0,0,.2))}
+body:has(#hostMenu:not(.hidden)) .we-host-profile{grid-column:1/-1;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 16px;border:1px solid rgba(255,255,255,.65);border-radius:17px;background:rgba(255,255,255,.96);color:#102b59;box-shadow:0 7px 20px rgba(0,0,0,.1)}
+body:has(#hostMenu:not(.hidden)) .we-avatar{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#dcecff,#b7d5ff);font-size:29px}
+body:has(#hostMenu:not(.hidden)) .we-profile-copy{display:flex;flex-direction:column;gap:3px;min-width:180px;flex:1}
+body:has(#hostMenu:not(.hidden)) .we-profile-label{font-size:10px;font-weight:900;letter-spacing:1.2px;color:#4770a5}
+body:has(#hostMenu:not(.hidden)) .we-profile-copy strong{font-size:18px;color:#102b59}
+body:has(#hostMenu:not(.hidden)) .we-profile-copy span:last-child{font-size:13px;color:#506783}
+body:has(#hostMenu:not(.hidden)) .we-active-pill{padding:10px 14px;border-radius:999px;background:#e0f8e9;color:#087544;font-size:13px;font-weight:900;white-space:nowrap}
+body:has(#hostMenu:not(.hidden)) #hostMenu>.we-old-hero{display:none!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px!important;margin-top:0!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card{min-height:238px;padding:22px!important;border:1px solid #d8e5f5!important;border-top:0!important;border-radius:21px!important;background:linear-gradient(145deg,#fff,#f6f9ff)!important;box-shadow:0 9px 25px rgba(22,64,118,.10)!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:before{content:"";height:6px;display:block;border-radius:8px;margin:-22px -22px 17px;background:#2369dc}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card.assignment:before{background:linear-gradient(90deg,#0878ef,#38a1ff)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card.live:before{background:linear-gradient(90deg,#e2a51b,#ffd66e)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card.mcq:before{background:linear-gradient(90deg,#07985d,#38c88a)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card.general:before{background:linear-gradient(90deg,#7b3fd2,#b28aff)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(5):before{background:linear-gradient(90deg,#078ca5,#54d0df)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(6):before{background:linear-gradient(90deg,#b42362,#f07ba9)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(7):before{background:linear-gradient(90deg,#dc6a18,#ffc078)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(8):before{background:linear-gradient(90deg,#be185d,#fb80b4)}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(4),body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card:nth-child(5){grid-column:auto!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card h3{font-size:21px!important;color:#102b59!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card p{color:#526985!important;font-size:14px!important;line-height:1.55!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card button{background:linear-gradient(110deg,#0d3474,#1766c8)!important;color:#fff!important;border:0!important;border-radius:11px!important;min-height:44px;font-weight:850}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card.assignment .host-menu-icon{background:#e1efff}
+body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"]{border-radius:20px!important;background:#fff!important;color:#17345d!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"] p{color:#536b8b!important}
+body:has(#hostMenu:not(.hidden)) #hostMenu .host-home-note{background:#e7f1ff!important;color:#31577f!important}
+body:has(#hostMenu:not(.hidden)) #testAllotmentCard{display:none!important}
+body.host-assignment-view:has(#hostMenu:not(.hidden)) #weWelcomePanel,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.we-old-hero,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.host-menu-grid,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.card[style*="margin-top:18px"],body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.host-home-note{display:none!important}
+body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard{display:block!important;max-width:1200px;margin:20px auto!important;background:#fff!important;color:#17345d!important;border:1px solid #d8e5f5!important;border-top:6px solid #1769c8!important;border-radius:22px!important;padding:26px!important;box-shadow:0 12px 30px rgba(22,64,118,.12)}
+body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard h2,body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard h3{color:#102b59!important}
+body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard p,body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard label{color:#526985!important}
+body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard table{color:#17345d!important}
+body.host-assignment-view:has(#hostMenu:not(.hidden)) .we-assignment-back{margin-top:18px}
+@media(max-width:1000px){body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:650px){body:has(#hostMenu:not(.hidden)) .we-welcome-panel{grid-template-columns:1fr;padding:23px 18px}body:has(#hostMenu:not(.hidden)) .we-academic-art{display:none}body:has(#hostMenu:not(.hidden)) .we-host-profile{align-items:flex-start}body:has(#hostMenu:not(.hidden)) .we-active-pill{white-space:normal}body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-grid{grid-template-columns:1fr!important}body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card{min-height:0}}
+</style>
+<script id="world-of-exam-host-dashboard-routing-v50">
+(function(){
+ const params=new URLSearchParams(location.search);
+ const assignmentView=params.get('module')==='assignment';
+ if(assignmentView) document.body.classList.add('host-assignment-view');
+ function routeReady(){
+  const menu=document.getElementById('hostMenu');
+  if(!menu||menu.classList.contains('hidden')) return false;
+  const email=(document.getElementById('authStatus')?.textContent||'').trim();
+  const emailNode=document.getElementById('weHostEmail');
+  if(emailNode&&email) emailNode.textContent=email;
+  const nameNode=document.getElementById('weHostName');
+  if(nameNode&&email&&email.includes('@')) nameNode.textContent=email.split('@')[0].replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  const open=document.getElementById('openTestAssignmentPageBtn');
+  if(open&&!open.dataset.bound){open.dataset.bound='1';open.addEventListener('click',()=>location.href='host.html?module=assignment');}
+  const back=document.getElementById('backToHostDashboardBtn');
+  if(back&&!back.dataset.bound){back.dataset.bound='1';back.addEventListener('click',()=>location.href='host.html');}
+  return true;
+ }
+ const observer=new MutationObserver(()=>routeReady());
+ observer.observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class']});
+ document.addEventListener('DOMContentLoaded',routeReady);
+ setTimeout(routeReady,500);setTimeout(routeReady,1500);
+})();
+</script>
 </body></html>
