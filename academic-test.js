@@ -5,7 +5,23 @@ import{firebaseConfig}from'./firebase-config.js';
 const app=getApps().length?getApp():initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
 let test=null,testId=null,uid=null,timer=null,started=0,submitted=false,attemptId=null,progressWrite=Promise.resolve();
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const cleanMobile=v=>String(v||'').replace(/\D/g,'');
+const cleanMobile=v=>String(v||'').replace(/\\D/g,'');
+// Assigned examinations use the authenticated participant identity and test ID.
+// Hide the manual room-code/class/subject entry fields; the assignment is verified
+// against Firebase before the examination can begin.
+const assignedMode=new URLSearchParams(location.search).has('assignment');
+if(assignedMode){
+ const heading=document.querySelector('#joinPanel h1');
+ const intro=document.querySelector('#joinPanel .muted');
+ if(heading)heading.textContent='Assigned Olympiad Examination';
+ if(intro)intro.textContent='This examination has been allotted to your account. No room code is required.';
+ ['pClass','pSubject','pCode'].forEach(id=>{const el=$(id);if(el){const label=el.closest('label');if(label)label.hidden=true;el.required=false;}});
+ const nameField=$('pName'),mobileField=$('pMobile');
+ if(nameField){nameField.readOnly=true;nameField.placeholder='Loading your participant profile…';}
+ if(mobileField){mobileField.readOnly=true;mobileField.placeholder='Loading your participant profile…';}
+ const join=$('joinBtn');if(join)join.textContent='Start Assigned Examination';
+ const status=$('joinStatus');if(status)status.textContent='Your assignment and account will be verified before the examination starts.';
+}
 $('pClass').innerHTML='<option value="">Select class</option>'+Array.from({length:12},(_,i)=>`<option>Class ${i+1}</option>`).join('');
 async function init(){try{
  // Wait until Firebase restores the persisted login before deciding whether
@@ -14,7 +30,10 @@ async function init(){try{
  const current=await new Promise(resolve=>{
   const stop=onAuthStateChanged(auth,user=>{stop();resolve(user||null);});
  });
- if(current && !current.isAnonymous){uid=current.uid;return;}
+ if(current && !current.isAnonymous){uid=current.uid;
+  if(assignedMode){const profile=JSON.parse(sessionStorage.getItem('quizParticipant')||'{}');$('pName').value=profile.name||'';$('pMobile').value=cleanMobile(profile.phone||'');}
+  return;
+ }
  const cred=await signInAnonymously(auth);uid=cred.user.uid;
  }catch(e){$('joinStatus').textContent='Unable to connect. Please refresh and try again.'}}init();
 $('joinBtn').onclick=async()=>{try{

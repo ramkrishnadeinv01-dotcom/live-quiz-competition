@@ -1,0 +1,5 @@
+v42 - Assigned Olympiad direct-entry usability correction
+- When opened with an assignment ID, the Olympiad page hides manual class, subject and room-code fields.
+- The page identifies itself as an assigned examination and changes the action to Start Assigned Examination.
+- Existing assignment UID, category, test ID, deadline and LIVE-state validation remain in place.
+- Normal non-assigned room-code entry remains unchanged.
