@@ -14,13 +14,11 @@ if(assignedMode){
  const heading=document.querySelector('#joinPanel h1');
  const intro=document.querySelector('#joinPanel .muted');
  if(heading)heading.textContent='Assigned Olympiad Examination';
- if(intro)intro.textContent='This examination has been allotted to your account. No room code is required.';
- ['pClass','pSubject','pCode'].forEach(id=>{const el=$(id);if(el){const label=el.closest('label');if(label)label.hidden=true;el.required=false;}});
- const nameField=$('pName'),mobileField=$('pMobile');
- if(nameField){nameField.readOnly=true;nameField.placeholder='Loading your participant profile…';}
- if(mobileField){mobileField.readOnly=true;mobileField.placeholder='Loading your participant profile…';}
+ if(intro)intro.textContent='Your allotted examination details are loaded automatically. No manual entry or Host presence is required.';
+ ['pName','pMobile','pSubject','pCode'].forEach(id=>{const el=$(id);if(el){el.readOnly=true;el.required=false;}});
+ const cls=$('pClass');if(cls){cls.disabled=true;cls.required=false;}
  const join=$('joinBtn');if(join)join.textContent='Start Assigned Examination';
- const status=$('joinStatus');if(status)status.textContent='Your assignment and account will be verified before the examination starts.';
+ const status=$('joinStatus');if(status)status.textContent='Verifying your assignment and loading the examination details…';
 }
 $('pClass').innerHTML='<option value="">Select class</option>'+Array.from({length:12},(_,i)=>`<option>Class ${i+1}</option>`).join('');
 async function init(){try{
@@ -38,18 +36,38 @@ async function init(){try{
  }catch(e){$('joinStatus').textContent='Unable to connect. Please refresh and try again.'}}init();
 $('joinBtn').onclick=async()=>{try{
  if(!uid)throw Error('Please wait for the connection to complete.');
- const assignmentId=new URLSearchParams(location.search).get('assignment');
+ const params=new URLSearchParams(location.search),assignmentId=params.get('assignment');
  const savedParticipant=JSON.parse(sessionStorage.getItem('quizParticipant')||'null')||{};
- const name=$('pName').value.trim()||savedParticipant.name||'',mobile=cleanMobile($('pMobile').value||savedParticipant.phone||''),className=$('pClass').value||'',subject=$('pSubject').value.trim(),code=$('pCode').value.trim().toUpperCase();
+ const name=$('pName').value.trim()||savedParticipant.name||'',mobile=cleanMobile($('pMobile').value||savedParticipant.phone||'');
+ let className=$('pClass').value||'',subject=$('pSubject').value.trim(),code=$('pCode').value.trim().toUpperCase(),assignment=null;
  if(!assignmentId&&(!name||mobile.length!==10||!className||!subject||!code))throw Error('Enter your name, valid 10-digit mobile number, class, subject and room code.');
- $('joinStatus').textContent='Checking room and participant access…';
- const s=await get(ref(db,'academicOlympiadTests')),all=s.val()||{},requestedId=new URLSearchParams(location.search).get('id');
+ $('joinStatus').textContent=assignmentId?'Loading your allotted examination…':'Checking room and participant access…';
+ if(assignmentId){
+  if(!uid)throw Error('Please sign in to your approved participant account again.');
+  assignment=(await get(ref(db,`testAssignments/${uid}/${assignmentId}`))).val();
+  if(!assignment||assignment.category!=='olympiad'||assignment.participantUid!==uid)throw Error('This Olympiad examination is not assigned to your participant account.');
+  if(assignment.dueAt&&Date.now()>assignment.dueAt)throw Error('The deadline for this assigned examination has passed.');
+  code=String(assignment.roomCode||'').trim().toUpperCase();
+  if(!code)throw Error('The Host assignment does not contain a room code. Please ask the Host to refresh or recreate this allotment.');
+ }
+ const s=await get(ref(db,'academicOlympiadTests')),all=s.val()||{},requestedId=assignment?.testId||params.get('id');
  const found=requestedId&&all[requestedId]?[requestedId,all[requestedId]]:Object.entries(all).find(([id,x])=>x?.roomCode===code);
- if(!found)throw Error('Invalid room code or assigned examination.');
+ if(!found)throw Error('The allotted Olympiad test could not be found. Please ask the Host to verify the selected test.');
  [testId,test]=found;
- if(assignmentId){const as=(await get(ref(db,`testAssignments/${uid}/${assignmentId}`))).val();if(!as||as.category!=='olympiad'||as.testId!==testId||as.participantUid!==uid)throw Error('This examination is not assigned to your participant account.');if(as.dueAt&&Date.now()>as.dueAt)throw Error('The deadline for this assigned examination has passed.');$('pName').value=name||as.participantName||'';$('pMobile').value=mobile||'';$('pClass').value=test.className||'';$('pSubject').value=test.subject||'';}
- else if(test.className!==className||String(test.subject).toLowerCase()!==subject.toLowerCase())throw Error('Your selected class or subject does not match this room.');
- if(test.status!=='LIVE')throw Error(test.status==='CLOSED'?'This examination is closed.':'The examination has not been started by the administrator.');
+ if(assignment){
+  if(assignment.testId!==testId)throw Error('The allotted test ID does not match the examination record.');
+  className=test.className||assignment.className||'';
+  subject=test.subject||assignment.subject||'';
+  $('pName').value=name||assignment.participantName||'';
+  $('pMobile').value=mobile||'';
+  const cls=$('pClass');if(cls){cls.value=className;if(!cls.value&&className){const opt=document.createElement('option');opt.value=className;opt.textContent=className;cls.appendChild(opt);cls.value=className;}}
+  $('pSubject').value=subject;
+  $('pCode').value=code;
+ } else if(test.className!==className||String(test.subject).toLowerCase()!==subject.toLowerCase())throw Error('Your selected class or subject does not match this room.');
+ if(assignment){
+  if(test.status==='CLOSED'||test.examStatus==='CLOSED')throw Error('This assigned examination has been closed by the Host.');
+  if(test.status==='DRAFT'||test.published===false)throw Error('This Olympiad examination has not been published by the Host yet.');
+ } else if(test.status!=='LIVE')throw Error(test.status==='CLOSED'?'This examination is closed.':'The examination has not been started by the administrator.');
  if(!assignmentId&&test.accessMode==='private'){
   const normName=v=>String(v||'').trim().normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase();
   const ok=(test.approvedParticipants||[]).some(p=>cleanMobile(p.mobile)===mobile&&normName(p.name)===normName(name)&&String(p.className||test.className).trim().toLowerCase()===className.trim().toLowerCase());
@@ -63,7 +81,8 @@ $('joinBtn').onclick=async()=>{try{
   else priorList=Object.entries(v||{}).map(([id,a])=>({id,...a})).filter(a=>a&&typeof a==='object');
  }
  const last=priorList.filter(a=>a.status==='SUBMITTED').sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0))[0];
- if(last&&!confirm('You have already attempted this examination. Do you want to reattempt?')){$('joinStatus').textContent='Your previous result is retained. You may return to the Participant Panel.';return;}
+ if(assignment&&last&&Number(assignment.attemptLimit||1)<=priorList.filter(a=>a.status==='SUBMITTED').length)throw Error('You have already used the permitted attempt for this assigned examination.');
+ if(last&&!assignment&&!confirm('You have already attempted this examination. Do you want to reattempt?')){$('joinStatus').textContent='Your previous result is retained. You may return to the Participant Panel.';return;}
  attemptId=push(ref(db,`academicOlympiadAttempts/${testId}/${uid}`)).key;
  started=Date.now();
  await set(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{name,mobile,className,subject,status:'IN PROGRESS',joinedAt:started,answered:0,correct:0,wrong:0,score:0,attemptNo:priorList.length+1});

@@ -1,0 +1,7 @@
+v43 - Olympiad allotted test direct-entry fix
+- Loads assignment first by the authenticated participant UID.
+- Uses the assigned testId and stored roomCode; fills participant, class, subject and room code automatically.
+- Shows the room code as a populated read-only field.
+- Assigned examinations no longer require the Host to be online or to change status to LIVE; CLOSED and DRAFT/unpublished tests remain blocked.
+- Normal unassigned Olympiad entry still requires class, subject, room code and LIVE status.
+- Enforces assignment deadline and attemptLimit for assigned exams.
