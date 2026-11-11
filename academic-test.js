@@ -126,7 +126,7 @@ async function submit(auto=false){
  try{
   await progressWrite;
   await update(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{...result,status:'SUBMITTED',submittedAt:Date.now(),lastActivityAt:Date.now()});
-  const assignmentId=new URLSearchParams(location.search).get('assignment');if(assignmentId)await update(ref(db,`testAssignments/${uid}/${assignmentId}`),{status:'SUBMITTED',submittedAt:Date.now()});
+  const assignmentId=new URLSearchParams(location.search).get('assignment');if(assignmentId){try{await update(ref(db,`testAssignments/${uid}/${assignmentId}`),{status:'SUBMITTED',submittedAt:Date.now()});}catch(assignmentUpdateError){console.warn('Attempt saved, but assignment status could not be updated under current database rules:',assignmentUpdateError);}}
   document.querySelectorAll('#testArea input').forEach(x=>x.disabled=true);
   $('testArea').classList.add('hidden');$('submitBtn').classList.add('hidden');
   $('testResult').innerHTML=`<section class="result-summary"><h2>Examination submitted successfully</h2><p>Your question paper has been closed.</p><p>Please check your result by clicking the button below.</p><button class="btn" id="checkResultBtn" type="button">Check Result</button></section>`;

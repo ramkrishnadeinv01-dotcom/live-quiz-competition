@@ -1,0 +1,3 @@
+v45 - Olympiad submission permission handling
+Root cause: participant attempt records are writable by their own authenticated UID, but the Host-owned testAssignments record is not writable by the participant. The previous submit handler awaited both writes in one try block, so a denied assignment-status update caused a false overall submission failure after the attempt had already been saved.
+Fix: successful write to academicOlympiadAttempts is authoritative. Updating the testAssignments status is now best-effort and cannot turn a successfully saved submission into a displayed failure. No Firebase rules change is required. The attempt history continues to enforce the assignment attempt limit.
