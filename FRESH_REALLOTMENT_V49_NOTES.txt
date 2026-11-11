@@ -1,0 +1,23 @@
+VERSION 49 — FRESH RE-ALLOTMENT & ASSIGNMENT ARCHIVING
+
+Host Portal
+- Re-allotting the same category + examination to the same participant now prompts for confirmation.
+- OK creates a new unique assignment ID and generation, marks earlier records as previous, and leaves prior attempts/results intact.
+- Cancel creates no new assignment and leaves the earlier record unchanged.
+- Host Delete now archives the assignment (status ARCHIVED) rather than physically deleting its history.
+
+Participant Portal
+- Archived assignments are hidden from active Pending/Completed/Results lists.
+- A fresh Olympiad allotment only counts attempts linked to its own assignment ID; attempts from an earlier allotment do not mark it completed.
+- MCQ/General submissions are only associated with a fresh allotment when submittedAt is on/after its assignedAt timestamp.
+- Participant Delete Completed Assignment now archives the record instead of physically deleting it.
+- Previous submitted records remain available in the assignment history in Firebase; a fresh allotment is shown as a new pending task.
+
+Firebase rules
+- database.rules.json has the participant assignment write condition extended to allow status ARCHIVED for an already submitted assignment.
+- Merge the updated testAssignments/$uid/$assignmentId .write condition into the existing live rules; do not replace unrelated rules.
+
+Deployment
+- Upload all files from this ZIP to the existing GitHub Pages repository, replacing files with the same names.
+- Merge the rule change in database.rules.json into Firebase Realtime Database Rules and Publish.
+- Existing Firebase data is not migrated or deleted. Previously hard-deleted assignments cannot be detected unless their old records still exist elsewhere.

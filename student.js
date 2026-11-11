@@ -49,7 +49,7 @@ async function loadMyAllottedTests(){
  box.innerHTML="<p>Loading your assigned examinations…</p>";
  try{
   const snap=await get(ref(db,`testAssignments/${uid}`));
-  const items=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
+  const items=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).filter(a=>a&&a.status!=="ARCHIVED").sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
   if(!items.length){box.innerHTML='<div class="status">No examinations have been allotted to you yet.</div>';return;}
   const pending=[],completed=[],results=[];
   for(const a of items){
@@ -58,13 +58,13 @@ async function loadMyAllottedTests(){
    if(a.category==='olympiad'){
     const h=await get(ref(db,`academicOlympiadAttempts/${a.testId}/${uid}`));
     const v=h.val()||{};const attempts=v.status?[v]:Object.values(v).filter(x=>x&&typeof x==='object');
-    latest=attempts.filter(x=>x.status==='SUBMITTED').sort((x,y)=>(y.submittedAt||0)-(x.submittedAt||0))[0]||null;
+    latest=attempts.filter(x=>x.status==='SUBMITTED'&&(x.assignmentId===a.id||(!x.assignmentId&&Number(a.generation||1)===1))).sort((x,y)=>(y.submittedAt||0)-(x.submittedAt||0))[0]||null;
    } else if(a.category==='mcq'){
     const phone=String(participantProfile?.phone||'').replace(/\D/g,'');
-    const h=await get(ref(db,`rooms/${a.testId}/mcqAnswers/${phone}`));latest=h.exists()&&h.val()?.status==='SUBMITTED'?h.val():null;
+    const h=await get(ref(db,`rooms/${a.testId}/mcqAnswers/${phone}`));latest=h.exists()&&h.val()?.status==='SUBMITTED'&&Number(h.val().submittedAt||0)>=Number(a.assignedAt||0)?h.val():null;
    } else if(a.category==='general'){
     const phone=String(participantProfile?.phone||'').replace(/\D/g,'');
-    const h=await get(ref(db,`rooms/${a.testId}/generalAnswers/${phone}`));latest=h.exists()?h.val():null;
+    const h=await get(ref(db,`rooms/${a.testId}/generalAnswers/${phone}`));latest=h.exists()&&Number(h.val().submittedAt||0)>=Number(a.assignedAt||0)?h.val():null;
    }
    const isDone=!!latest||a.status==='SUBMITTED';
    const detail=`${String(a.category||'').toUpperCase()} · ${a.testTitle||'Examination'} · ${a.roomCode||a.testId||''}`;
@@ -76,7 +76,7 @@ async function loadMyAllottedTests(){
   }
   box.innerHTML=`<section class="allotted-section"><h3>1. Pending Tasks (${pending.length})</h3>${pending.length?pending.map(x=>x.html).join(''):'<p class="status">No pending tasks.</p>'}</section><section class="allotted-section" style="margin-top:22px"><h3>2. Completed Tests (${completed.length})</h3>${completed.length?completed.map(x=>x.html).join(''):'<p class="status">No completed tests yet.</p>'}</section><section class="allotted-section" style="margin-top:22px"><h3>3. Results of Allotted Tests (${results.length})</h3>${results.length?results.map(x=>x.html).join(''):'<p class="status">Your submitted results will appear here.</p>'}</section>`;
   box.querySelectorAll('.allottedStartBtn,.allottedReattemptBtn').forEach(btn=>btn.onclick=()=>startAllottedTest(items.find(a=>a.id===btn.dataset.id)));
-  box.querySelectorAll('.allottedDeleteBtn').forEach(btn=>btn.onclick=async()=>{const a=items.find(x=>x.id===btn.dataset.id);if(!a||!confirm(`Delete the completed assignment record for “${a.testTitle||'this examination'}”? Your submitted result history will remain saved.`))return;try{await set(ref(db,`testAssignments/${uid}/${a.id}`),null);await loadMyAllottedTests();}catch(e){alert(`Unable to delete completed record: ${e.message||e}`);}});
+  box.querySelectorAll('.allottedDeleteBtn').forEach(btn=>btn.onclick=async()=>{const a=items.find(x=>x.id===btn.dataset.id);if(!a||!confirm(`Delete the completed assignment record for “${a.testTitle||'this examination'}”? Your submitted result history will remain saved.`))return;try{await update(ref(db,`testAssignments/${uid}/${a.id}`),{status:"ARCHIVED",archivedAt:Date.now(),archivedBy:uid,isLatest:false});await loadMyAllottedTests();}catch(e){alert(`Unable to archive completed record: ${e.message||e}`);}});
  }catch(e){console.error(e);box.innerHTML=`<div class="status blocked">Unable to load assigned examinations: ${esc(e.message||e)}</div>`;}
 }
 function startAllottedTest(a){if(!a)return;const category=a.category;if(category==="olympiad"){location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="mcq"){location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="general"){location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}alert("Unsupported examination category.");}

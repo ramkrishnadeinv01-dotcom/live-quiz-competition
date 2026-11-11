@@ -89,7 +89,7 @@ $('joinBtn').onclick=async()=>{try{
  if(last&&!assignment&&!confirm('You have already attempted this examination. Do you want to reattempt?')){$('joinStatus').textContent='Your previous result is retained. You may return to the Participant Panel.';return;}
  attemptId=push(ref(db,`academicOlympiadAttempts/${testId}/${uid}`)).key;
  started=Date.now();
- await set(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{name,mobile,className,subject,status:'IN PROGRESS',joinedAt:started,answered:0,correct:0,wrong:0,score:0,attemptNo:priorList.length+1});
+ await set(ref(db,`academicOlympiadAttempts/${testId}/${uid}/${attemptId}`),{name,mobile,className,subject,status:'IN PROGRESS',joinedAt:started,answered:0,correct:0,wrong:0,score:0,attemptNo:priorList.length+1,assignmentId:assignmentId||null});
  renderExam();
  }catch(e){$('joinStatus').textContent=e.message||'Unable to join examination.'}};
 function renderExam(){

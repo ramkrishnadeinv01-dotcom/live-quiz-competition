@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth,onAuthStateChanged,signOut,reload,getIdToken } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getDatabase,ref,get,set } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+import { getDatabase,ref,get,set,update } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const $=id=>document.getElementById(id);
@@ -17,11 +17,11 @@ async function latestAttempt(a){
  if(a.category==="olympiad"){
   const snap=await get(ref(db,`academicOlympiadAttempts/${a.testId}/${uid}`)),v=snap.val()||{};
   const arr=v.status?[v]:Object.values(v).filter(x=>x&&typeof x==="object");
-  return arr.filter(x=>x.status==="SUBMITTED").sort((x,y)=>(y.submittedAt||0)-(x.submittedAt||0))[0]||null;
+  return arr.filter(x=>x.status==="SUBMITTED" && (x.assignmentId===a.id || (!x.assignmentId && Number(a.generation||1)===1))).sort((x,y)=>(y.submittedAt||0)-(x.submittedAt||0))[0]||null;
  }
  const phone=String(profile?.phone||"").replace(/\D/g,"");
- if(a.category==="mcq"){const snap=await get(ref(db,`rooms/${a.testId}/mcqAnswers/${phone}`));return snap.exists()&&snap.val()?.status==="SUBMITTED"?snap.val():null;}
- if(a.category==="general"){const snap=await get(ref(db,`rooms/${a.testId}/generalAnswers/${phone}`));return snap.exists()?snap.val():null;}
+ if(a.category==="mcq"){const snap=await get(ref(db,`rooms/${a.testId}/mcqAnswers/${phone}`));const v=snap.val();return snap.exists()&&v?.status==="SUBMITTED"&&Number(v.submittedAt||0)>=Number(a.assignedAt||0)?v:null;}
+ if(a.category==="general"){const snap=await get(ref(db,`rooms/${a.testId}/generalAnswers/${phone}`));const v=snap.val();return snap.exists()&&Number(v.submittedAt||0)>=Number(a.assignedAt||0)?v:null;}
  return null;
 }
 function meta(label,value){return `<div><small>${esc(label)}</small><b>${esc(value||"—")}</b></div>`;}
@@ -33,7 +33,7 @@ function card(a,latest,done,expired){
  const stateClass=done?"done":expired?"over":"";
  const actions=done?`<button class="at-btn" data-action="reattempt" data-id="${esc(a.id)}">↻ Reattempt Test</button><button class="at-btn danger" data-action="delete" data-id="${esc(a.id)}">Delete Completed Assignment</button>`:(!expired?`<button class="at-btn" data-action="start" data-id="${esc(a.id)}">Start Examination →</button>`:`<span class="at-status over">Deadline passed</span>`);
  const result=latest?(a.category==="olympiad"?`Score: ${Number(latest.score||0).toFixed(2)} · Correct: ${Number(latest.correct||0)} · Wrong: ${Number(latest.wrong||0)} · Unanswered: ${Number(latest.unanswered||0)}`:a.category==="mcq"?`Correct: ${Number(latest.correctCount||0)} · Wrong: ${Number(latest.wrongCount||0)} · Answered: ${Number(latest.answeredCount||0)}`:"Submission recorded."):"";
- return `<article class="at-card"><div class="at-card-head"><h3>${esc(title)}</h3><span class="at-status ${stateClass}">${state}</span></div><div class="at-meta">${meta("EXAM CATEGORY",category)}${meta("ROOM CODE",a.roomCode||a.testId)}${meta("ASSIGNED ON",assigned)}${meta("DUE DATE",due)}${meta("CLASS",a.className||"—")}${meta("SUBJECT",a.subject||"—")}</div><div style="color:#cbd9ed;font-size:13px">Assignment ID: ${esc(a.id)}</div>${result?`<div class="at-result">${esc(result)}<br>Submitted: ${latest?.submittedAt?new Date(latest.submittedAt).toLocaleString("en-IN"):"Recorded"}</div>`:""}<div class="at-actions">${actions}</div></article>`;
+ return `<article class="at-card"><div class="at-card-head"><h3>${esc(title)}</h3><span class="at-status ${stateClass}">${state}${a.isLatest===false?" · PREVIOUS ALLOTMENT":" · LATEST ALLOTMENT"}</span></div><div class="at-meta">${meta("EXAM CATEGORY",category)}${meta("ROOM CODE",a.roomCode||a.testId)}${meta("ASSIGNED ON",assigned)}${meta("DUE DATE",due)}${meta("CLASS",a.className||"—")}${meta("SUBJECT",a.subject||"—")}</div><div style="color:#cbd9ed;font-size:13px">Assignment ID: ${esc(a.id)}</div>${result?`<div class="at-result">${esc(result)}<br>Submitted: ${latest?.submittedAt?new Date(latest.submittedAt).toLocaleString("en-IN"):"Recorded"}</div>`:""}<div class="at-actions">${actions}</div></article>`;
 }
 async function loadAssignments(){
  if(!uid)return;
@@ -41,7 +41,7 @@ async function loadAssignments(){
  ["pendingList","completedList","resultsList"].forEach(id=>$(id).innerHTML='<div class="at-empty">Loading…</div>');
  try{
   const snap=await get(ref(db,`testAssignments/${uid}`));
-  assignments=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
+  assignments=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).filter(a=>a&&a.status!=="ARCHIVED").sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
   const pending=[],completed=[],results=[];
   for(const a of assignments){
    const latest=await latestAttempt(a),done=!!latest||a.status==="SUBMITTED",expired=!!(a.dueAt&&Date.now()>a.dueAt);
@@ -60,7 +60,7 @@ async function loadAssignments(){
    if(btn.dataset.action==="delete"){
     const latest=await latestAttempt(a);if(!latest&&a.status!=="SUBMITTED"){alert("Only a completed assignment can be deleted.");return;}
     if(!confirm(`Delete the completed assignment “${a.testTitle||"this examination"}”? Your saved result history will remain in the examination records.`))return;
-    try{await set(ref(db,`testAssignments/${uid}/${a.id}`),null);await loadAssignments();}catch(e){alert("Unable to delete this completed assignment: "+(e.message||e));}
+    try{await update(ref(db,`testAssignments/${uid}/${a.id}`),{status:"ARCHIVED",archivedAt:Date.now(),archivedBy:uid,isLatest:false});await loadAssignments();}catch(e){alert("Unable to archive this completed assignment: "+(e.message||e));}
    }
   }));
   status(`Loaded ${assignments.length} allotted examination(s). Your profile and saved results remain linked to your account.`);

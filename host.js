@@ -782,12 +782,24 @@ async function createTestAllotment(){
  try{
   const [pSnap,tSnap]=await Promise.all([get(ref(db,`participantDirectory/${studentId}`)),get(ref(db,category==="olympiad"?`academicOlympiadTests/${testId}`:`rooms/${testId}`))]);
   if(!pSnap.exists()||pSnap.val().status!=="approved")throw Error("The selected participant is not approved.");if(!tSnap.exists())throw Error("The selected examination no longer exists.");
-  const p=pSnap.val(),t=tSnap.val(),id=crypto.randomUUID();const record={assignmentId:id,category,testId,roomCode:category==="olympiad"?(t.roomCode||""):testId,testTitle:t.title||t.mcqTitle||t.generalTitle||`${t.className||""} ${t.subject||""} ${category.toUpperCase()}`,participantUid:studentId,participantName:p.name||"",participantEmail:p.email||"",assignedBy:uid,assignedByEmail:currentUser.email||"",assignedAt:Date.now(),dueAt:dueRaw?new Date(dueRaw).getTime():null,status:"ASSIGNED",attemptLimit:0};
+  const p=pSnap.val(),t=tSnap.val(),id=crypto.randomUUID(),allSnap=await get(ref(db,`testAssignments/${studentId}`));
+  const previous=Object.entries(allSnap.val()||{}).map(([oldId,a])=>({id:oldId,...a})).filter(a=>a&&a.category===category&&a.testId===testId);
+  let freshGeneration=1;
+  if(previous.length){
+   freshGeneration=Math.max(...previous.map(a=>Number(a.generation)||1))+1;
+   const last=previous.sort((a,b)=>(Number(b.assignedAt)||0)-(Number(a.assignedAt)||0))[0];
+   const choice=confirm(`This examination was allotted to ${p.name||"this participant"} earlier (${previous.length} previous allotment record(s)).\n\nChoose OK to create a FRESH allotment. The student will see it as a new pending task. Previous attempts and results will be retained.\n\nChoose Cancel to keep the earlier assignment unchanged.`);
+   if(!choice){$("allotmentMsg").textContent="No new allotment created. The earlier assignment remains unchanged.";return;}
+   for(const old of previous){
+    if(old.status!=="ARCHIVED") await update(ref(db,`testAssignments/${studentId}/${old.id}`),{isLatest:false,supersededBy:id,supersededAt:Date.now()});
+   }
+  }
+  const record={assignmentId:id,category,testId,roomCode:category==="olympiad"?(t.roomCode||""):testId,testTitle:t.title||t.mcqTitle||t.generalTitle||`${t.className||""} ${t.subject||""} ${category.toUpperCase()}`,className:t.className||"",subject:t.subject||"",participantUid:studentId,participantName:p.name||"",participantEmail:p.email||"",assignedBy:uid,assignedByEmail:currentUser.email||"",assignedAt:Date.now(),dueAt:dueRaw?new Date(dueRaw).getTime():null,status:"ASSIGNED",attemptLimit:0,generation:freshGeneration,isLatest:true,previousAssignmentCount:previous.length};
   await set(ref(db,`testAssignments/${studentId}/${id}`),record);
-  $("allotmentMsg").textContent="Examination assigned successfully. The participant can now find it under My Allotted Tests.";await refreshAllotmentLists();
+  $("allotmentMsg").textContent=previous.length?"Fresh examination allotment created. The participant will see it as a new pending task; previous results are retained.":"Examination assigned successfully. The participant can now find it under My Allotted Tests.";await refreshAllotmentLists();
  }catch(e){console.error(e);$("allotmentMsg").textContent=`Assignment failed: ${e.message||e}`;}
 }
-$("hostAllotmentRows")?.addEventListener("click",async e=>{const b=e.target.closest(".deleteHostAllotmentBtn");if(!b)return;const student=b.dataset.student,id=b.dataset.id;if(!confirm("Delete this examination allotment? The participant will no longer see it in their allotted tasks. Previously submitted result history will remain saved."))return;try{await set(ref(db,`testAssignments/${student}/${id}`),null);await refreshAllotmentLists();}catch(err){alert(`Unable to delete allotment: ${err.message||err}`);}});
+$("hostAllotmentRows")?.addEventListener("click",async e=>{const b=e.target.closest(".deleteHostAllotmentBtn");if(!b)return;const student=b.dataset.student,id=b.dataset.id;if(!confirm("Archive this examination allotment? It will disappear from the participant task list, but its history will be retained for future fresh re-allotments."))return;try{await update(ref(db,`testAssignments/${student}/${id}`),{status:"ARCHIVED",archivedAt:Date.now(),archivedBy:uid,isLatest:false});await refreshAllotmentLists();}catch(err){alert(`Unable to delete allotment: ${err.message||err}`);}});
 $("createAllotmentBtn")?.addEventListener("click",createTestAllotment);
 $("refreshAllotmentBtn")?.addEventListener("click",refreshAllotmentLists);
 
