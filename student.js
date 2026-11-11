@@ -328,7 +328,7 @@ function activateParticipantTab(which){
  Object.entries(ids).forEach(([key,[tab,panel]])=>{const t=$(tab),p=$(panel);if(t)t.classList.toggle("active",key===which);if(p)p.classList.toggle("hidden",key!==which);});
 }
 $("assignmentTab").onclick=()=>activateParticipantTab("assignment");
-$("allottedTab")?.addEventListener("click",()=>{activateParticipantTab("allotted");loadMyAllottedTests();});
+$("allottedTab")?.addEventListener("click",()=>{location.href="allotted-tests.html";});
 $("refreshAllottedTests")?.addEventListener("click",loadMyAllottedTests);
 $("resultTab").onclick=()=>activateParticipantTab("result");
 if($("academicTab"))$("academicTab").onclick=()=>activateParticipantTab("academic");

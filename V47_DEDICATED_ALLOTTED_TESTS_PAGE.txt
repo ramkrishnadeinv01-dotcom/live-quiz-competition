@@ -1,0 +1,7 @@
+v47 - Dedicated participant allotted-tests page
+- Participant dashboard My Allotted Tests button now navigates to allotted-tests.html.
+- New standalone page has separate Pending Tasks, Completed Tests, and Results sections.
+- Cards show assignment title, category, room code, assigned date, deadline, class, subject and assignment ID.
+- Start and reattempt actions open the appropriate examination module with the existing assignment ID.
+- Completed assignment deletion removes only the assignment record; saved examination history remains.
+- Existing Firebase rules and Host portal files are unchanged.

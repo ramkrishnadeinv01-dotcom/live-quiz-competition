@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Allotted Tests — Student Portal</title>
+<link rel="stylesheet" href="styles.css?v=20261111-v47">
+<style>
+:root{color-scheme:dark}
+body{margin:0;background:radial-gradient(circle at 12% 0%,#173d72 0,#081d3c 42%,#041329 100%);color:#f5f7fc;font-family:Arial,sans-serif;min-height:100vh}
+.at-wrap{max-width:1240px;margin:0 auto;padding:24px 22px 56px}
+.at-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:17px 20px;border:1px solid #d9b65b;border-radius:18px;background:linear-gradient(110deg,#071a36,#123e7b);box-shadow:0 12px 30px #0004}
+.at-brand{font-family:Georgia,serif;font-size:clamp(20px,3vw,29px);font-weight:800;color:#ffe2a0}
+.at-top-actions{display:flex;gap:9px;flex-wrap:wrap}
+.at-btn{border:1px solid #d9b65b;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,#f5d77e,#bd882b);color:#071a36}
+.at-btn.secondary{background:#122f57;color:#ffe7ac}.at-btn.danger{background:#7e2437;color:white;border-color:#d77a8c}
+.at-hero{margin:22px 0;padding:26px;border:1px solid #d9b65b;border-radius:20px;background:linear-gradient(120deg,#102c55,#0a1d3b);box-shadow:0 12px 30px #0003}
+.at-kicker{font-size:11px;letter-spacing:2px;font-weight:900;color:#f3c95f}.at-hero h1{font:800 clamp(27px,4vw,40px) Georgia,serif;color:#ffe2a0;margin:10px 0}.at-hero p{color:#d6e3f7;margin:0;line-height:1.6}
+.at-profile{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}.at-profile span{padding:8px 12px;border:1px solid #ffffff22;border-radius:9px;background:#ffffff0a;color:#e7efff;font-size:13px}
+.at-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:22px 0}
+.at-tab{padding:17px 14px;border:1px solid #d9b65b88;border-radius:14px;background:#0c2548;color:#f8e6b5;text-align:left;cursor:pointer;font-weight:900;min-height:78px}
+.at-tab small{display:block;color:#c4d3e9;font-weight:500;margin-top:6px}.at-tab.active{background:linear-gradient(135deg,#f5d77e,#c18b2e);color:#071a36}.at-tab.active small{color:#263b5b}
+.at-section{border:1px solid #d9b65b;border-radius:18px;background:linear-gradient(145deg,#0b2142,#06162e);padding:22px;box-shadow:0 10px 28px #0003}
+.at-section h2{font:800 25px Georgia,serif;color:#ffe2a0;margin:0 0 6px}.at-desc{color:#cbd9ed;margin:0 0 16px}
+.at-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.at-card{border:1px solid #d9b65b88;border-radius:14px;padding:17px;background:linear-gradient(145deg,#15345f,#0b2140);color:#fff;min-width:0}
+.at-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.at-card h3{margin:0;color:#ffe2a0;font-size:18px}.at-status{white-space:nowrap;font-size:11px;font-weight:900;border-radius:30px;padding:6px 9px;background:#243f62;color:#f8e6b5}.at-status.done{background:#14583e;color:#b7f5d4}.at-status.over{background:#692637;color:#ffd5dc}
+.at-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}.at-meta div{padding:9px;border-radius:9px;background:#ffffff0a;border:1px solid #ffffff14}.at-meta small{display:block;color:#9fb5d5;font-size:10px;font-weight:800;letter-spacing:.6px}.at-meta b{display:block;color:#f2f6ff;margin-top:4px;font-size:13px;overflow-wrap:anywhere}
+.at-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.at-result{margin-top:12px;padding:12px;border-radius:10px;background:#06162d;border:1px solid #ffffff20;color:#dbe8fa;font-size:13px;line-height:1.6}
+.at-empty,.at-message{padding:18px;border-radius:12px;background:#ffffff0b;border:1px dashed #9fb5d555;color:#d4e2f6}
+.at-hidden{display:none!important}
+@media(max-width:650px){.at-wrap{padding:12px 10px 35px}.at-hero{padding:19px}.at-tabs{grid-template-columns:1fr}.at-tab{min-height:unset}.at-section{padding:15px}.at-meta{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="at-wrap">
+<header class="at-top"><div class="at-brand">🏅 My Allotted Tests</div><div class="at-top-actions"><button class="at-btn secondary" id="backBtn">← Participant Panel</button><button class="at-btn secondary" id="refreshBtn">↻ Refresh</button><button class="at-btn danger" id="logoutBtn">Log Out</button></div></header>
+<section class="at-hero"><span class="at-kicker">YOUR PERSONAL EXAMINATION CENTRE</span><h1>Allotted Examination Workspace</h1><p>View your pending assignments, revisit completed examinations, and review the results of tests allotted specifically to your account. Each examination opens separately when you choose to start it.</p><div class="at-profile" id="profileLine"><span>Verifying participant account…</span></div></section>
+<nav class="at-tabs" aria-label="Allotted test sections">
+<button class="at-tab active" data-section="pending">① Pending Tasks <small id="pendingCount">Loading…</small></button>
+<button class="at-tab" data-section="completed">② Completed Tests <small id="completedCount">Submitted examinations</small></button>
+<button class="at-tab" data-section="results">③ Results of Allotted Tests <small id="resultCount">Scores and performance</small></button>
+</nav>
+<section class="at-section" id="pendingSection"><h2>Pending Tasks</h2><p class="at-desc">Examinations assigned to you that are awaiting submission.</p><div class="at-list" id="pendingList"><div class="at-empty">Loading your assignments…</div></div></section>
+<section class="at-section at-hidden" id="completedSection"><h2>Completed Tests</h2><p class="at-desc">Your submitted examinations. Reattempts are available where the assignment remains active.</p><div class="at-list" id="completedList"><div class="at-empty">Loading…</div></div></section>
+<section class="at-section at-hidden" id="resultsSection"><h2>Results of Allotted Tests</h2><p class="at-desc">Review scores and submission details for your allotted examinations.</p><div class="at-list" id="resultsList"><div class="at-empty">No results loaded yet.</div></div></section>
+<div id="pageStatus" class="at-message" style="margin-top:16px" aria-live="polite">Connecting securely…</div>
+</div>
+<script type="module" src="allotted-tests.js"></script>
+</body></html>
