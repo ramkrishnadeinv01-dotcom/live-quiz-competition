@@ -65,8 +65,12 @@ $('joinBtn').onclick=async()=>{try{
   $('pCode').value=code;
  } else if(test.className!==className||String(test.subject).toLowerCase()!==subject.toLowerCase())throw Error('Your selected class or subject does not match this room.');
  if(assignment){
-  if(test.status==='CLOSED'||test.examStatus==='CLOSED')throw Error('This assigned examination has been closed by the Host.');
-  if(test.status==='DRAFT'||test.published===false)throw Error('This Olympiad examination has not been published by the Host yet.');
+  if(test.status==='CLOSED'||test.examStatus==='CLOSED'||test.active===false)throw Error('This assigned examination has been closed or disabled by the Host.');
+  if(!Array.isArray(test.questions)||!test.questions.length)throw Error('The Host has not saved the questions for this assigned examination yet. Please contact the Host.');
+  if(test.startMode==='scheduled'&&test.scheduleAt){
+   const scheduledAt=new Date(test.scheduleAt).getTime();
+   if(Number.isFinite(scheduledAt)&&Date.now()<scheduledAt)throw Error('This assigned examination is scheduled to open at '+new Date(scheduledAt).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST.');
+  }
  } else if(test.status!=='LIVE')throw Error(test.status==='CLOSED'?'This examination is closed.':'The examination has not been started by the administrator.');
  if(!assignmentId&&test.accessMode==='private'){
   const normName=v=>String(v||'').trim().normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase();

@@ -1,0 +1,6 @@
+v44 - Fix assigned Olympiad start status
+For an authenticated participant with a valid Olympiad assignment:
+- DRAFT status alone no longer blocks start. This supports the existing Host workflow, where saved manual-start rooms remain DRAFT until a Host presses Start.
+- Start is allowed only if questions are saved, test is active, not CLOSED, and any scheduled start time has arrived.
+- Normal unassigned room-code entry still requires status LIVE.
+This enables an allotted participant to start independently without the Host opening the portal.
