@@ -288,6 +288,23 @@ body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"]{backg
 body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"] p{color:#536984!important}
 @media(max-width:650px){body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero:after{display:none!important}body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero h2,body:has(#hostMenu:not(.hidden)) #hostMenu .host-hero p{max-width:100%!important}body:has(#hostMenu:not(.hidden)) #testAllotmentCard{padding:20px 14px!important}body:has(#hostMenu:not(.hidden)) #testAllotmentCard .row{gap:12px!important}}
 </style>
+<style id="world-of-exam-host-header-polish-v51">
+/* Correct the live header layout: keep all desktop controls on one aligned row. */
+@media (min-width: 1200px){
+ body:has(#hostMenu:not(.hidden)) .host-site-nav{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;gap:clamp(10px,1.2vw,22px)!important;padding:12px clamp(18px,2.4vw,38px)!important;min-height:78px!important}
+ body:has(#hostMenu:not(.hidden)) .host-brand{flex:0 1 330px!important;min-width:210px!important;font-size:clamp(16px,1.25vw,21px)!important;line-height:1.18!important;white-space:normal!important}
+ body:has(#hostMenu:not(.hidden)) .host-brand-mark{font-size:30px!important;flex:0 0 auto!important}
+ body:has(#hostMenu:not(.hidden)) .host-nav-links{display:flex!important;flex:0 1 auto!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-end!important;gap:3px!important;margin-left:auto!important;white-space:nowrap!important}
+ body:has(#hostMenu:not(.hidden)) .host-nav-links a{padding:10px 11px!important;font-size:13px!important;white-space:nowrap!important}
+ body:has(#hostMenu:not(.hidden)) .host-auth-pill,body:has(#hostMenu:not(.hidden)) .host-permission-pill{flex:0 0 auto!important;padding:10px 13px!important;font-size:12px!important;white-space:nowrap!important}
+ body:has(#hostMenu:not(.hidden)) .host-nav-signout{flex:0 0 auto!important;padding:10px 14px!important;font-size:13px!important;white-space:nowrap!important}
+}
+/* Clear separation and consistent alignment in the approval launch control. */
+body:has(#hostMenu:not(.hidden)) .admin-launcher{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:9px!important;flex-wrap:wrap!important;padding:14px 20px!important}
+body:has(#hostMenu:not(.hidden)) .admin-launcher span{display:inline-block!important;margin:0!important}
+body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!important;margin:0 0 0 3px!important;font-size:12px!important;line-height:1.2!important;opacity:.9!important}
+@media(max-width:1199px){body:has(#hostMenu:not(.hidden)) .host-site-nav{align-items:center!important;flex-wrap:wrap!important;row-gap:10px!important}body:has(#hostMenu:not(.hidden)) .host-nav-links{flex-wrap:wrap!important;justify-content:flex-start!important}}
+</style>
 </head>
 <body>
 <nav class="host-site-nav" aria-label="Main navigation">
