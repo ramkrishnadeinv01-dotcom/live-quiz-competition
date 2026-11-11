@@ -728,7 +728,7 @@ async function importWordQuestions(){
   }catch(err){console.error(err); status.textContent=`Import failed: ${err?.message||err}`;}
 }
 
-function syncLiveQuizRoute(){const live=location.hash==="#liveQuiz";const appBox=$("hostApp");const menu=$("hostMenu");if(appBox&&currentUser&&isApproved())appBox.classList.toggle("hidden",!live);if(menu&&currentUser&&isApproved())menu.classList.toggle("hidden",live);}
+function syncLiveQuizRoute(){const live=location.hash==="#liveQuiz";const appBox=$("hostApp");const menu=$("hostMenu");const approved=!!currentUser&&isApproved();if(appBox)appBox.classList.toggle("hidden",!(approved&&live));if(menu)menu.classList.toggle("hidden",!(approved&&!live));document.body.classList.toggle("host-authenticated",approved&&!live);}
 window.addEventListener("hashchange",syncLiveQuizRoute);
 $("backHostHomeBtn2")?.addEventListener("click",()=>{location.hash="";syncLiveQuizRoute();window.scrollTo({top:0,behavior:"smooth"});});
 
@@ -744,7 +744,7 @@ onAuthStateChanged(auth,async user=>{
   currentUser=user||null; uid=user?.uid||null;
   $("authStatus").textContent=user?(isAdmin(user)?"Administrator signed in":"Signed in"):"Not signed in";
   $("loginCard").classList.toggle("hidden",!!user);
-  if(!user){clearHostRegistrationFields();msg("");$("registrationBox").classList.add("hidden");$("signupBtn").classList.remove("hidden");$("registrationSubmitBtn").classList.remove("hidden");$("registrationSubmitBtn").disabled=false;$("hostApp").classList.add("hidden");$("adminLauncher").classList.add("hidden");closeAdminModal();$("hostAccessCard").classList.add("hidden");return;}
+  if(!user){document.body.classList.remove("host-authenticated");clearHostRegistrationFields();msg("");$("registrationBox").classList.add("hidden");$("signupBtn").classList.remove("hidden");$("registrationSubmitBtn").classList.remove("hidden");$("registrationSubmitBtn").disabled=false;$("hostApp").classList.add("hidden");$("hostMenu")?.classList.add("hidden");$("adminLauncher").classList.add("hidden");closeAdminModal();$("hostAccessCard").classList.add("hidden");return;}
   try{
     hostProfile=await ensureHostProfile(user);
     renderAccess();

@@ -551,7 +551,8 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
   function setupHostHeader(){
     const menu=document.getElementById('hostMenu');
     const nav=document.querySelector('.host-site-nav');
-    if(!menu||!nav||menu.classList.contains('hidden')) return;
+    if(!menu||!nav) return;
+    if(menu.classList.contains('hidden')){nav.querySelector('.host-permission-pill')?.remove();nav.querySelector('.host-nav-signout')?.remove();return;}
     if(!nav.querySelector('.host-permission-pill')){
       const badge=document.createElement('span');
       badge.className='host-permission-pill';
@@ -631,6 +632,10 @@ body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard table{c
 body.host-assignment-view:has(#hostMenu:not(.hidden)) .we-assignment-back{margin-top:18px}
 @media(max-width:1000px){body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 @media(max-width:650px){body:has(#hostMenu:not(.hidden)) .we-welcome-panel{grid-template-columns:1fr;padding:23px 18px}body:has(#hostMenu:not(.hidden)) .we-academic-art{display:none}body:has(#hostMenu:not(.hidden)) .we-host-profile{align-items:flex-start}body:has(#hostMenu:not(.hidden)) .we-active-pill{white-space:normal}body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-grid{grid-template-columns:1fr!important}body:has(#hostMenu:not(.hidden)) #hostMenu .host-menu-card{min-height:0}}
+
+/* Hard guard: signed-out users must never see the host dashboard or its cards. */
+#hostMenu.hidden{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body:not(.host-authenticated) #hostMenu{display:none!important;visibility:hidden!important;pointer-events:none!important}
 </style>
 <script id="world-of-exam-host-dashboard-routing-v50">
 (function(){
