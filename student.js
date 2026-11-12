@@ -52,7 +52,7 @@ async function handleParticipantAuth(user){
  }
  const participant={uid:user.uid,email:user.email,name:participantProfile.name,designation:participantProfile.designation,placeOfPosting:participantProfile.placeOfPosting,phone:participantProfile.phone};
  await update(ref(db,`participantDirectory/${user.uid}`),{uid:user.uid,email:user.email,name:participantProfile.name||"",className:participantProfile.className||"",status:participantProfile.status,updatedAt:Date.now()});
- sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";try{await renderStudentAnalytics(user.uid);}catch(analyticsError){console.error("Student analytics failed to load:",analyticsError);const panel=$("studentAnalyticsContent");if(panel)panel.innerHTML=`<div class="status blocked">Unable to load your performance analysis: ${esc(analyticsError.message||analyticsError)}. Please press Refresh to try again.</div>`;}
+ sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";
 }
 async function loadMyAllottedTests(){
  const box=$("myAllottedTests"),uid=auth.currentUser?.uid;if(!box||!uid)return;
@@ -529,21 +529,7 @@ document.addEventListener("click",event=>{
  const w=window.open("","_blank","width=900,height=700");if(!w)return;
  w.document.write(`<!doctype html><html><head><title>7-Day Study Plan</title><meta charset="utf-8"><style>body{font:14px Arial,sans-serif;color:#172033;margin:24px}h3{color:#17365d}div[style*="grid-template-columns"]{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}div[style*="border-radius:10px"]{border:1px solid #ccd4df;padding:10px;margin:6px 0;break-inside:avoid}button{display:none}li{margin:5px 0}@media print{body{margin:12mm}}</style></head><body><h1>Personalised 7-Day Study Plan</h1>${planner.outerHTML}<script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script></body></html>`);w.document.close();
 });
-const analyticsRefreshButton=$("refreshStudentAnalytics");
-if(analyticsRefreshButton){
- analyticsRefreshButton.addEventListener("click",async()=>{
-  const user=auth.currentUser;
-  const target=$("studentAnalyticsContent");
-  if(!user||user.isAnonymous||!participantProfile||participantProfile.status!=="approved"){
-   if(target)target.innerHTML='<p class="status blocked">Please sign in with your approved participant account to view your performance.</p>';
-   return;
-  }
-  analyticsRefreshButton.disabled=true;
-  try{await renderStudentAnalytics(user.uid);}
-  catch(e){console.error("Manual student analytics refresh failed:",e);if(target)target.innerHTML=`<div class="status blocked">Unable to load your performance analysis: ${esc(e.message||e)}</div>`;}
-  finally{analyticsRefreshButton.disabled=false;}
- });
-}
+
 const saved=JSON.parse(sessionStorage.getItem("quizParticipant")||"null"); if(saved)showDashboard(saved);
 const autoResultParams=new URLSearchParams(location.search);
 const autoResultRoom=String(autoResultParams.get("resultRoom")||"").trim().toUpperCase();

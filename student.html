@@ -4,6 +4,13 @@
 .dashboard-tabs{display:flex;gap:8px;margin-bottom:18px}.tab{border:1px solid #ccd5e1;background:#eef3f8;padding:12px 20px;border-radius:10px;font-weight:700}.tab.active{background:#1769e0;color:#fff}.assignment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.assignment-card{text-align:left;padding:20px;border:1px solid #d9e1ea;border-radius:14px;background:#fff;cursor:pointer;display:flex;flex-direction:column;gap:8px}.assignment-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.08)}.assignment-card span{font-size:30px}.assignment-card b{font-size:18px}.assignment-card small{color:#64748b}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000}.modal-card{background:#fff;width:min(520px,100%);border-radius:16px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25)}.modal-card input{width:100%;box-sizing:border-box;margin-top:8px;padding:13px;border:1px solid #ccd5e1;border-radius:8px;font-size:18px}.modal-card .row{display:flex;gap:10px}.modal-card button{margin-top:0}
 @media(max-width:700px){#studentAnalyticsContent>div:first-child{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
+<style id="academic-performance-card-v57">
+.academic-performance-card{display:flex;align-items:center;gap:13px;min-height:118px;padding:17px;border:1px solid #d9b65b;border-radius:15px;text-decoration:none;color:#fff!important;background:linear-gradient(120deg,#123c78,#0a2348 72%,#071a35);box-shadow:0 8px 18px #0005;transition:transform .16s,box-shadow .16s}
+.academic-performance-card:hover{transform:translateY(-2px);box-shadow:0 12px 24px #0006}
+.academic-performance-card .academic-performance-icon{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:14px;background:#e9bd5822;font-size:27px}
+.academic-performance-card div{flex:1;min-width:0}.academic-performance-card b{display:block;margin:5px 0;color:#ffe2a0;font:700 19px Georgia,serif}.academic-performance-card small{display:block;color:#d7e3f5;font-size:11px;line-height:1.5}.academic-performance-card em{font-style:normal;font-size:23px;color:#ffe2a0}
+@media(max-width:700px){.academic-performance-card{min-height:0;padding:14px}.academic-performance-card b{font-size:17px}}
+</style>
 <style id="advanced-v2-phase2">
 .p2-overview{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin:0 0 18px}
 .p2-welcome{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:25px 28px;border-radius:20px;background:linear-gradient(110deg,#071f52,#104b91 62%,#0878b9);color:#fff;box-shadow:0 14px 32px #0b397326;overflow:hidden;position:relative}
@@ -208,10 +215,11 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
         <div class="p2-metric"><span>🔐</span><div><b>01</b><small>Active participant session</small></div></div>
       </div>
       <div class="p2-result-shortcuts" id="studentAnalyticsPanel" style="display:block!important;grid-area:rail;">
-        <section class="card" style="margin:0;border:1px solid #d8b65b88;background:linear-gradient(145deg,#102d58,#071a36);color:#fff">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><span class="p2-kicker">YOUR LEARNING INSIGHTS</span><h2 style="margin:5px 0;color:#ffe2a0">My Academic Performance</h2><p style="margin:0;color:#d7e3f5">Your submitted Olympiad examinations are analysed automatically.</p></div><button id="refreshStudentAnalytics" class="secondary" type="button">↻ Refresh</button></div>
-          <div id="studentAnalyticsContent" style="margin-top:16px"><p class="muted">Loading your examination history…</p></div>
-        </section>
+        <a class="academic-performance-card" href="academic-performance.html">
+          <span class="academic-performance-icon">📈</span>
+          <div><span class="p2-kicker">YOUR LEARNING INSIGHTS</span><b>My Academic Performance</b><small>View your overall progress, subject-wise and chapter-wise analysis, examination history and personalised 7-day study planner.</small></div>
+          <em>↗</em>
+        </a>
       </div>
     </section>
     <div class="card">
@@ -277,6 +285,6 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 </div>
 
 
-<script type="module" src="student.js?v=20261112-v56"></script>
-<script type="module" src="academic.js?v=20261112-v56"></script>
+<script type="module" src="student.js?v=20261113-v57"></script>
+<script type="module" src="academic.js?v=20261113-v57"></script>
 </body></html>

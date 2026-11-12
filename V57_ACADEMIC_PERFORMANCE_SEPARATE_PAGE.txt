@@ -1,0 +1,9 @@
+V57 — Academic Performance Separate Page
+
+- Replaced the long embedded Academic Performance report on the Participant Dashboard with a compact clickable card.
+- Added academic-performance.html and academic-performance.js as a dedicated detail page.
+- Preserved the existing performance calculations, subject/chapter analysis, history, progress comparison, study planner and print/PDF report action.
+- Removed automatic analytics loading from the dashboard authentication callback so the dashboard opens faster and remains compact.
+- No Firebase rules or authentication persistence logic changed.
+
+Deploy the complete contents of this ZIP to GitHub Pages.
