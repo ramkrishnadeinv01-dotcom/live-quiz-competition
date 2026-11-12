@@ -1,0 +1,14 @@
+V59 — ACADEMIC PERFORMANCE CLASS / SUBJECT / MONTH / CHAPTER FILTERS
+
+Changes:
+1. Added Class, Subject, Month and Chapter selectors to academic-performance.html.
+2. Class choices are discovered from the participant's own submitted tests (test.className / attempt.className). Class V and Class VI records are therefore separated when a filter is selected.
+3. Subject choices are discovered from the selected class's submitted tests (test.subject / attempt.subject). The list is not hard-coded; Math, Science, SST or other subject names appear only when present in test metadata.
+4. Month choices are discovered from submittedAt timestamps and cascade with Class and Subject.
+5. Chapter choices are discovered from question metadata in the selected class, subject and month (chapter / chapterName / topic / unit).
+6. Selecting a chapter narrows chapter-wise accuracy to that chapter. Subject and overall examination metrics remain based on the filtered examination set.
+7. Data reads remain limited to academicOlympiadAttempts/{testId}/{participantUid}; no Firebase Rules changes are required.
+8. V56 participant authentication flow is retained. Cache query version updated to v59.
+
+Data limitation:
+The filters can only use metadata saved with each published test and submitted attempt. Older records with missing class, subject, submittedAt or question chapter tags cannot be reliably inferred or backfilled by this UI. Host should set the class and subject on the test and add chapter/unit/topic to questions before publishing.

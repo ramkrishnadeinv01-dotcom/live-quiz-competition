@@ -5,31 +5,67 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-let participantProfile=null,authUser=null;
+let participantProfile=null,authUser=null,allSubmittedRecords=null;
 function showMessage(text){const el=$("performanceMessage");if(el)el.textContent=text;}
+function setupPerformanceFilters(records){
+ const cls=$('filterClass'),sub=$('filterSubject'),mon=$('filterMonth'),chap=$('filterChapter');if(!cls||!sub||!mon||!chap)return;
+ const distinct=(arr)=>[...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+ const monthLabel=v=>{const [y,m]=v.split('-');return new Date(Number(y),Number(m)-1,1).toLocaleDateString('en-IN',{month:'long',year:'numeric'});};
+ const fill=(el,items,allLabel,selected)=>{el.innerHTML=`<option value="">${allLabel}</option>`+items.map(x=>`<option value="${esc(x.value)}">${esc(x.label)}</option>`).join('');if(items.some(x=>x.value===selected))el.value=selected;};
+ const current=()=>({c:cls.value,s:sub.value,m:mon.value,h:chap.value});
+ const update=()=>{
+  const v=current();
+  const byClass=records.filter(a=>!v.c||String(a.className||a.test.className||'Unspecified')===v.c);
+  const subjects=distinct(byClass.map(a=>String(a.subject||a.test.subject||'Unspecified')));
+  fill(sub,subjects.map(x=>({value:x,label:x})),'All subjects',v.s);
+  const bySubject=byClass.filter(a=>!sub.value||String(a.subject||a.test.subject||'Unspecified')===sub.value);
+  const months=distinct(bySubject.map(a=>{if(!a.submittedAt)return '';const d=new Date(Number(a.submittedAt));return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;})).sort().reverse();
+  fill(mon,months.map(x=>({value:x,label:monthLabel(x)})),'All months',v.m);
+  const byMonth=bySubject.filter(a=>{if(!mon.value)return true;if(!a.submittedAt)return false;const d=new Date(Number(a.submittedAt));return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`===mon.value;});
+  const chapters=distinct(byMonth.flatMap(a=>(Array.isArray(a.test.questions)?a.test.questions:[]).map(q=>String(q.chapter||q.chapterName||q.topic||q.unit||'').trim())));
+  fill(chap,chapters.map(x=>({value:x,label:x})),'All chapters',v.h);
+ };
+ const classes=distinct(records.map(a=>String(a.className||a.test.className||'Unspecified')));
+ fill(cls,classes.map(x=>({value:x,label:x})),'All classes',cls.value);
+ update();
+ [cls,sub,mon,chap].forEach(el=>el.addEventListener('change',()=>{update();renderStudentAnalytics(authUser.uid).catch(e=>console.error(e));}));
+}
 async function renderStudentAnalytics(uid){
  const target=$("studentAnalyticsContent");if(!target||!uid)return;
  target.innerHTML='<p style="color:#d7e3f5">Analysing your submitted examinations…</p>';
- // Read the published test index, then read only this participant's attempt node
- // under each test. Reading the entire attempts root is denied by the project's
- // per-user Firebase rules and caused the dashboard to remain stuck on loading.
- const testSnap=await get(ref(db,'academicOlympiadTests'));
- const tests=testSnap.val()||{},records=[];
- for(const [testId,test] of Object.entries(tests)){
-  const ownSnap=await get(ref(db,`academicOlympiadAttempts/${testId}/${uid}`));
-  if(!ownSnap.exists())continue;
-  const own=ownSnap.val();
-  const list=own?.status?[own]:Object.values(own||{}).filter(x=>x&&typeof x==='object');
-  for(const a of list)if(a.status==='SUBMITTED')records.push({...a,testId,test:test||{}});
+ // Read only this participant's attempts under each published test. Cache them
+ // for filter changes; never read the protected attempts root.
+ if(!allSubmittedRecords){
+  const testSnap=await get(ref(db,'academicOlympiadTests'));
+  const tests=testSnap.val()||{},loaded=[];
+  for(const [testId,test] of Object.entries(tests)){
+   const ownSnap=await get(ref(db,`academicOlympiadAttempts/${testId}/${uid}`));
+   if(!ownSnap.exists())continue;
+   const own=ownSnap.val();
+   const list=own?.status?[own]:Object.values(own||{}).filter(x=>x&&typeof x==='object');
+   for(const a of list)if(a.status==='SUBMITTED')loaded.push({...a,testId,test:test||{}});
+  }
+  loaded.sort((a,b)=>(Number(a.submittedAt)||0)-(Number(b.submittedAt)||0));
+  allSubmittedRecords=loaded;
+  setupPerformanceFilters(loaded);
  }
- records.sort((a,b)=>(Number(a.submittedAt)||0)-(Number(b.submittedAt)||0));
- if(!records.length){target.innerHTML='<div style="padding:16px;border:1px dashed #d8b65b88;border-radius:12px;color:#d7e3f5"><b>No completed Olympiad examination yet.</b><p style="margin:6px 0 0">After you submit your first Olympiad examination, your overall, subject-wise and chapter-wise analysis will appear here.</p></div>';return;}
+ const allRecords=allSubmittedRecords;
+ if(!allRecords.length){target.innerHTML='<div style="padding:16px;border:1px dashed #d8b65b88;border-radius:12px;color:#d7e3f5"><b>No completed Olympiad examination yet.</b><p style="margin:6px 0 0">After you submit your first Olympiad examination, your overall, subject-wise and chapter-wise analysis will appear here.</p></div>';return;}
+ const selectedClass=$('filterClass')?.value||'',selectedSubject=$('filterSubject')?.value||'',selectedMonth=$('filterMonth')?.value||'',selectedChapter=$('filterChapter')?.value||'';
+ const records=allRecords.filter(a=>{
+  const cls=String(a.className||a.test.className||'Unspecified');
+  const subject=String(a.subject||a.test.subject||'Unspecified');
+  const d=new Date(Number(a.submittedAt)||0),month=Number(a.submittedAt)?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:'';
+  const hasChapter=(Array.isArray(a.test.questions)?a.test.questions:[]).some(q=>String(q.chapter||q.chapterName||q.topic||q.unit||'').trim()===selectedChapter);
+  return (!selectedClass||cls===selectedClass)&&(!selectedSubject||subject===selectedSubject)&&(!selectedMonth||month===selectedMonth)&&(!selectedChapter||hasChapter);
+ });
+ if(!records.length){target.innerHTML='<div class="performance-empty"><b>No submitted examination matches these filters.</b><p>Try another class, subject, month or chapter, or select All.</p></div>';return;}
  let totalCorrect=0,totalAnswered=0,totalQuestions=0,totalScore=0;const subjects={},chapters={},trend=[];
  for(const a of records){const qs=Array.isArray(a.test.questions)?a.test.questions:[],answers=a.answers||{};const subject=String(a.subject||a.test.subject||'Unspecified');const sub=subjects[subject]||(subjects[subject]={correct:0,answered:0,questions:0,exams:0});sub.correct+=Number(a.correct||0);sub.answered+=Number(a.answered||0);sub.questions+=qs.length||Number(a.answered||0)+Number(a.unanswered||0);sub.exams++;totalCorrect+=Number(a.correct||0);totalAnswered+=Number(a.answered||0);totalQuestions+=qs.length||Number(a.answered||0)+Number(a.unanswered||0);totalScore+=Number(a.score||0);
-  qs.forEach((q,i)=>{const chapter=String(q.chapter||q.chapterName||q.topic||q.unit||'').trim();if(!chapter)return;const key=`${subject}|||${chapter}`;const c=chapters[key]||(chapters[key]={subject,chapter,correct:0,answered:0,questions:0});const chosen=String(answers[String(i)]||'').toUpperCase();if(chosen){c.answered++;if(chosen===String(q.correct||'').toUpperCase())c.correct++;}c.questions++;});
+  qs.forEach((q,i)=>{const chapter=String(q.chapter||q.chapterName||q.topic||q.unit||'').trim();if(!chapter||(selectedChapter&&chapter!==selectedChapter))return;const key=`${subject}|||${chapter}`;const c=chapters[key]||(chapters[key]={subject,chapter,correct:0,answered:0,questions:0});const chosen=String(answers[String(i)]||'').toUpperCase();if(chosen){c.answered++;if(chosen===String(q.correct||'').toUpperCase())c.correct++;}c.questions++;});
   trend.push({label:a.test.title||`Exam ${trend.length+1}`,score:Number(a.score||0),correct:Number(a.correct||0),answered:Number(a.answered||0),date:a.submittedAt?new Date(Number(a.submittedAt)).toLocaleDateString('en-IN'):'—'});
  }
- const pct=(n,d)=>d?Math.round(n/d*100):0,overall=pct(totalCorrect,totalAnswered);const subjectRows=Object.entries(subjects).map(([name,x])=>({name,...x,pct:pct(x.correct,x.answered)})).sort((a,b)=>a.pct-b.pct);const chapterRows=Object.values(chapters).filter(x=>x.answered>0).map(x=>({...x,pct:pct(x.correct,x.answered)})).sort((a,b)=>a.pct-b.pct);const taggedQuestions=records.reduce((n,a)=>n+(Array.isArray(a.test.questions)?a.test.questions.filter(q=>String(q.chapter||q.chapterName||q.topic||q.unit||'').trim()).length:0),0);const totalOlympiadQuestions=records.reduce((n,a)=>n+(Array.isArray(a.test.questions)?a.test.questions.length:0),0);const weak=chapterRows.filter(x=>x.answered>=3&&x.pct<60).slice(0,6);const fmt=x=>`${x}%`;
+ const pct=(n,d)=>d?Math.round(n/d*100):0,overall=pct(totalCorrect,totalAnswered);const subjectRows=Object.entries(subjects).map(([name,x])=>({name,...x,pct:pct(x.correct,x.answered)})).sort((a,b)=>a.pct-b.pct);const chapterRows=Object.values(chapters).filter(x=>x.answered>0).map(x=>({...x,pct:pct(x.correct,x.answered)})).sort((a,b)=>a.pct-b.pct);const taggedQuestions=records.reduce((n,a)=>n+(Array.isArray(a.test.questions)?a.test.questions.filter(q=>{const c=String(q.chapter||q.chapterName||q.topic||q.unit||'').trim();return c&&(!selectedChapter||c===selectedChapter)}).length:0),0);const totalOlympiadQuestions=records.reduce((n,a)=>n+(Array.isArray(a.test.questions)?(selectedChapter?a.test.questions.filter(q=>String(q.chapter||q.chapterName||q.topic||q.unit||'').trim()===selectedChapter).length:a.test.questions.length):0),0);const weak=chapterRows.filter(x=>x.answered>=3&&x.pct<60).slice(0,6);const fmt=x=>`${x}%`;
  const metric=(n,l)=>`<div style="padding:12px;border:1px solid #d8b65b66;border-radius:12px;background:#0b2345"><b style="font-size:24px;color:#ffe2a0">${n}</b><div style="font-size:11px;color:#d7e3f5">${l}</div></div>`;
  const bar=(label,value,subtext)=>`<div style="margin:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;color:#fff;font-size:13px"><b>${esc(label)}</b><b>${fmt(value)}</b></div><div style="height:8px;background:#263f60;border-radius:20px;overflow:hidden;margin-top:5px"><div style="height:100%;width:${value}%;background:${value>=75?'#22c55e':value>=60?'#60a5fa':'#f59e0b'}"></div></div><small style="color:#b8c9df">${esc(subtext)}</small></div>`;
  const latest=trend.slice(-6);const maxScore=Math.max(1,...latest.map(x=>x.score));
