@@ -4,13 +4,11 @@ import { getDatabase, ref, get, set, runTransaction, update, onValue, serverTime
 import { firebaseConfig } from "./firebase-config.js";
 
 
-// Browser Back from the participant dashboard logs the participant out.
-window.addEventListener("popstate", () => {
-  sessionStorage.removeItem("quizParticipant");
-  sessionStorage.removeItem("mcqRoom");
-  sessionStorage.removeItem("generalRoom");
-  sessionStorage.removeItem("participantResultRoom");
-  sessionStorage.removeItem("participantResultPhone");
+// Returning from an examination must not clear the participant session.
+// Explicit logout is handled only by the Participant Sign Out control.
+window.addEventListener("pageshow", () => {
+  // Firebase restores the persisted participant account; keep cached profile
+  // and room context available so the dashboard can reopen without another login.
 });
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
@@ -22,7 +20,7 @@ const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 function setJoinMessage(t,cls="status"){const el=$("joinMsg");if(el){el.textContent=t;el.className=cls;}}
 async function handleParticipantAuth(user){
  if(!user){authUser=null;participantProfile=null;showLogin();return;}
- if(user.isAnonymous){await signOut(auth);return;}
+ if(user.isAnonymous){showLogin();setJoinMessage("Your participant account is not currently signed in. Please sign in to continue.","status blocked");return;}
  try{await reload(user);await getIdToken(user,true);}catch(e){console.warn("Unable to refresh participant auth state",e);}
  if(!user.emailVerified){showLogin();setJoinMessage("Please verify your email using the activation link sent to your inbox, then sign in.","status blocked");return;}
  const profileRef=ref(db,`participants/${user.uid}`);let snap=await get(profileRef);

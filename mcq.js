@@ -237,5 +237,5 @@ $("previousBtn").onclick=async()=>{if(finalized||submitting||idx<=0)return;idx--
 $("nextBtn").onclick=async()=>{if(finalized||submitting||idx>=questions.length-1)return;idx++;await persistLive(false);renderQuestion();};
 $("previewBtn").onclick=()=>showPreview();
 $("submitLastBtn").onclick=()=>showSubmitConfirm();
-$("backBtn").onclick=()=>location.href="student.html";
+$("backBtn").onclick=()=>location.replace("student.html?returnFromExam=1");
 init();

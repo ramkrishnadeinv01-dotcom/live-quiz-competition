@@ -1,0 +1,6 @@
+V53 - Participant return after examination submission
+- Returning to student.html from MCQ, General and Olympiad exam pages uses an explicit return marker.
+- Removed popstate logic that cleared quizParticipant and room/result session data on browser navigation.
+- Anonymous auth state no longer triggers an automatic signOut from student.js; participant login UI is shown without clearing cached session.
+- Explicit Participant Sign Out remains the only intended logout action.
+- Firebase local persistence and participant profile lookup remain in place.

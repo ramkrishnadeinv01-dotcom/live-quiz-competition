@@ -47,4 +47,4 @@ async function submit(keys){if(submitted)return;const btn=$("submit");btn.disabl
  const path=ref(db,`rooms/${room}/generalAnswers/${phone}`);if((await get(path)).exists())throw new Error("An answer sheet has already been submitted for this phone number.");
  await set(path,{name:p.name||"",designation:p.designation||"",placeOfPosting:p.placeOfPosting||p.place||"",phone:p.phone||"",answers,submittedAt:Date.now(),authUid:auth.currentUser?.uid||""});const assignmentId=params.get("assignment");if(assignmentId)await update(ref(db,`testAssignments/${auth.currentUser.uid}/${assignmentId}`),{status:"SUBMITTED",submittedAt:Date.now()});submitted=true;show("Exam over, your answer has been successfully submitted. Thank you.");$("questions").querySelectorAll("textarea,button").forEach(x=>x.disabled=true);alert("Exam over, your answer has been successfully submitted. Thank you.");
  }catch(e){console.error(e);show(`Submission failed: ${e.message||e}`);btn.disabled=false;btn.textContent="SUBMIT EXAM";}}
-$("back").onclick=()=>location.href="student.html";init();
+$("back").onclick=()=>location.replace("student.html?returnFromExam=1");init();
