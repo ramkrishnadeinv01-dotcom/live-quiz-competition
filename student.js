@@ -13,25 +13,21 @@ window.addEventListener("pageshow", () => {
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 let authUser=null, participantProfile=null;
-// Establish durable browser-local Firebase Auth persistence before observing the
-// initial auth state. This prevents a page refresh from racing the first auth read.
-const authPersistenceReady=setPersistence(auth,browserLocalPersistence);
+// Do not call setPersistence() during page startup. Firebase Auth restores the
+// previously persisted user asynchronously; changing persistence before that
+// first restoration can race the initial auth state and make a refresh appear
+// signed out. Configure browser-local persistence only immediately before an
+// explicit participant sign-in or registration action.
 let resolveAuthReady;
 let authReadyResolved=false;
 const authReady=new Promise(resolve=>{resolveAuthReady=resolve;});
-authPersistenceReady.then(()=>{
- onAuthStateChanged(auth,async u=>{
-  authUser=u||null;
-  try{await handleParticipantAuth(u);}
-  catch(e){console.error(e);msg(`Account check failed: ${e.message||e}`);}
-  finally{if(!authReadyResolved){authReadyResolved=true;resolveAuthReady(!!u);}}
- });
-}).catch(e=>{
- console.error("Unable to initialise persistent participant authentication",e);
- showLogin();setJoinMessage(`Unable to restore your sign-in session: ${e.message||e}. Please sign in again once.`,"status blocked");
- if(!authReadyResolved){authReadyResolved=true;resolveAuthReady(false);}
+async function persistAuth(){await setPersistence(auth,browserLocalPersistence);}
+onAuthStateChanged(auth,async u=>{
+ authUser=u||null;
+ try{await handleParticipantAuth(u);}
+ catch(e){console.error("Participant account restoration failed:",e);msg(`Account check failed: ${e.message||e}`);}
+ finally{if(!authReadyResolved){authReadyResolved=true;resolveAuthReady(!!u);}}
 });
-async function persistAuth(){await authPersistenceReady;}
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 function setJoinMessage(t,cls="status"){const el=$("joinMsg");if(el){el.textContent=t;el.className=cls;}}
 async function handleParticipantAuth(user){
