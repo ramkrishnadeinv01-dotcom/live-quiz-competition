@@ -1,0 +1,13 @@
+V58 — CHAPTER-WISE ANALYSIS SUPPORT
+
+1. Host Olympiad Question Bank now includes a Chapter / Unit / Topic field for every question.
+2. The downloadable MCQ Excel template includes the column 'Chapter / Unit / Topic'.
+3. Excel import reads Chapter / Unit / Topic (also accepts Chapter, chapter, Topic or topic).
+4. Saved question records retain the chapter tag with each question.
+5. Participant Academic Performance groups submitted answers by subject and chapter and shows accuracy per chapter.
+6. If old submitted tests have no chapter tags, the report explains this and shows tagged-question coverage rather than inventing chapter labels.
+
+IMPORTANT:
+- Existing historical submissions cannot reliably be assigned to chapters if their saved question bank did not contain chapter metadata.
+- Chapter-wise analysis is available for examinations whose saved questions contain chapter/unit/topic tags.
+- No Firebase Rules changes are included.
