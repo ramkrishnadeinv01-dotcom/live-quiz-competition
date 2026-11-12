@@ -1,0 +1,11 @@
+V56 – Participant Session Preservation Fix
+
+Root cause found in V55: academic.js called signInAnonymously(auth) unconditionally when student.html loaded. Because student.html loads both student.js and academic.js, the academic script could replace the restored participant account with an anonymous session.
+
+Fixes:
+1. academic.js now waits for Firebase's initial auth restoration.
+2. It reuses an existing participant/host account and signs in anonymously only when no account is signed in.
+3. student.html cache-busting query versions updated for student.js and academic.js.
+4. No Firebase rules changes are required for this code fix.
+
+Validation: JavaScript syntax checks and ZIP integrity check performed. Live Firebase/GitHub Pages test remains pending.
