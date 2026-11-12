@@ -104,7 +104,7 @@
         ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
-          ".write": "auth != null && auth.uid === $uid"
+          ".write": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))"
         }
       }
     },

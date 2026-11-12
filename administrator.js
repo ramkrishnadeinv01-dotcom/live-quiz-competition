@@ -38,14 +38,45 @@ function renderParticipants(){
  const pending=participantCache.filter(p=>String(p.status||"pending").toLowerCase()==="pending").length;
  if(status)status.textContent=`${pending} pending participant request(s) • ${participantCache.length} participant profile(s) • ${arr.length} shown`;
  if(!arr.length){body.innerHTML='<tr><td colspan="8" class="empty">No participant requests match the selected filters.</td></tr>';return;}
- body.innerHTML=arr.map(p=>{const st=String(p.status||"pending").toLowerCase();let opts='<option value="">Select action</option>';if(p.uid!==currentUser.uid){if(st==="pending")opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';else if(st==="approved")opts+='<option value="revoked">Revoke</option>';else opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';opts+='<option value="delete">Delete profile record</option>';}
+ body.innerHTML=arr.map(p=>{const st=String(p.status||"pending").toLowerCase();let opts='<option value="">Select action</option>';if(p.uid!==currentUser.uid){if(st==="pending")opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';else if(st==="approved")opts+='<option value="revoked">Revoke</option>';else opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';opts+='<option value="eraseExamData">🧹 Erase ALL exam data (keep account)</option><option value="delete">Delete profile record</option>';}
  return `<tr><td>${esc(p.email||"")}</td><td><b>${esc(p.name||p.participantName||"")}</b></td><td>${esc(p.designation||"")}</td><td>${esc(p.placeOfPosting||"")}</td><td>${esc(p.phone||p.mobile||"")}</td><td>${statusBadge(st)}</td><td>${fmt(p.requestedAt||p.submittedAt||p.createdAt)}</td><td>${p.uid===currentUser.uid?"—":`<select class="participant-action-select" data-uid="${esc(p.uid)}">${opts}</select>`}</td></tr>`;}).join("");
- document.querySelectorAll(".participant-action-select").forEach(sel=>sel.onchange=async()=>{const action=sel.value,uid=sel.dataset.uid;sel.value="";if(!action)return;if(action==="delete"){if(!confirm("Delete this Participant profile record? The Firebase Authentication account will NOT be deleted."))return;try{await remove(ref(db,`participants/${uid}`));await loadParticipants();}catch(e){alert(`Delete failed: ${e.message||e}`);}return;}const verb=action==="approved"?"approve":action==="rejected"?"reject":"revoke";if(!confirm(`Are you sure you want to ${verb} this Participant?`))return;try{await update(ref(db,`participants/${uid}`),{status:action,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});await loadParticipants();}catch(e){alert(`Participant access update failed: ${e.message||e}`);}});
+ document.querySelectorAll(".participant-action-select").forEach(sel=>sel.onchange=async()=>{const action=sel.value,uid=sel.dataset.uid;sel.value="";if(!action)return;
+ if(action==="eraseExamData"){const person=participantCache.find(x=>x.uid===uid)||{},phone=String(person.phone||person.mobile||person.mobileNumber||"").replace(/\D/g,"");const label=person.name||person.participantName||person.email||uid;if(!confirm(`PERMANENTLY ERASE EXAM DATA\n\nParticipant: ${label}\n\nThis removes submitted answers/results, Olympiad attempts and allotted-test records for this participant from examination rooms. Login account, password, participant profile and approval status will be preserved.\n\nContinue?`))return;const typed=prompt(`Type ERASE to confirm deletion of exam data for ${label}.`);if(typed!=="ERASE")return;try{await eraseParticipantExamData(uid,phone);alert("Exam data erased successfully. The participant login account, password and profile have been preserved.");await loadParticipants();}catch(e){alert(`Exam-data deletion failed: ${e.message||e}`);}return;}
+ if(action==="delete"){if(!confirm("Delete this Participant profile record? The Firebase Authentication account will NOT be deleted."))return;try{await remove(ref(db,`participants/${uid}`));await loadParticipants();}catch(e){alert(`Delete failed: ${e.message||e}`);}return;}const verb=action==="approved"?"approve":action==="rejected"?"reject":"revoke";if(!confirm(`Are you sure you want to ${verb} this Participant?`))return;try{await update(ref(db,`participants/${uid}`),{status:action,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});await loadParticipants();}catch(e){alert(`Participant access update failed: ${e.message||e}`);}});
 }
 async function loadParticipants(){
  if(!admin())return;const body=$("participantRequests"),status=$("participantStatus");if(!body)return;
  try{const snap=await get(ref(db,"participants"));const obj=snap.val()||{};participantCache=Object.entries(obj).map(([uid,p])=>({uid,...(p||{})})).filter(p=>p.emailVerified===true || ["pending","approved","rejected","revoked"].includes(String(p.status||"").toLowerCase())).sort((a,b)=>(Number(b.requestedAt||b.submittedAt||b.createdAt)||0)-(Number(a.requestedAt||a.submittedAt||a.createdAt)||0));renderParticipants();}
  catch(e){if(status)status.textContent=`Unable to load Participant requests: ${e.message||e}`;body.innerHTML=`<tr><td colspan="8">Unable to load Participant requests: ${esc(e.message||e)}</td></tr>`;}
+}
+
+
+// Permanently clear a participant's examination footprint while preserving
+// Firebase Authentication credentials and the participants/{uid} profile.
+async function eraseParticipantExamData(uid,phone){
+ if(!admin())throw new Error("Administrator authorization required.");
+ const norm=v=>String(v??"").replace(/\D/g,"");
+ const matches=(key,v)=>{
+  if(phone&&norm(key)===phone)return true;
+  if(!v||typeof v!=="object")return false;
+  const ids=[v.uid,v.authUid,v.userId,v.userUid,v.studentUid,v.participantUid,v.phone,v.mobile,v.mobileNumber,v.participantPhone,v.studentPhone];
+  return ids.some(x=>String(x??"")===uid || (phone&&norm(x)===phone));
+ };
+ const snap=await get(ref(db,"rooms"));const rooms=snap.val()||{};
+ for(const [roomId,room] of Object.entries(rooms)){
+  for(const field of ["mcqAnswers","generalAnswers","participants","violations","mcqLive","answers","runs","archivedRuns","history"]){
+   if(room?.[field]){const cleaned=await cleanObject(room[field],uid,phone);if(cleaned.changed)await update(ref(db,`rooms/${roomId}/${field}`),cleaned.value);}
+  }
+ }
+ const attempts=await get(ref(db,"academicOlympiadAttempts"));const all=attempts.val()||{};
+ for(const [testId,byUid] of Object.entries(all))if(byUid&&Object.prototype.hasOwnProperty.call(byUid,uid))await remove(ref(db,`academicOlympiadAttempts/${testId}/${uid}`));
+ await remove(ref(db,`testAssignments/${uid}`));
+}
+function cleanObject(node,uid,phone){
+ const norm=v=>String(v??"").replace(/\D/g,"");let changed=false;
+ const matches=(key,v)=>{if(phone&&norm(key)===phone)return true;if(!v||typeof v!=="object")return false;return [v.uid,v.authUid,v.userId,v.userUid,v.studentUid,v.participantUid,v.phone,v.mobile,v.mobileNumber,v.participantPhone,v.studentPhone].some(x=>String(x??"")===uid||(phone&&norm(x)===phone));};
+ const walk=obj=>{if(!obj||typeof obj!=="object")return obj;const out=Array.isArray(obj)?[]:{};for(const [k,v] of Object.entries(obj)){if(matches(k,v)){changed=true;continue;}out[k]=v&&typeof v==="object"?walk(v):v;}return out;};
+ const value=walk(node);return {value,changed};
 }
 
 function roomType(r){if(r?.examType==="general"||r?.generalQuestions)return "General Question";if(r?.mcqQuestions)return "MCQ";if(r?.questions)return "Live Quiz";return "Unknown";}

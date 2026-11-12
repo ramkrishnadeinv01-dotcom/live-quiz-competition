@@ -1,0 +1,6 @@
+V63 — Participant exam-data erasure
+
+Administrator → Participant Requests & Access → select “Erase ALL exam data (keep account)”.
+The action requires two confirmations and preserves Firebase Authentication account/password and participants/{uid} profile/status. It removes testAssignments/{uid}, academicOlympiadAttempts/{testId}/{uid}, and matching participant answer/result records from room answer, participant, violation, live and archived-run collections.
+
+The database rules file includes an administrator-only exception alongside the participant-own-write rule for academicOlympiadAttempts so the administrator can perform this deletion. Merge the rules change carefully; do not replace unrelated live rules.
