@@ -1,0 +1,1 @@
+V62 — Built from V59. Retains Class, Subject, Month and Chapter filters. Adds answer-distribution doughnut charts, subject/chapter visual breakdowns, month-wise progress, attempt-rate and average-correct indicators. PDF report uses browser Print > Save as PDF. Existing Firebase schema/rules unchanged.
