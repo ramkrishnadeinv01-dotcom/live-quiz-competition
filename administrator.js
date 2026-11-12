@@ -70,7 +70,14 @@ async function eraseParticipantExamData(uid,phone){
  }
  const attempts=await get(ref(db,"academicOlympiadAttempts"));const all=attempts.val()||{};
  for(const [testId,byUid] of Object.entries(all))if(byUid&&Object.prototype.hasOwnProperty.call(byUid,uid))await remove(ref(db,`academicOlympiadAttempts/${testId}/${uid}`));
- await remove(ref(db,`testAssignments/${uid}`));
+ // Delete assignment records one child at a time. The live rules grant
+ // administrator write permission at testAssignments/$uid/$assignmentId,
+ // not necessarily at the parent testAssignments/$uid node.
+ const assignmentSnap=await get(ref(db,`testAssignments/${uid}`));
+ const assignmentRecords=assignmentSnap.val()||{};
+ for(const assignmentId of Object.keys(assignmentRecords)){
+  await remove(ref(db,`testAssignments/${uid}/${assignmentId}`));
+ }
 }
 function cleanObject(node,uid,phone){
  const norm=v=>String(v??"").replace(/\D/g,"");let changed=false;
