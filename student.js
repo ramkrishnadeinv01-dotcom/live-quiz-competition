@@ -13,9 +13,25 @@ window.addEventListener("pageshow", () => {
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 let authUser=null, participantProfile=null;
-const authReady=Promise.resolve(true);
-onAuthStateChanged(auth,u=>{authUser=u||null;handleParticipantAuth(u).catch(e=>{console.error(e);msg(`Account check failed: ${e.message||e}`);});});
-async function persistAuth(){await setPersistence(auth,browserLocalPersistence);}
+// Establish durable browser-local Firebase Auth persistence before observing the
+// initial auth state. This prevents a page refresh from racing the first auth read.
+const authPersistenceReady=setPersistence(auth,browserLocalPersistence);
+let resolveAuthReady;
+let authReadyResolved=false;
+const authReady=new Promise(resolve=>{resolveAuthReady=resolve;});
+authPersistenceReady.then(()=>{
+ onAuthStateChanged(auth,async u=>{
+  authUser=u||null;
+  try{await handleParticipantAuth(u);}
+  catch(e){console.error(e);msg(`Account check failed: ${e.message||e}`);}
+  finally{if(!authReadyResolved){authReadyResolved=true;resolveAuthReady(!!u);}}
+ });
+}).catch(e=>{
+ console.error("Unable to initialise persistent participant authentication",e);
+ showLogin();setJoinMessage(`Unable to restore your sign-in session: ${e.message||e}. Please sign in again once.`,"status blocked");
+ if(!authReadyResolved){authReadyResolved=true;resolveAuthReady(false);}
+});
+async function persistAuth(){await authPersistenceReady;}
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 function setJoinMessage(t,cls="status"){const el=$("joinMsg");if(el){el.textContent=t;el.className=cls;}}
 async function handleParticipantAuth(user){
@@ -79,7 +95,7 @@ async function loadMyAllottedTests(){
 }
 function startAllottedTest(a){if(!a)return;const category=a.category;if(category==="olympiad"){location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="mcq"){location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="general"){location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}alert("Unsupported examination category.");}
 
-function showLogin(){const j=$("joinCard"),d=$("dashboardCard"),q=$("quizCard");if(j)j.classList.remove("hidden");if(d)d.classList.add("hidden");if(q)q.classList.add("hidden");$("connection").textContent="Sign in required";sessionStorage.removeItem("quizParticipant");}
+function showLogin(){const j=$("joinCard"),d=$("dashboardCard"),q=$("quizCard");if(j)j.classList.remove("hidden");if(d)d.classList.add("hidden");if(q)q.classList.add("hidden");$("connection").textContent="Sign in required";}
 async function registerParticipant(){
  const name=$("studentName").value.trim(),designation=$("designation").value.trim(),placeOfPosting=$("placeOfPosting").value.trim(),phone=$("phoneNumber").value.trim(),email=$("participantEmail").value.trim().toLowerCase(),password=$("participantPassword").value;
  if(!name||!designation||!placeOfPosting||!phone||!email||!password)return setJoinMessage("Please complete all registration fields.","status blocked");
