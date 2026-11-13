@@ -305,6 +305,10 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher span{display:inline-block!impor
 body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!important;margin:0 0 0 3px!important;font-size:12px!important;line-height:1.2!important;opacity:.9!important}
 @media(max-width:1199px){body:has(#hostMenu:not(.hidden)) .host-site-nav{align-items:center!important;flex-wrap:wrap!important;row-gap:10px!important}body:has(#hostMenu:not(.hidden)) .host-nav-links{flex-wrap:wrap!important;justify-content:flex-start!important}}
 </style>
+
+<!-- Google Analytics 4: World of Exam -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-R996T43PXM"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-R996T43PXM',{send_page_view:true});</script>
 </head>
 <body>
 <nav class="host-site-nav" aria-label="Main navigation">
@@ -448,6 +452,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <div class="host-menu-card general"><div class="host-menu-icon">✍️</div><h3>General Question Exam Setup</h3><p>Set up descriptive/general-question examinations in the dedicated examination module.</p><button class="warning" id="openGeneralBtn" type="button">Open General Exam Setup →</button></div>
 <div class="host-menu-card" style="border-top:5px solid #0891b2"><div class="host-menu-icon">🎓</div><h3>Academic &amp; Olympiad Resources</h3><p>Upload class-wise study PDFs, organise subjects and chapters, and publish Olympiad mock tests with automatic scoring.</p><div class="host-tools" style="margin-top:auto"><button style="background:#0891b2" onclick="location.href='academic-host.html'" type="button">Manage Academic Resources →</button></div></div>
 <div class="host-menu-card" style="border-top:5px solid #7c3aed"><div class="host-menu-icon">📊</div><h3>Other Exam Result Publication</h3><p>Publish results of examinations conducted outside this portal. Upload the prepared Excel result sheet and make results searchable by mobile number.</p><div class="host-tools" style="margin-top:auto"><button style="background:#7c3aed" id="openOtherResultsBtn" type="button">Publish Other Exam Results →</button><button class="danger" id="openOtherResultsManageBtn" type="button">🗑 Manage / Delete Results</button></div></div>
+<div class="host-menu-card" style="border-top:5px solid #0f766e"><div class="host-menu-icon">📈</div><h3>Website Analytics &amp; User Monitoring</h3><p>Monitor registered participant activity, currently active signed-in users, visitor traffic through Google Analytics, and download reports.</p><button style="background:#0f766e" id="openWebsiteAnalyticsBtn" type="button">Open Website Analytics →</button></div>
 <div class="host-menu-card" style="border-top:5px solid #be185d"><div class="host-menu-icon">🏅</div><h3>Hindi Pakhwada 2026 Result Publication</h3><p>Upload and publish Hindi Pakhwada examination marksheets. Participants can search their result using their registered mobile number in the Participant Panel.</p><div class="host-tools" style="margin-top:auto"><button style="background:#be185d" id="openHindiResultsBtn" type="button">Publish Hindi Pakhwada Results →</button></div></div>
 </div>
 <div class="card" style="margin-top:18px"><h3>📊 Result Management</h3><p class="muted">Access MCQ result management separately when you need to review or export completed examination results.</p><div class="host-tools"><button class="secondary" id="openMcqResultsBtn" type="button">Open MCQ Results</button><button class="success" id="openMcqLiveResultsBtn" type="button">🏁 MCQ Live Athlete-wise Result</button><button class="danger" id="homeLogoutBtn" type="button">🚪 Sign Out</button></div></div>
@@ -662,4 +667,6 @@ body:not(.host-authenticated) #hostMenu{display:none!important;visibility:hidden
  setTimeout(routeReady,500);setTimeout(routeReady,1500);
 })();
 </script>
+
+<script type="module" src="website-analytics-tracker.js?v=65"></script>
 </body></html>

@@ -811,6 +811,7 @@ function bindHostPortalButtons(){
     openGeneralBtn:()=>location.href='host-general.html',
     openOtherResultsBtn:()=>location.href='other-results.html',
     openHindiResultsBtn:()=>location.href='hindi-pakhwada-publication.html',
+    openWebsiteAnalyticsBtn:()=>location.href='website-analytics.html',
     openOtherResultsManageBtn:()=>location.href='other-results.html#manage',
     openMcqResultsBtn:()=>location.href='host-mcq-results.html',
     homeLogoutBtn:async()=>{clearHostRegistrationFields();await signOut(auth);},

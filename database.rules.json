@@ -135,6 +135,12 @@
           ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (root.child('hosts').child(auth.uid).child('status').val() === 'approved' && ((newData.exists() && newData.child('assignedBy').val() === auth.uid) || (!newData.exists() && data.child('assignedBy').val() === auth.uid))) || (auth.uid === $uid && data.exists() && ((newData.exists() && newData.child('status').val() === 'SUBMITTED') || (!newData.exists() && data.child('status').val() === 'SUBMITTED'))))"
         }
       }
+    },
+    "websiteUserActivity": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid"
+      }
     }
   }
 }

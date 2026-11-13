@@ -1,0 +1,29 @@
+V65 — WEBSITE ANALYTICS & USER MONITORING
+
+BASE: V64 Participant Exam Data Reset Permission Fix. Existing website files and Firebase configuration are retained.
+
+GOOGLE ANALYTICS 4
+Measurement ID: G-R996T43PXM
+Web stream: World of Exam – GitHub Pages
+Website stream URL: https://ramkrishnadeinv01-dotcom.github.io/live-quiz-competition/
+
+FEATURES
+1. GA4 page-view tracking snippet added to the site's HTML pages. GA4 reports anonymous and registered traffic in aggregate, including Realtime visitors, acquisition and engagement.
+2. Host Portal card: Website Analytics & User Monitoring.
+3. Administrator-only monitoring page: website-analytics.html.
+4. Registered participant and host account overview, approval status, last activity, current page and online/offline presence.
+5. Excel and PDF exports for participant/host monitoring.
+6. Authenticated activity tracking does not sign in anonymously and does not replace an existing Firebase session (preserves V56 session-restoration fix).
+
+IMPORTANT DEPLOYMENT
+A. Upload the contents of this ZIP to the same GitHub repository, replacing the old files.
+B. Firebase Realtime Database Rules: merge ONLY the new top-level websiteUserActivity rule from database.rules.json into the existing live rules. Do not replace the entire live ruleset unless you have first compared it with your current deployed rules. This new rule allows a signed-in user to write only their own activity record; only the configured Administrator can read all records.
+C. Do not change Firebase Authentication settings or Storage Rules.
+D. After GitHub Pages updates, sign in as Administrator and open Host Portal → Website Analytics & User Monitoring.
+E. Open GA4 → Reports → Realtime to see live site visitors. Historical daily/monthly/yearly visitor trends are available in GA4 Reports.
+
+LIMITATIONS / NEXT PHASE
+The static GitHub Pages dashboard does not call the Google Analytics Data API directly because that requires a secured server-side OAuth/service-account integration. Do not put a Google service-account key, OAuth secret, or API secret in this public repository. GA4 visitor totals and anonymous visitor trends are viewed in the linked GA4 reports. This V65 dashboard shows registered participant/host records and authenticated activity from Firebase. Anonymous visitors are measured in aggregate by GA4, not identified by name.
+
+PRIVACY
+No passwords, authentication tokens or precise location are collected. Activity uses Firebase UID and existing registration details.
