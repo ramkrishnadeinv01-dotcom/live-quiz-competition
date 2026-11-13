@@ -5,13 +5,21 @@ import { firebaseConfig } from "./firebase-config.js";
 
 
 // Returning from an examination must not clear the participant session.
-// Explicit logout is handled only by the Participant Sign Out control.
-window.addEventListener("pageshow", () => {
-  // Firebase restores the persisted participant account; keep cached profile
-  // and room context available so the dashboard can reopen without another login.
-});
-
+// An explicit logout must remain effective when Chrome restores an older
+// authenticated page from its back/forward cache (BFCache).
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
+const EXPLICIT_LOGOUT_KEY="participantExplicitLogout";
+window.addEventListener("pageshow", event => {
+  if (sessionStorage.getItem(EXPLICIT_LOGOUT_KEY) === "1") {
+    // pageshow also fires when a page is restored from BFCache. Never allow
+    // that cached DOM to expose the previously authenticated dashboard.
+    sessionStorage.removeItem("quizParticipant");
+    sessionStorage.removeItem("mcqRoom");
+    sessionStorage.removeItem("generalRoom");
+    showLogin();
+    setJoinMessage("You are signed out. Please sign in again to access your Participant Panel.","status blocked");
+  }
+});
 let authUser=null, participantProfile=null;
 // Do not call setPersistence() during page startup. Firebase Auth restores the
 // previously persisted user asynchronously; changing persistence before that
@@ -51,6 +59,8 @@ async function handleParticipantAuth(user){
    return;
  }
  const participant={uid:user.uid,email:user.email,name:participantProfile.name,designation:participantProfile.designation,placeOfPosting:participantProfile.placeOfPosting,phone:participantProfile.phone};
+ // Clear the logout guard only after a verified, approved account is restored.
+ sessionStorage.removeItem(EXPLICIT_LOGOUT_KEY);
  await update(ref(db,`participantDirectory/${user.uid}`),{uid:user.uid,email:user.email,name:participantProfile.name||"",className:participantProfile.className||"",status:participantProfile.status,updatedAt:Date.now()});
  sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";
 }
@@ -342,7 +352,7 @@ $("allottedTab")?.addEventListener("click",()=>{location.href="allotted-tests.ht
 $("refreshAllottedTests")?.addEventListener("click",loadMyAllottedTests);
 $("resultTab").onclick=()=>activateParticipantTab("result");
 if($("academicTab"))$("academicTab").onclick=()=>activateParticipantTab("academic");
-$("participantSignOut").onclick=async()=>{if(!confirm("Log out of your participant account? Your saved profile and approval status will remain unchanged."))return;sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");await signOut(auth);showLogin();setJoinMessage("You have been logged out. Your participant profile remains saved.","status success");};
+$("participantSignOut").onclick=async()=>{if(!confirm("Log out of your participant account? Your saved profile and approval status will remain unchanged."))return;sessionStorage.setItem(EXPLICIT_LOGOUT_KEY,"1");sessionStorage.removeItem("quizParticipant");sessionStorage.removeItem("mcqRoom");sessionStorage.removeItem("generalRoom");try{await signOut(auth);}finally{showLogin();setJoinMessage("You have been logged out. Your participant profile remains saved. Pressing the browser Back button will not restore your signed-in dashboard.","status success");}};
 $("viewResultBtn").onclick=async()=>{
  const code=$("resultRoomCode").value.trim().toUpperCase();
  const resultPhone=$("resultPhoneNumber").value.trim();

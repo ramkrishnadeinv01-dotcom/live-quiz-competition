@@ -1,0 +1,9 @@
+V79 – Participant Sign-out / Browser Back-button Fix
+
+- Adds a per-tab explicit logout guard in sessionStorage.
+- On pageshow (including Chrome back/forward-cache restoration), a logged-out tab clears cached participant/room session data and shows the login screen.
+- The guard is cleared only after Firebase restores a verified and administrator-approved participant account.
+- Sign-out still uses Firebase signOut and preserves participant profile/database records.
+- No Firebase rules, database schema, test logic, or profile data are changed.
+
+Deployment: upload the complete ZIP contents to the existing GitHub Pages project, replacing the corresponding files. Hard-refresh the browser (Ctrl+Shift+R). Test: sign in, sign out, press browser Back, and confirm the login screen remains visible.
