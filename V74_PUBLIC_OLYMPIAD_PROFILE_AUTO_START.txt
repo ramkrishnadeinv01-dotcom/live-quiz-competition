@@ -1,0 +1,13 @@
+V74 – PUBLIC OLYMPIAD PROFILE AUTO-START
+
+Changes:
+1. Public catalogue test links now pass public=1.
+2. Public Olympiad entry uses the currently signed-in approved participant account.
+3. Participant name, mobile number and class are loaded from participants/{uid}; subject is loaded from the published test.
+4. Public tests auto-start without asking for a room code or manual participant details.
+5. Private and assigned examination flows remain separate.
+6. Public access is rechecked before the attempt is created; inactive, private, closed, or class-mismatched tests are blocked.
+7. No Firebase rules or database schema changes.
+
+Deployment:
+Replace the repository files with this package and publish. Test while signed in to an approved participant account. Public tests require the participant's existing authenticated account; guest/anonymous entry is not permitted so that the attempt is saved under the correct participant UID.

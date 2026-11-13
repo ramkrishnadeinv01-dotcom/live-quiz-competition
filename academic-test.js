@@ -9,7 +9,10 @@ const cleanMobile=v=>String(v||'').replace(/\\D/g,'');
 // Assigned examinations use the authenticated participant identity and test ID.
 // Hide the manual room-code/class/subject entry fields; the assignment is verified
 // against Firebase before the examination can begin.
-const assignedMode=new URLSearchParams(location.search).has('assignment');
+const pageParams=new URLSearchParams(location.search);
+const assignedMode=pageParams.has('assignment');
+const publicMode=pageParams.get('public')==='1';
+let publicParticipant=null;
 if(assignedMode){
  const heading=document.querySelector('#joinPanel h1');
  const intro=document.querySelector('#joinPanel .muted');
@@ -20,27 +23,58 @@ if(assignedMode){
  const join=$('joinBtn');if(join)join.textContent='Start Assigned Examination';
  const status=$('joinStatus');if(status)status.textContent='Verifying your assignment and loading the examination details…';
 }
+if(publicMode){
+ const heading=document.querySelector('#joinPanel h1');
+ const intro=document.querySelector('#joinPanel .muted');
+ if(heading)heading.textContent='Free Public Olympiad Examination';
+ if(intro)intro.textContent='Your saved participant profile will be used automatically. No room code or manual details are required.';
+ ['pName','pMobile','pSubject','pCode'].forEach(id=>{const el=$(id);if(el){el.readOnly=true;el.required=false;}});
+ const cls=$('pClass');if(cls){cls.disabled=true;cls.required=false;}
+ const join=$('joinBtn');if(join)join.textContent='Start Public Mock Test';
+ document.querySelectorAll('#joinPanel .field').forEach(el=>el.classList.add('hidden'));
+}
 $('pClass').innerHTML='<option value="">Select class</option>'+Array.from({length:12},(_,i)=>`<option>Class ${i+1}</option>`).join('');
 async function init(){try{
- // Wait until Firebase restores the persisted login before deciding whether
- // anonymous authentication is needed; otherwise a signed-in participant could
- // accidentally be switched to a different anonymous UID on page load.
  const current=await new Promise(resolve=>{
   const stop=onAuthStateChanged(auth,user=>{stop();resolve(user||null);});
  });
- if(current && !current.isAnonymous){uid=current.uid;
-  if(assignedMode){const profile=JSON.parse(sessionStorage.getItem('quizParticipant')||'{}');$('pName').value=profile.name||'';$('pMobile').value=cleanMobile(profile.phone||'');}
+ if(current && !current.isAnonymous){
+  uid=current.uid;
+  if(publicMode){
+   const cached=JSON.parse(sessionStorage.getItem('quizParticipant')||'null')||{};
+   const profileSnap=await get(ref(db,`participants/${uid}`));
+   publicParticipant=profileSnap.val()||cached;
+   if(!profileSnap.exists()||publicParticipant.status&&publicParticipant.status!=='approved')throw Error('Please sign in to your approved participant account to take a public Olympiad.');
+   if(cached.uid&&cached.uid!==uid)throw Error('Your participant session does not match the signed-in account. Please sign out and sign in again.');
+   $('pName').value=publicParticipant.name||cached.name||'';
+   $('pMobile').value=cleanMobile(publicParticipant.phone||cached.phone||'');
+   const cls=$('pClass');if(cls){cls.innerHTML=`<option value="${esc(publicParticipant.className||'')}">${esc(publicParticipant.className||'Class not specified')}</option>`;cls.value=publicParticipant.className||'';}
+   const testSnap=await get(ref(db,`academicOlympiadTests/${pageParams.get('id')}`));
+   const publicTest=testSnap.val();
+   if(!publicTest||publicTest.active===false||publicTest.accessMode==='private'||(publicTest.accessMode&&publicTest.accessMode!=='public'))throw Error('This public Olympiad is no longer available.');
+   $('pSubject').value=publicTest.subject||'';
+   $('pCode').value='';
+   $('joinStatus').textContent='Profile verified. Starting your public examination…';
+   setTimeout(()=>$('joinBtn').click(),150);
+  }else if(assignedMode){
+   const profile=JSON.parse(sessionStorage.getItem('quizParticipant')||'{}');
+   $('pName').value=profile.name||'';$('pMobile').value=cleanMobile(profile.phone||'');
+  }
   return;
  }
+ if(publicMode)throw Error('Please sign in to your participant account first. Public Olympiad tests use your saved profile and cannot be taken as a guest.');
  const cred=await signInAnonymously(auth);uid=cred.user.uid;
- }catch(e){$('joinStatus').textContent='Unable to connect. Please refresh and try again.'}}init();
+ }catch(e){$('joinStatus').textContent=e.message||'Unable to connect. Please refresh and try again.'}}init();
 $('joinBtn').onclick=async()=>{try{
  if(!uid)throw Error('Please wait for the connection to complete.');
  const params=new URLSearchParams(location.search),assignmentId=params.get('assignment');
  const savedParticipant=JSON.parse(sessionStorage.getItem('quizParticipant')||'null')||{};
  const name=$('pName').value.trim()||savedParticipant.name||'',mobile=cleanMobile($('pMobile').value||savedParticipant.phone||'');
  let className=$('pClass').value||'',subject=$('pSubject').value.trim(),code=$('pCode').value.trim().toUpperCase(),assignment=null;
- if(!assignmentId&&(!name||mobile.length!==10||!className||!subject||!code))throw Error('Enter your name, valid 10-digit mobile number, class, subject and room code.');
+ if(publicMode){
+  if(!publicParticipant||!name||mobile.length!==10)throw Error('Your saved participant profile is incomplete. Please update your profile and try again.');
+  className=publicParticipant.className||className;
+ }else if(!assignmentId&&(!name||mobile.length!==10||!className||!subject||!code))throw Error('Enter your name, valid 10-digit mobile number, class, subject and room code.');
  $('joinStatus').textContent=assignmentId?'Loading your allotted examination…':'Checking room and participant access…';
  if(assignmentId){
   if(!uid)throw Error('Please sign in to your approved participant account again.');
@@ -54,6 +88,14 @@ $('joinBtn').onclick=async()=>{try{
  const found=requestedId&&all[requestedId]?[requestedId,all[requestedId]]:Object.entries(all).find(([id,x])=>x?.roomCode===code);
  if(!found)throw Error('The allotted Olympiad test could not be found. Please ask the Host to verify the selected test.');
  [testId,test]=found;
+ if(publicMode){
+  if(test.active===false||test.status==='CLOSED'||test.examStatus==='CLOSED'||test.accessMode==='private'||(test.accessMode&&test.accessMode!=='public'))throw Error('This examination is not published or is no longer available.');
+  className=publicParticipant.className||test.className||'';
+  if(publicParticipant.className&&test.className&&String(publicParticipant.className).trim().toLowerCase()!==String(test.className).trim().toLowerCase())throw Error('This Olympiad is for '+test.className+'. Your saved profile is registered for '+publicParticipant.className+'.');
+  subject=test.subject||'';
+  $('pSubject').value=subject;
+  $('pCode').value='';
+ }
  if(assignment){
   if(assignment.testId!==testId)throw Error('The allotted test ID does not match the examination record.');
   className=test.className||assignment.className||'';
@@ -71,7 +113,7 @@ $('joinBtn').onclick=async()=>{try{
    const scheduledAt=new Date(test.scheduleAt).getTime();
    if(Number.isFinite(scheduledAt)&&Date.now()<scheduledAt)throw Error('This assigned examination is scheduled to open at '+new Date(scheduledAt).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST.');
   }
- } else if(test.status!=='LIVE')throw Error(test.status==='CLOSED'?'This examination is closed.':'The examination has not been started by the administrator.');
+ } else if(!publicMode&&test.status!=='LIVE')throw Error(test.status==='CLOSED'?'This examination is closed.':'The examination has not been started by the administrator.');
  if(!assignmentId&&test.accessMode==='private'){
   const normName=v=>String(v||'').trim().normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase();
   const ok=(test.approvedParticipants||[]).some(p=>cleanMobile(p.mobile)===mobile&&normName(p.name)===normName(name)&&String(p.className||test.className).trim().toLowerCase()===className.trim().toLowerCase());
