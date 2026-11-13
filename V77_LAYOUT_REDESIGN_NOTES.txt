@@ -1,0 +1,14 @@
+V77 – Complete Participant Dashboard Layout Redesign
+
+Major structural CSS reset:
+- Participant dashboard is now a single full-width vertical flow rather than the previous asymmetric two-column grid.
+- Welcome and profile panels are arranged in a balanced two-column row on desktop, with metrics and performance shortcut below.
+- Main workspace containing all tabs spans the full available width.
+- Academic & Olympiad Hub has a full-width hero and a full-width filter row.
+- Study Notes and Olympiad sections use a balanced two-column layout (notes 38%, Olympiad 62%).
+- Private and public access cards use equal columns within the wider Olympiad section.
+- Responsive breakpoints stack content cleanly on tablet and mobile.
+- Existing DOM, links, event handlers, Firebase logic, and data paths are preserved.
+- Script query versions are updated to force browser refresh of existing modules.
+
+This is a layout-only redesign. ZIP integrity and JavaScript source preservation were checked; visual browser/live Firebase testing remains required.
