@@ -28,6 +28,10 @@ body{background:linear-gradient(180deg,#eef4fb 0,#f8fafc 35%,#fff 100%);color:va
 <div class="card" id="adminLoginCard"><h2>Administrator Login</h2><p class="notice">Restricted to the configured Administrator account.</p><div class="row"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password"></div></div><div class="back-row"><button class="success" id="loginBtn">🔐 Sign In as Administrator</button><button class="secondary" id="forgotBtn">Forgot Password?</button><button class="secondary" id="backBtn">← Host Portal</button></div><p id="loginMsg"></p></div>
 <div class="hidden" id="adminApp">
   <div class="admin-hero"><div class="admin-top"><div><h2>Central Examination Administration</h2><p>Manage Host access and supervise examination rooms and externally published results from one secure control centre.</p></div><div class="admin-actions"><button class="secondary" id="refreshBtn">↻ Refresh Dashboard</button><button class="secondary" id="logoutBtn">🚪 Sign Out</button></div></div></div>
+  <div class="card" style="margin:18px 0;border-left:6px solid #0f766e;background:linear-gradient(110deg,#f0fdfa,#ffffff);padding:20px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap">
+    <div><h2 style="margin:0 0 6px;color:#115e59">📈 Website Analytics &amp; User Monitoring</h2><p style="margin:0;color:#475569">Monitor registered participants, signed-in activity, visitor traffic through Google Analytics, and download Excel/PDF reports.</p></div>
+    <button type="button" id="openWebsiteAnalyticsAdminBtn" style="background:#0f766e">Open Website Analytics →</button>
+  </div>
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-label">Pending Hosts</div><div class="stat-value" id="pendingCount">0</div><div class="stat-note">Awaiting approval</div></div>
     <div class="stat-card"><div class="stat-label">Approved Hosts</div><div class="stat-value" id="approvedCount">0</div><div class="stat-note">Authorized to conduct exams</div></div>
