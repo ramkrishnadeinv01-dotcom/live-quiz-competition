@@ -33,8 +33,44 @@ function card(a,latest,done,expired){
  const stateClass=done?"done":expired?"over":"";
  const actions=done?`<button class="at-btn" data-action="reattempt" data-id="${esc(a.id)}">↻ Reattempt Test</button><button class="at-btn danger" data-action="delete" data-id="${esc(a.id)}">Delete Completed Assignment</button>`:(!expired?`<button class="at-btn" data-action="start" data-id="${esc(a.id)}">Start Examination →</button>`:`<span class="at-status over">Deadline passed</span>`);
  const result=latest?(a.category==="olympiad"?`Score: ${Number(latest.score||0).toFixed(2)} · Correct: ${Number(latest.correct||0)} · Wrong: ${Number(latest.wrong||0)} · Unanswered: ${Number(latest.unanswered||0)}`:a.category==="mcq"?`Correct: ${Number(latest.correctCount||0)} · Wrong: ${Number(latest.wrongCount||0)} · Answered: ${Number(latest.answeredCount||0)}`:"Submission recorded."):"";
- return `<article class="at-card"><div class="at-card-head"><h3>${esc(title)}</h3><span class="at-status ${stateClass}">${state}${a.isLatest===false?" · PREVIOUS ALLOTMENT":" · LATEST ALLOTMENT"}</span></div><div class="at-meta">${meta("EXAM CATEGORY",category)}${meta("ROOM CODE",a.roomCode||a.testId)}${meta("ASSIGNED ON",assigned)}${meta("DUE DATE",due)}${meta("CLASS",a.className||"—")}${meta("SUBJECT",a.subject||"—")}</div><div style="color:#cbd9ed;font-size:13px">Assignment ID: ${esc(a.id)}</div>${result?`<div class="at-result">${esc(result)}<br>Submitted: ${latest?.submittedAt?new Date(latest.submittedAt).toLocaleString("en-IN"):"Recorded"}</div>`:""}<div class="at-actions">${actions}</div></article>`;
+ const reviewActions=latest?`<button class="at-btn" data-action="view-result" data-id="${esc(a.id)}">📋 View Detailed Result</button><button class="at-btn secondary" data-action="download-result" data-id="${esc(a.id)}">⬇ Download Result PDF</button>`:"";
+ return `<article class="at-card"><div class="at-card-head"><h3>${esc(title)}</h3><span class="at-status ${stateClass}">${state}${a.isLatest===false?" · PREVIOUS ALLOTMENT":" · LATEST ALLOTMENT"}</span></div><div class="at-meta">${meta("EXAM CATEGORY",category)}${meta("ROOM CODE",a.roomCode||a.testId)}${meta("ASSIGNED ON",assigned)}${meta("DUE DATE",due)}${meta("CLASS",a.className||"—")}${meta("SUBJECT",a.subject||"—")}</div><div style="color:#cbd9ed;font-size:13px">Assignment ID: ${esc(a.id)}</div>${result?`<div class="at-result">${esc(result)}<br>Submitted: ${latest?.submittedAt?new Date(latest.submittedAt).toLocaleString("en-IN"):"Recorded"}</div>`:""}<div class="at-actions">${reviewActions}${actions}</div><div class="at-detail" id="detail-${esc(a.id)}"></div></article>`;
 }
+
+async function getQuestionReview(a,attempt){
+ let questions=[];
+ if(a.category==="olympiad"){
+  const snap=await get(ref(db,`academicOlympiadTests/${a.testId}`));
+  questions=Array.isArray(snap.val()?.questions)?snap.val().questions:[];
+  return questions.map((q,i)=>{const chosen=String(attempt.answers?.[String(i)]||"").toUpperCase(),key=String(q.correct||"").toUpperCase(),opt=k=>k?`${k}. ${q.options?.[k]||""}`:"Not answered";return{number:i+1,question:q.question||`Question ${i+1}`,your:opt(chosen),correct:opt(key),status:!chosen?"Unanswered":chosen===key?"Correct":"Wrong"};});
+ }
+ if(a.category==="mcq"){
+  const snap=await get(ref(db,`rooms/${a.testId}`)),room=snap.val()||{},raw=room.mcqQuestions||{};
+  const entries=Array.isArray(raw)?raw.map((q,i)=>[`q${i+1}`,q]):Object.entries(raw);
+  entries.sort((x,y)=>Number((String(x[0]).match(/\d+/)||[0])[0])-Number((String(y[0]).match(/\d+/)||[0])[0]));
+  return entries.map(([id,q],i)=>{const key=String(q.correct||q.answer||"").toUpperCase(),chosen=String(attempt.answers?.[id]||"").toUpperCase(),opts=q.options||{},getOpt=k=>opts[k]??opts[k.toLowerCase()]??q[`option${k}`]??q[`Option${k}`]??"",opt=k=>k?`${k}. ${getOpt(k)}`:"Not answered";return{number:i+1,question:q.text||q.question||`Question ${i+1}`,your:opt(chosen),correct:opt(key),status:!chosen?"Unanswered":key?(chosen===key?"Correct":"Wrong"):"Answer key unavailable"};});
+ }
+ if(a.category==="general"){
+  const snap=await get(ref(db,`rooms/${a.testId}`)),raw=snap.val()?.generalQuestions||{};
+  const entries=Array.isArray(raw)?raw.map((q,i)=>[`q${i+1}`,q]):Object.entries(raw);
+  return entries.map(([id,q],i)=>({number:i+1,question:q.text||q.question||`Question ${i+1}`,your:String(attempt.answers?.[id]||"Not answered"),correct:"Not applicable — descriptive answer",status:"Submitted"}));
+ }
+ return [];
+}
+function resultMarkup(rows){return `<div class="at-review-list">${rows.map(r=>`<div class="at-review-row"><div><b>Question ${r.number} · ${esc(r.status)}</b><p>${esc(r.question)}</p><p><strong>Your answer:</strong> ${esc(r.your)}</p><p><strong>Correct answer:</strong> ${esc(r.correct)}</p></div></div>`).join("")||'<p>Question-wise review is not available for this examination.</p>'}</div>`;}
+async function downloadResultPdf(a,attempt,rows){
+ const JsPDF=window.jspdf?.jsPDF;if(!JsPDF){alert("PDF generator is not available. Please refresh the page and try again.");return;}
+ const doc=new JsPDF({unit:"mm",format:"a4"}),W=210,L=15,CW=180;let y=18;
+ const txt=(v,x,yy,size=9,style="normal")=>{doc.setFont("helvetica",style);doc.setFontSize(size);doc.text(doc.splitTextToSize(String(v??""),CW-8),x,yy);};
+ doc.setFillColor(12,37,72);doc.rect(0,0,W,38,"F");doc.setTextColor(255,226,160);doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("WORLD OF EXAM",L,16);doc.setFontSize(13);doc.text("DETAILED EXAMINATION RESULT",L,27);
+ doc.setTextColor(25,40,65);y=49;txt(`Participant: ${profile?.name||"Participant"}`,L,y,10,"bold");y+=7;txt(`Examination: ${a.testTitle||"Examination"}`,L,y,10,"bold");y+=7;txt(`Subject: ${a.subject||"Other Tests"}   |   Category: ${String(a.category||"").toUpperCase()}`,L,y);y+=7;txt(`Submitted: ${attempt.submittedAt?new Date(attempt.submittedAt).toLocaleString("en-IN"):"Recorded"}`,L,y);y+=9;
+ const score=a.category==="olympiad"?`Score: ${Number(attempt.score||0).toFixed(2)} | Correct: ${attempt.correct||0} | Wrong: ${attempt.wrong||0} | Unanswered: ${attempt.unanswered||0}`:a.category==="mcq"?`Correct: ${attempt.correctCount||0} | Wrong: ${attempt.wrongCount||0} | Answered: ${attempt.answeredCount||0}`:"Submission recorded";
+ doc.setFillColor(238,243,250);doc.roundedRect(L,y,CW,13,2,2,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(score,L+4,y+8);y+=21;
+ rows.forEach(r=>{const lines=doc.splitTextToSize(`${r.number}. ${r.question}`,CW-10),your=doc.splitTextToSize(`Your answer: ${r.your}`,CW-10),correct=doc.splitTextToSize(`Correct answer: ${r.correct}`,CW-10);const h=8+(lines.length+your.length+correct.length)*4+4;if(y+h>280){doc.addPage();y=18;}doc.setDrawColor(210,220,233);doc.setFillColor(r.status==="Wrong"?[255,240,241]:r.status==="Correct"?[235,248,241]:[245,247,250]);doc.roundedRect(L,y,CW,h,2,2,"FD");doc.setTextColor(r.status==="Wrong"?175: r.status==="Correct"?20:70,r.status==="Wrong"?45:100,r.status==="Wrong"?55:75);doc.setFont("helvetica","bold");doc.setFontSize(8);doc.text(String(r.status).toUpperCase(),W-L-4,y+6,{align:"right"});doc.setTextColor(25,40,65);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(lines,L+4,y+7);let yy=y+7+lines.length*4;doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(your,L+4,yy);yy+=your.length*4;doc.text(correct,L+4,yy);y+=h+3;});
+ const safe=(a.testTitle||"Examination").replace(/[^a-z0-9_-]+/gi,"_");doc.save(`${safe}_Detailed_Result.pdf`);
+}
+async function handleResultAction(btn){const a=assignments.find(x=>x.id===btn.dataset.id);if(!a)return;const attempt=await latestAttempt(a);if(!attempt){alert("The saved submission could not be found.");return;}try{btn.disabled=true;btn.textContent="Loading result…";const rows=await getQuestionReview(a,attempt);if(btn.dataset.action==="view-result"){const target=$(`detail-${a.id}`);target.innerHTML=resultMarkup(rows);target.scrollIntoView({behavior:"smooth",block:"nearest"});}else await downloadResultPdf(a,attempt,rows);}catch(e){console.error(e);alert("Unable to load detailed result: "+(e.message||e));}finally{btn.disabled=false;btn.textContent=btn.dataset.action==="view-result"?"📋 View Detailed Result":"⬇ Download Result PDF";}}
+
 async function loadAssignments(){
  if(!uid)return;
  status("Loading your assignments and examination history…");
@@ -61,6 +97,7 @@ async function loadAssignments(){
   $("resultCount").textContent=`${results.length} result record(s) available`;
   document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",async()=>{
    const a=assignments.find(x=>x.id===btn.dataset.id);if(!a)return;
+   if(btn.dataset.action==="view-result"||btn.dataset.action==="download-result"){await handleResultAction(btn);return;}
    if(btn.dataset.action==="start"||btn.dataset.action==="reattempt"){startExam(a);return;}
    if(btn.dataset.action==="delete"){
     const latest=await latestAttempt(a);if(!latest&&a.status!=="SUBMITTED"){alert("Only a completed assignment can be deleted.");return;}

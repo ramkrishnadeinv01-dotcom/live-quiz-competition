@@ -1,0 +1,11 @@
+V68 - DETAILED ALLOTTED EXAMINATION RESULTS
+
+Changes:
+1. Added View Detailed Result and Download Result PDF actions to submitted allotted examination cards.
+2. Olympiad review displays each question, participant answer, correct answer, and correct/wrong/unanswered status.
+3. MCQ review loads the saved room question paper and saved participant answers, then displays answer-key comparison where the answer key exists.
+4. General/descriptive examinations show submitted responses in the review/PDF; no automatic correct/wrong judgement is claimed because these answers are not objectively graded by the portal.
+5. Added jsPDF library to the allotted-tests page for participant-side PDF export.
+6. Improved result-card heading wrapping to avoid excessively narrow titles.
+
+No Firebase rules changes are required. Existing assignments and attempt records are read only.
