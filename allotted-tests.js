@@ -4,7 +4,7 @@ import { getDatabase,ref,get,set,update } from "https://www.gstatic.com/firebase
 import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const $=id=>document.getElementById(id);
-let profile=null,uid=null,assignments=[];
+let profile=null,uid=null,assignments=[],pendingEntries=[];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function status(t){$("pageStatus").textContent=t;}
 function showSection(which){["pending","completed","results"].forEach(k=>{$(k+"Section").classList.toggle("at-hidden",k!==which);document.querySelector(`[data-section="${k}"]`).classList.toggle("active",k===which);});}
@@ -46,9 +46,14 @@ async function loadAssignments(){
   for(const a of assignments){
    const latest=await latestAttempt(a),done=!!latest||a.status==="SUBMITTED",expired=!!(a.dueAt&&Date.now()>a.dueAt);
    const html=card(a,latest,done,expired);
-   if(done){completed.push(html);results.push(html);}else pending.push(html);
+   if(done){completed.push(html);results.push(html);}else pending.push({html,a});
   }
-  $("pendingList").innerHTML=pending.join("")||'<div class="at-empty">You have no pending allotted examinations.</div>';
+  pendingEntries=pending;
+  const pendingSubjectFilter=$("pendingSubjectFilter");
+  const pendingSubjects=[...new Set(pendingEntries.map(x=>String(x.a?.subject||"").trim()||"Other Tests"))].sort((a,b)=>a.localeCompare(b));
+  if(pendingSubjectFilter){const previous=pendingSubjectFilter.value;pendingSubjectFilter.innerHTML='<option value="">All Subjects</option>'+pendingSubjects.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");pendingSubjectFilter.value=pendingSubjects.includes(previous)?previous:"";}
+  const renderPendingBySubject=()=>{const selected=pendingSubjectFilter?.value||"";const filtered=pendingEntries.filter(x=>!selected||(String(x.a?.subject||"").trim()||"Other Tests")===selected);$("pendingList").innerHTML=filtered.map(x=>x.html).join("")||'<div class="at-empty">No pending examinations under this subject.</div>';};
+  if(pendingSubjectFilter)pendingSubjectFilter.onchange=renderPendingBySubject;renderPendingBySubject();
   $("completedList").innerHTML=completed.join("")||'<div class="at-empty">No completed examinations yet.</div>';
   $("resultsList").innerHTML=results.join("")||'<div class="at-empty">Your submitted results will appear here after you complete an allotted test.</div>';
   $("pendingCount").textContent=`${pending.length} examination(s) awaiting submission`;
