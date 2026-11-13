@@ -1,0 +1,17 @@
+WORLD OF EXAM – V70 CHANGE NOTES
+
+1. Detailed Result popup
+- View Detailed Result now opens a centred modal dialog instead of inserting the long review into the assignment card.
+- The modal has its own vertical scrolling area.
+- Close button, backdrop click, and Escape key close the dialog.
+- Closing restores the participant to the underlying page without changing result data.
+
+2. Downloaded detailed result PDF
+- Status label is placed on its own header line rather than sharing the question text line.
+- Question, participant answer, and correct answer are measured and wrapped separately.
+- Card height is calculated from the wrapped line counts with additional vertical spacing.
+- Page breaks are checked against the calculated card height.
+
+Scope:
+- Changes are limited to allotted-tests.html and allotted-tests.js, plus this note.
+- No Firebase rules, database paths, result calculations, or saved participant records were changed.

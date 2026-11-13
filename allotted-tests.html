@@ -36,6 +36,29 @@ body{margin:0;background:radial-gradient(circle at 12% 0%,#173d72 0,#081d3c 42%,
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-R996T43PXM',{send_page_view:true});</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>.at-card-head h3{flex:1;min-width:0;overflow-wrap:anywhere}.at-review-list{margin-top:14px;display:grid;gap:9px}.at-review-row{padding:12px;border-radius:10px;background:#ffffff0b;border:1px solid #ffffff24;color:#eaf1ff}.at-review-row b{color:#ffe2a0}.at-review-row p{margin:7px 0;line-height:1.5;overflow-wrap:anywhere}.at-review-row p:last-child{margin-bottom:0}</style>
+
+<style id="v70-result-modal-styles">
+body.at-modal-open{overflow:hidden}
+.at-result-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(2,10,25,.78);backdrop-filter:blur(5px)}
+.at-result-modal.open{display:flex}
+.at-result-dialog{width:min(900px,100%);max-height:min(88vh,900px);display:flex;flex-direction:column;background:#f8fbff;color:#102344;border:2px solid #d9b65b;border-radius:18px;box-shadow:0 24px 80px #0008;overflow:hidden}
+.at-result-modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;background:linear-gradient(120deg,#102b50,#071a35);color:#ffe2a0;flex-shrink:0}
+.at-result-modal-head h2{margin:0;font-size:clamp(17px,2.5vw,22px)}
+.at-result-close{border:1px solid #e9bd58;background:#ffe2a0;color:#102344;border-radius:9px;padding:8px 13px;font-weight:900;font-size:15px;cursor:pointer}
+.at-result-modal-body{overflow-y:auto;overscroll-behavior:contain;padding:16px 20px 22px;min-height:0}
+.at-review-list{display:grid;gap:12px}
+.at-review-row{padding:14px;border-radius:11px;background:#fff;border:1px solid #d8e2ef;border-left:5px solid #64748b;color:#102344;min-width:0}
+.at-review-row:has(.at-review-status.correct){border-left-color:#16a34a}
+.at-review-row:has(.at-review-status.wrong){border-left-color:#dc2626}
+.at-review-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.at-review-head b{color:#102344}
+.at-review-status{display:inline-block;padding:4px 9px;border-radius:20px;background:#e8edf4;color:#334155;font-size:11px;font-weight:900}
+.at-review-status.correct{background:#dcfce7;color:#166534}.at-review-status.wrong{background:#fee2e2;color:#991b1b}
+.at-review-row p{margin:7px 0;line-height:1.55;overflow-wrap:anywhere;word-break:normal}
+.at-review-question{font-weight:800;color:#102344}
+@media(max-width:600px){.at-result-modal{padding:8px}.at-result-dialog{max-height:94vh;border-radius:13px}.at-result-modal-head{padding:12px 14px}.at-result-modal-body{padding:12px}.at-review-row{padding:11px}}
+</style>
+
 </head>
 <body>
 <div class="at-wrap">
@@ -51,6 +74,14 @@ body{margin:0;background:radial-gradient(circle at 12% 0%,#173d72 0,#081d3c 42%,
 <section class="at-section at-hidden" id="resultsSection"><h2>Results of Allotted Tests</h2><p class="at-desc">Review scores and submission details for your allotted examinations.</p><div class="at-list" id="resultsList"><div class="at-empty">No results loaded yet.</div></div></section>
 <div id="pageStatus" class="at-message" style="margin-top:16px" aria-live="polite">Connecting securely…</div>
 </div>
+
+<div class="at-result-modal" id="resultModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
+ <section class="at-result-dialog">
+  <header class="at-result-modal-head"><h2 id="resultModalTitle">📋 Detailed Examination Result</h2><button class="at-result-close" id="closeResultModal" type="button" aria-label="Close detailed result">✕ Close</button></header>
+  <div class="at-result-modal-body" id="resultModalBody"><p>Loading detailed result…</p></div>
+ </section>
+</div>
+
 <script type="module" src="allotted-tests.js"></script>
 
 <script type="module" src="website-analytics-tracker.js?v=65"></script>

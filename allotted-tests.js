@@ -9,6 +9,10 @@ const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function status(t){$("pageStatus").textContent=t;}
 function showSection(which){["pending","completed","results"].forEach(k=>{$(k+"Section").classList.toggle("at-hidden",k!==which);document.querySelector(`[data-section="${k}"]`).classList.toggle("active",k===which);});}
 document.querySelectorAll(".at-tab").forEach(b=>b.addEventListener("click",()=>showSection(b.dataset.section)));
+$("closeResultModal")?.addEventListener("click",closeResultModal);
+$("resultModal")?.addEventListener("click",e=>{if(e.target===$("resultModal"))closeResultModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("resultModal")?.classList.contains("open"))closeResultModal();});
+
 $("backBtn").onclick=()=>location.href="student.html";
 $("refreshBtn").onclick=()=>loadAssignments();
 $("logoutBtn").onclick=async()=>{if(!confirm("Log out of your participant account? Your profile and examination history will remain saved."))return;await signOut(auth);location.href="student.html";};
@@ -57,19 +61,58 @@ async function getQuestionReview(a,attempt){
  }
  return [];
 }
-function resultMarkup(rows){return `<div class="at-review-list">${rows.map(r=>`<div class="at-review-row"><div><b>Question ${r.number} · ${esc(r.status)}</b><p>${esc(r.question)}</p><p><strong>Your answer:</strong> ${esc(r.your)}</p><p><strong>Correct answer:</strong> ${esc(r.correct)}</p></div></div>`).join("")||'<p>Question-wise review is not available for this examination.</p>'}</div>`;}
+function resultMarkup(rows){return `<div class="at-review-list">${rows.map(r=>`<article class="at-review-row"><div class="at-review-head"><b>Question ${r.number}</b><span class="at-review-status ${String(r.status).toLowerCase()}">${esc(r.status)}</span></div><p class="at-review-question">${esc(r.question)}</p><p><strong>Your answer:</strong> ${esc(r.your)}</p><p><strong>Correct answer:</strong> ${esc(r.correct)}</p></article>`).join("")||'<p>Question-wise review is not available for this examination.</p>'}</div>`;}
+function closeResultModal(){
+ const modal=$("resultModal");if(modal){modal.classList.remove("open");modal.setAttribute("aria-hidden","true");}
+ document.body.classList.remove("at-modal-open");
+}
+function openResultModal(rows){
+ const modal=$("resultModal"),body=$("resultModalBody");
+ if(!modal||!body){alert("Result viewer is unavailable. Please refresh the page.");return;}
+ body.innerHTML=resultMarkup(rows);
+ modal.classList.add("open");modal.setAttribute("aria-hidden","false");document.body.classList.add("at-modal-open");
+ $("closeResultModal")?.focus();
+}
 async function downloadResultPdf(a,attempt,rows){
  const JsPDF=window.jspdf?.jsPDF;if(!JsPDF){alert("PDF generator is not available. Please refresh the page and try again.");return;}
- const doc=new JsPDF({unit:"mm",format:"a4"}),W=210,L=15,CW=180;let y=18;
- const txt=(v,x,yy,size=9,style="normal")=>{doc.setFont("helvetica",style);doc.setFontSize(size);doc.text(doc.splitTextToSize(String(v??""),CW-8),x,yy);};
- doc.setFillColor(12,37,72);doc.rect(0,0,W,38,"F");doc.setTextColor(255,226,160);doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("WORLD OF EXAM",L,16);doc.setFontSize(13);doc.text("DETAILED EXAMINATION RESULT",L,27);
- doc.setTextColor(25,40,65);y=49;txt(`Participant: ${profile?.name||"Participant"}`,L,y,10,"bold");y+=7;txt(`Examination: ${a.testTitle||"Examination"}`,L,y,10,"bold");y+=7;txt(`Subject: ${a.subject||"Other Tests"}   |   Category: ${String(a.category||"").toUpperCase()}`,L,y);y+=7;txt(`Submitted: ${attempt.submittedAt?new Date(attempt.submittedAt).toLocaleString("en-IN"):"Recorded"}`,L,y);y+=9;
+ const doc=new JsPDF({unit:"mm",format:"a4"}),W=210,L=15,CW=180,R=L+CW,contentX=L+4,contentW=CW-8;
+ const pageBottom=282,lineH=4.8;let y=18;
+ const addHeader=()=>{doc.setFillColor(12,37,72);doc.rect(0,0,W,38,"F");doc.setTextColor(255,226,160);doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("WORLD OF EXAM",L,16);doc.setFontSize(13);doc.text("DETAILED EXAMINATION RESULT",L,27);};
+ const ensureSpace=h=>{if(y+h>pageBottom){doc.addPage();y=18;}};
+ const addInfo=(label,value,size=9)=>{doc.setFont("helvetica","normal");doc.setFontSize(size);const lines=doc.splitTextToSize(`${label}${value}`,contentW);const h=Math.max(lineH,lines.length*lineH);ensureSpace(h+1);doc.setTextColor(25,40,65);doc.text(lines,contentX,y);y+=h+1;};
+ addHeader();doc.setTextColor(25,40,65);y=49;
+ addInfo("Participant: ",profile?.name||"Participant",10);
+ addInfo("Examination: ",a.testTitle||"Examination",10);
+ addInfo("Subject: ",a.subject||"Other Tests");
+ addInfo("Category: ",String(a.category||"").toUpperCase());
+ addInfo("Submitted: ",attempt.submittedAt?new Date(attempt.submittedAt).toLocaleString("en-IN"):"Recorded");
  const score=a.category==="olympiad"?`Score: ${Number(attempt.score||0).toFixed(2)} | Correct: ${attempt.correct||0} | Wrong: ${attempt.wrong||0} | Unanswered: ${attempt.unanswered||0}`:a.category==="mcq"?`Correct: ${attempt.correctCount||0} | Wrong: ${attempt.wrongCount||0} | Answered: ${attempt.answeredCount||0}`:"Submission recorded";
- doc.setFillColor(238,243,250);doc.roundedRect(L,y,CW,13,2,2,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(score,L+4,y+8);y+=21;
- rows.forEach(r=>{const lines=doc.splitTextToSize(`${r.number}. ${r.question}`,CW-10),your=doc.splitTextToSize(`Your answer: ${r.your}`,CW-10),correct=doc.splitTextToSize(`Correct answer: ${r.correct}`,CW-10);const h=8+(lines.length+your.length+correct.length)*4+4;if(y+h>280){doc.addPage();y=18;}doc.setDrawColor(210,220,233);const fill=r.status==="Wrong"?[255,240,241]:r.status==="Correct"?[235,248,241]:[245,247,250];doc.setFillColor(fill[0],fill[1],fill[2]);doc.roundedRect(L,y,CW,h,2,2,"FD");doc.setTextColor(r.status==="Wrong"?175: r.status==="Correct"?20:70,r.status==="Wrong"?45:100,r.status==="Wrong"?55:75);doc.setFont("helvetica","bold");doc.setFontSize(8);doc.text(String(r.status).toUpperCase(),W-L-4,y+6,{align:"right"});doc.setTextColor(25,40,65);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(lines,L+4,y+7);let yy=y+7+lines.length*4;doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(your,L+4,yy);yy+=your.length*4;doc.text(correct,L+4,yy);y+=h+3;});
+ const scoreLines=doc.splitTextToSize(score,contentW);const scoreH=Math.max(13,scoreLines.length*lineH+6);ensureSpace(scoreH+6);
+ doc.setFillColor(238,243,250);doc.roundedRect(L,y,CW,scoreH,2,2,"F");doc.setTextColor(25,40,65);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(scoreLines,contentX,y+6);y+=scoreH+8;
+ rows.forEach(r=>{
+  doc.setFont("helvetica","bold");doc.setFontSize(9);
+  const qLines=doc.splitTextToSize(`${r.number}. ${r.question}`,contentW);
+  doc.setFont("helvetica","normal");doc.setFontSize(8.5);
+  const yourLines=doc.splitTextToSize(`Your answer: ${r.your}`,contentW);
+  const correctLines=doc.splitTextToSize(`Correct answer: ${r.correct}`,contentW);
+  const statusH=6,qH=qLines.length*lineH,yourH=yourLines.length*lineH,correctH=correctLines.length*lineH;
+  const h=5+statusH+qH+3+yourH+2+correctH+5;
+  ensureSpace(h+3);
+  doc.setDrawColor(210,220,233);
+  const fill=r.status==="Wrong"?[255,240,241]:r.status==="Correct"?[235,248,241]:[245,247,250];
+  doc.setFillColor(fill[0],fill[1],fill[2]);doc.roundedRect(L,y,CW,h,2,2,"FD");
+  doc.setFont("helvetica","bold");doc.setFontSize(8);
+  doc.setTextColor(r.status==="Wrong"?175:r.status==="Correct"?20:70,r.status==="Wrong"?45:100,r.status==="Wrong"?55:75);
+  doc.text(String(r.status).toUpperCase(),R-4,y+6,{align:"right"});
+  let yy=y+5+statusH;
+  doc.setTextColor(25,40,65);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(qLines,contentX,yy);yy+=qH+3;
+  doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.text(yourLines,contentX,yy);yy+=yourH+2;
+  doc.text(correctLines,contentX,yy);
+  y+=h+3;
+ });
  const safe=(a.testTitle||"Examination").replace(/[^a-z0-9_-]+/gi,"_");doc.save(`${safe}_Detailed_Result.pdf`);
 }
-async function handleResultAction(btn){const a=assignments.find(x=>x.id===btn.dataset.id);if(!a)return;const attempt=await latestAttempt(a);if(!attempt){alert("The saved submission could not be found.");return;}try{btn.disabled=true;btn.textContent="Loading result…";const rows=await getQuestionReview(a,attempt);if(btn.dataset.action==="view-result"){const target=$(`detail-${a.id}`);target.innerHTML=resultMarkup(rows);target.scrollIntoView({behavior:"smooth",block:"nearest"});}else await downloadResultPdf(a,attempt,rows);}catch(e){console.error(e);alert("Unable to load detailed result: "+(e.message||e));}finally{btn.disabled=false;btn.textContent=btn.dataset.action==="view-result"?"📋 View Detailed Result":"⬇ Download Result PDF";}}
+async function handleResultAction(btn){const a=assignments.find(x=>x.id===btn.dataset.id);if(!a)return;const attempt=await latestAttempt(a);if(!attempt){alert("The saved submission could not be found.");return;}try{btn.disabled=true;btn.textContent="Loading result…";const rows=await getQuestionReview(a,attempt);if(btn.dataset.action==="view-result"){openResultModal(rows);}else await downloadResultPdf(a,attempt,rows);}catch(e){console.error(e);alert("Unable to load detailed result: "+(e.message||e));}finally{btn.disabled=false;btn.textContent=btn.dataset.action==="view-result"?"📋 View Detailed Result":"⬇ Download Result PDF";}}
 
 async function loadAssignments(){
  if(!uid)return;
