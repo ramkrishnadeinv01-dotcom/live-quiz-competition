@@ -1,0 +1,12 @@
+V71 - HOST TEST ASSIGNMENT RESULT MANAGER
+
+Enhancements:
+1. Host Test Assignment page now provides participant and subject filters.
+2. Added All / Pending / Completed assignment status selector.
+3. Submission status is checked against the participant's saved allotted-exam attempt records.
+4. Completed assignments expose View Detailed Result in a scrollable modal with a Close control.
+5. Completed assignments expose Download PDF with wrapped question/answer text and dynamically sized question blocks.
+6. Pending assignments remain visible with an Awaiting submission status and no result actions.
+7. Existing assignment creation, re-allotment, archive, Firebase paths and participant-side result history are retained.
+
+Deployment: Replace the repository contents with this package. Test with one pending assignment and one completed assignment from each category (Olympiad, MCQ, General). Confirm participant directory records have phone/mobile values for MCQ and General assignment attempt lookup.

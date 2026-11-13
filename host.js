@@ -762,6 +762,43 @@ onAuthStateChanged(auth,async user=>{
 
 // Individual examination allotments (v40)
 const allotEsc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+async function hostLatestAssignmentAttempt(a){
+ try{
+  if(a.category==="olympiad"){
+   const snap=await get(ref(db,`academicOlympiadAttempts/${a.testId}/${a.studentId}`)),v=snap.val()||{};
+   const arr=v.status?[v]:Object.values(v).filter(x=>x&&typeof x==="object");
+   return arr.filter(x=>x.status==="SUBMITTED"&&(x.assignmentId===a.id||(!x.assignmentId&&Number(a.generation||1)===1))).sort((x,y)=>(Number(y.submittedAt)||0)-(Number(x.submittedAt)||0))[0]||null;
+  }
+  const person=window.hostAllotmentDirectory?.[a.studentId]||{};const phone=String(person.phone||person.mobile||a.participantPhone||"").replace(/\D/g,"");if(!phone)return null;
+  const node=a.category==="mcq"?"mcqAnswers":"generalAnswers";const snap=await get(ref(db,`rooms/${a.testId}/${node}/${phone}`));const v=snap.val();return snap.exists()&&Number(v?.submittedAt||0)>=Number(a.assignedAt||0)?v:null;
+ }catch(e){console.warn("Assignment attempt lookup failed",a.id,e);return null;}
+}
+async function renderHostAllotments(){
+ const tbody=$("hostAllotmentRows");if(!tbody)return;const all=window.hostAllotmentRows||[];tbody.innerHTML='<tr><td colspan="7">Checking submission status…</td></tr>';
+ const filtered=all.filter(a=>(!$("hostAssignmentParticipant")?.value||a.studentId===$("hostAssignmentParticipant").value)&&(!$("hostAssignmentSubject")?.value||(a.subject||"Other Tests")===$("hostAssignmentSubject").value));
+ const records=await Promise.all(filtered.map(async a=>({...a,attempt:await hostLatestAssignmentAttempt(a)})));
+ const mode=$("hostAssignmentStatus")?.value||"ALL";const shown=records.filter(a=>mode==="ALL"||(mode==="COMPLETED"?!!a.attempt:!a.attempt));
+ tbody.innerHTML=shown.length?shown.map(a=>`<tr><td>${allotEsc(a.testTitle)}</td><td>${allotEsc(a.subject||"Other Tests")}</td><td>${allotEsc(a.participantName||a.participantEmail)}</td><td>${allotEsc(a.category)}</td><td>${a.dueAt?new Date(a.dueAt).toLocaleString("en-IN"):"—"}</td><td><span class="pill">${a.attempt?"COMPLETED":"PENDING"}</span></td><td>${a.attempt?`<button type="button" class="btn secondary" data-host-assignment-view="${allotEsc(a.id)}">View Detailed Result</button><button type="button" class="btn" data-host-assignment-pdf="${allotEsc(a.id)}">Download PDF</button>`:`<span>Awaiting submission</span>`} <button type="button" class="danger deleteHostAllotmentBtn" data-student="${allotEsc(a.studentId)}" data-id="${allotEsc(a.id)}">Archive</button></td></tr>`).join(""):'<tr><td colspan="7">No assignments match the selected filters.</td></tr>';
+ window.hostAllotmentRecords=records;
+}
+async function hostAssignmentReview(a,attempt){
+ let qs=[];
+ if(a.category==="olympiad"){const s=await get(ref(db,`academicOlympiadTests/${a.testId}`));qs=Array.isArray(s.val()?.questions)?s.val().questions:[];}
+ else if(a.category==="mcq"){const s=await get(ref(db,`rooms/${a.testId}/mcqQuestions`));const raw=s.val()||{};qs=Array.isArray(raw)?raw:Object.values(raw);}
+ else {const s=await get(ref(db,`rooms/${a.testId}/generalQuestions`));const raw=s.val()||{};qs=Array.isArray(raw)?raw:Object.values(raw);}
+ return qs.map((q,i)=>{const chosen=attempt.answers?.[String(i)]??attempt.answers?.[`q${i+1}`]??"";const key=String(q.correct||q.answer||"").toUpperCase();const opts=q.options||{};const opt=v=>{const k=String(v||"").toUpperCase();return k&&opts[k]?`${k}. ${opts[k]}`:String(v||"Not answered")};return{n:i+1,q:q.question||q.text||`Question ${i+1}`,your:opt(chosen),correct:a.category==="general"?"Not applicable — descriptive response":opt(key),status:a.category==="general"?"Submitted":!chosen?"Unanswered":!key?"Answer key unavailable":String(chosen).toUpperCase()===key?"Correct":"Wrong"};});
+}
+async function showHostAssignmentResult(id,download=false){
+ const a=(window.hostAllotmentRecords||[]).find(x=>x.id===id);if(!a?.attempt)return alert("No submitted result is available for this assignment.");
+ const rows=await hostAssignmentReview(a,a.attempt);const person=window.hostAllotmentDirectory?.[a.studentId]||{};
+ if(download){const J=window.jspdf?.jsPDF;if(!J)return alert("PDF generator is unavailable. Refresh and try again.");const d=new J({unit:"mm",format:"a4"});let y=18;const left=15,width=180;d.setFont("helvetica","bold");d.setFontSize(17);d.text("WORLD OF EXAM — DETAILED RESULT",left,y);y+=10;d.setFontSize(10);d.text(`Participant: ${a.participantName||person.name||"Participant"}`,left,y);y+=6;d.text(`Subject: ${a.subject||"—"} | Examination: ${a.testTitle||"—"}`,left,y);y+=6;d.text(`Submitted: ${a.attempt.submittedAt?new Date(a.attempt.submittedAt).toLocaleString("en-IN"):"Recorded"}`,left,y);y+=9;rows.forEach(r=>{const parts=[`${r.n}. ${r.q}`,`Your answer: ${r.your}`,`Correct answer: ${r.correct}`,`Status: ${r.status}`];const wrapped=parts.flatMap(t=>d.splitTextToSize(t,width-10));const h=wrapped.length*5+8;if(y+h>280){d.addPage();y=18;}d.setDrawColor(205,218,235);d.roundedRect(left,y,width,h,2,2,"S");d.setFontSize(9);d.setTextColor(25,45,75);let yy=y+6;wrapped.forEach((line,i)=>{d.setFont("helvetica",i===0?"bold":"normal");d.text(line,left+4,yy);yy+=5;});y+=h+3;});d.save(`${String(a.testTitle||"Assignment_Result").replace(/[^a-z0-9_-]/gi,"_")}_Result.pdf`);return;}
+ $("hostAssignmentDetailTitle").textContent=`${a.participantName||person.name||"Participant"} — ${a.subject||"Subject"} — Detailed Result`;
+ $("hostAssignmentDetailBody").innerHTML=`<p><b>Examination:</b> ${allotEsc(a.testTitle)} &nbsp; <b>Category:</b> ${allotEsc(a.category)} &nbsp; <b>Submitted:</b> ${a.attempt.submittedAt?new Date(a.attempt.submittedAt).toLocaleString("en-IN"):"Recorded"}</p>${rows.map(r=>`<article class="host-assignment-q"><b>Question ${r.n} · ${allotEsc(r.status)}</b><p>${allotEsc(r.q)}</p><p><b>Participant answer:</b> ${allotEsc(r.your)}</p><p><b>Correct answer:</b> ${allotEsc(r.correct)}</p></article>`).join("")||"<p>Question-wise detail is not available.</p>"}`;
+ $("hostAssignmentDetailModal").classList.add("open");
+}
+$("hostAllotmentRows")?.addEventListener("click",e=>{const v=e.target.closest("[data-host-assignment-view]"),p=e.target.closest("[data-host-assignment-pdf]");if(v)showHostAssignmentResult(v.dataset.hostAssignmentView,false);if(p)showHostAssignmentResult(p.dataset.hostAssignmentPdf,true);});
+$("hostAssignmentCloseDetail")?.addEventListener("click",()=>$("hostAssignmentDetailModal")?.classList.remove("open"));
+$("hostAssignmentDetailModal")?.addEventListener("click",e=>{if(e.target.id==="hostAssignmentDetailModal")e.currentTarget.classList.remove("open");});
 async function refreshAllotmentLists(){
  if(!isApproved()&&!isAdmin())return;
  const msgEl=$("allotmentMsg"),cat=$("allotCategory"),testSel=$("allotTest"),partSel=$("allotParticipant");
@@ -774,8 +811,18 @@ async function refreshAllotmentLists(){
    const subjects=[...new Set(availableTests.map(t=>t.subject))].sort((a,b)=>a.localeCompare(b));subjectSel.innerHTML='<option value="">Select a subject</option>'+subjects.map(x=>`<option value="${allotEsc(x)}">${allotEsc(x)}</option>`).join("");testSel.disabled=true;testSel.innerHTML='<option value="">First select a subject</option>';};
   const renderSubjectTests=()=>{const chosen=subjectSel.value,arr=availableTests.filter(t=>t.subject===chosen);testSel.disabled=!chosen;testSel.innerHTML=chosen?'<option value="">Select an examination</option>'+arr.map(t=>`<option value="${allotEsc(t.id)}" data-title="${allotEsc(t.title)}">${allotEsc(t.title)} — ${allotEsc(t.meta)}</option>`).join(""):'<option value="">First select a subject</option>';};
   renderTests();cat.onchange=renderTests;subjectSel.onchange=renderSubjectTests;
-  const ownSnap=await get(ref(db,"testAssignments"));let rows=[];Object.entries(ownSnap.val()||{}).forEach(([studentId,items])=>Object.entries(items||{}).forEach(([id,a])=>{if(a&&a.assignedBy===uid)rows.push({...a,studentId,id});}));
-  $("hostAllotmentRows").innerHTML=rows.length?rows.map(a=>`<tr><td>${allotEsc(a.testTitle)}</td><td>${allotEsc(a.category)}</td><td>${allotEsc(a.participantName||a.participantEmail)}</td><td>${a.dueAt?new Date(a.dueAt).toLocaleString("en-IN"):"—"}</td><td>${allotEsc(a.status||"ASSIGNED")}</td><td><button type="button" class="danger deleteHostAllotmentBtn" data-student="${allotEsc(a.studentId)}" data-id="${allotEsc(a.id)}">Delete</button></td></tr>`).join(""):'<tr><td colspan="6">No examinations assigned yet.</td></tr>';
+  const ownSnap=await get(ref(db,"testAssignments"));let rows=[];Object.entries(ownSnap.val()||{}).forEach(([studentId,items])=>Object.entries(items||{}).forEach(([id,a])=>{if(a&&a.assignedBy===uid&&a.status!=="ARCHIVED")rows.push({...a,studentId,id});}));
+  const participantFilter=$("hostAssignmentParticipant"),subjectFilter=$("hostAssignmentSubject");
+  const participantOptions=[...new Map(rows.map(a=>[a.studentId,{id:a.studentId,name:a.participantName||a.participantEmail||a.studentId}])).values()].sort((a,b)=>a.name.localeCompare(b.name));
+  const subjectOptions=[...new Set(rows.map(a=>a.subject||"Other Tests"))].sort((a,b)=>a.localeCompare(b));
+  const oldParticipant=participantFilter?.value||"",oldSubject=subjectFilter?.value||"";
+  if(participantFilter)participantFilter.innerHTML='<option value="">All Participants</option>'+participantOptions.map(x=>`<option value="${allotEsc(x.id)}">${allotEsc(x.name)}</option>`).join("");
+  if(subjectFilter)subjectFilter.innerHTML='<option value="">All Subjects</option>'+subjectOptions.map(x=>`<option value="${allotEsc(x)}">${allotEsc(x)}</option>`).join("");
+  if(participantFilter)participantFilter.value=oldParticipant;if(subjectFilter)subjectFilter.value=oldSubject;
+  window.hostAllotmentRows=rows;window.hostAllotmentDirectory=directory;
+  await renderHostAllotments();
+  [participantFilter,subjectFilter,$("hostAssignmentStatus")].forEach(el=>{if(el&&!el.dataset.bound){el.dataset.bound="1";el.addEventListener("change",renderHostAllotments);}});
+  
   if(msgEl)msgEl.textContent=`${Object.keys(directory).length} participant account(s) in directory.`;
  }catch(e){console.error(e);if(msgEl)msgEl.textContent=`Unable to load allotment lists: ${e.message||e}. Check participantDirectory and testAssignments database rules.`;}
 }
