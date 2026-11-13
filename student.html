@@ -152,7 +152,76 @@ body#studentBody{background:radial-gradient(ellipse at 12% 8%,#173e76 0,transpar
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-R996T43PXM',{send_page_view:true});</script>
 
 <style id="olympiad-entry-hub-v73">#dashboardCard .olympiad-entry-section{min-width:0}#dashboardCard .olympiad-intro{margin:0 0 12px;color:#d6e5fa!important}.olympiad-entry-grid{display:grid;grid-template-columns:1fr;gap:12px}.olympiad-entry{display:flex;flex-direction:column;gap:9px;padding:17px;border-radius:16px;text-decoration:none!important;border:1px solid #d9b75d;box-shadow:0 8px 20px #0003;transition:transform .18s,box-shadow .18s;min-width:0}.olympiad-entry:hover{transform:translateY(-2px);box-shadow:0 12px 25px #0005}.olympiad-entry.private{background:linear-gradient(145deg,#102e58,#071a37);color:#fff!important}.olympiad-entry.public{background:linear-gradient(145deg,#174d49,#092b35);color:#fff!important}.olympiad-entry-icon{font-size:29px}.olympiad-entry-title{font-size:19px;font-weight:900;color:#ffe4a0}.olympiad-entry-desc{font-size:13px;line-height:1.55;color:#e0eaf8}.olympiad-entry-cta{display:flex;justify-content:space-between;align-items:center;margin-top:5px;padding:10px 12px;border-radius:10px;background:#fff;color:#102b50;font-weight:900}.olympiad-entry.public .olympiad-entry-cta{color:#125348}@media(min-width:900px){.olympiad-entry-grid{grid-template-columns:1fr 1fr}}@media(max-width:700px){.olympiad-entry{padding:14px}.olympiad-entry-title{font-size:17px}}</style>
-</head>
+<style id="v75-olympiad-alignment">
+/* V75 — Olympiad access cards: full-width, balanced alignment */
+#dashboardCard #academicPanel{
+  grid-column:1 / -1!important;
+  width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+#dashboardCard #academicPanel .ac-columns{
+  display:grid!important;
+  grid-template-columns:minmax(250px,.78fr) minmax(0,1.45fr)!important;
+  align-items:stretch!important;
+  gap:18px!important;
+  width:100%!important;
+}
+#dashboardCard #academicPanel .ac-columns>section{
+  min-width:0!important;
+  box-sizing:border-box!important;
+}
+#dashboardCard #academicPanel .olympiad-entry-section{
+  padding:20px!important;
+}
+#dashboardCard #academicPanel .olympiad-entry-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:16px!important;
+  align-items:stretch!important;
+}
+#dashboardCard #academicPanel .olympiad-entry{
+  min-width:0!important;
+  min-height:235px!important;
+  box-sizing:border-box!important;
+  padding:20px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:flex-start!important;
+  gap:12px!important;
+  overflow-wrap:anywhere!important;
+}
+#dashboardCard #academicPanel .olympiad-entry-icon{font-size:34px!important;line-height:1.15!important}
+#dashboardCard #academicPanel .olympiad-entry-title{font-size:clamp(18px,1.35vw,22px)!important;line-height:1.25!important;white-space:normal!important}
+#dashboardCard #academicPanel .olympiad-entry-desc{font-size:14px!important;line-height:1.55!important;max-width:42ch!important}
+#dashboardCard #academicPanel .olympiad-entry-cta{
+  width:100%!important;
+  box-sizing:border-box!important;
+  margin-top:auto!important;
+  justify-content:center!important;
+  gap:8px!important;
+  padding:12px 14px!important;
+  text-align:center!important;
+}
+#dashboardCard #academicPanel .ac-filters{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:14px!important;
+}
+#dashboardCard #academicPanel .ac-filters label{min-width:0!important}
+#dashboardCard #academicPanel .ac-filters select,
+#dashboardCard #academicPanel .ac-filters input{width:100%!important;min-width:0!important}
+@media(max-width:900px){
+ #dashboardCard #academicPanel .ac-columns{grid-template-columns:1fr!important}
+ #dashboardCard #academicPanel .olympiad-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:560px){
+ #dashboardCard #academicPanel .olympiad-entry-grid{grid-template-columns:1fr!important}
+ #dashboardCard #academicPanel .olympiad-entry{min-height:0!important}
+ #dashboardCard #academicPanel .ac-filters{grid-template-columns:1fr!important}
+}
+</style></head>
 <body id="studentBody">
 <header class="participant-topbar">
   <a class="participant-brand" href="index.html" aria-label="Live Quiz Competition home"><span class="brand-trophy">🏆</span><span>Live Quiz Competition</span></a>

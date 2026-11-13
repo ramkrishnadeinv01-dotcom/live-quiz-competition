@@ -1,0 +1,9 @@
+V75 – Participant Panel Olympiad Section Alignment
+
+UI-only changes:
+- Academic & Olympiad panel spans full dashboard width.
+- Study notes and Olympiad access area use balanced desktop columns.
+- Private Test and Free to All cards display side-by-side with equal height.
+- Titles and descriptions wrap naturally; buttons align at card bottoms.
+- Tablet/mobile layouts stack cleanly.
+- Existing links, Firebase logic, and data paths are unchanged.
