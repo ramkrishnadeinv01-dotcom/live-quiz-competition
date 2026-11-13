@@ -14,12 +14,20 @@ body{min-height:100vh;background:radial-gradient(ellipse at 0% 20%,#173e76 0,tra
 <!-- Google Analytics 4: World of Exam -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-R996T43PXM"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-R996T43PXM',{send_page_view:true});</script>
+<script>
+/* V80: Chrome may restore this protected page from BFCache after logout. */
+window.addEventListener("pageshow", function () {
+  if (sessionStorage.getItem("participantExplicitLogout") === "1") {
+    window.location.replace("student.html?session=expired");
+  }
+});
+</script>
 </head><body>
 <header class="performance-top"><a href="student.html">← Participant Panel</a><strong>🏆 Live Quiz Competition</strong><span id="performanceParticipant">Academic Performance</span></header>
 <main class="performance-wrap"><section class="performance-hero"><span class="kicker">YOUR LEARNING INSIGHTS</span><h1>My Academic Performance</h1><p id="performanceMessage">Loading your examination history…</p></section>
 <section class="performance-filters" aria-label="Academic performance filters"><div><label for="filterClass">CLASS</label><select id="filterClass"><option value="">All classes</option></select></div><div><label for="filterSubject">SUBJECT</label><select id="filterSubject"><option value="">All subjects</option></select></div><div><label for="filterMonth">MONTH</label><select id="filterMonth"><option value="">All months</option></select></div><div><label for="filterChapter">CHAPTER</label><select id="filterChapter"><option value="">All chapters</option></select></div><p class="filter-note">Choose a class to keep different academic years separate. Subjects and chapters are automatically taken from the examinations you have attempted.</p></section>
 <div class="performance-actions"><button class="back" type="button" onclick="location.href='student.html'">← Back to Dashboard</button><button class="refresh" id="refreshPerformance" type="button">↻ Refresh Analysis</button></div>
 <section id="studentAnalyticsContent"><div class="performance-empty">Loading your submitted examinations…</div></section></main>
-<script type="module" src="academic-performance.js?v=20261113-v62"></script>
+<script type="module" src="academic-performance.js?v=20261113-v80"></script>
 <script type="module" src="website-analytics-tracker.js?v=65"></script>
 </body></html>

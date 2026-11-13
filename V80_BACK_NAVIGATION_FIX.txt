@@ -1,0 +1,8 @@
+V80 – Protected-page Back Navigation Fix
+
+- If Chrome restores Academic Performance from BFCache after explicit logout, a pageshow guard immediately redirects to the Participant Panel login page.
+- If Firebase auth state is missing/anonymous, Academic Performance redirects to student.html using location.replace instead of leaving a stale protected page visible.
+- No Firebase rules, database records, participant profile data, or examination history changed.
+- Existing analytics and dashboard functionality preserved.
+
+Deploy by replacing the existing website files with this ZIP. Test: sign in > open Academic Performance > sign out > press browser Back.

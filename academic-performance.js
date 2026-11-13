@@ -113,7 +113,12 @@ function attachPrintActions(){
 }
 onAuthStateChanged(auth,async user=>{
  authUser=user||null;
- if(!user||user.isAnonymous){showMessage("Please sign in to your approved participant account from the Participant Panel, then open Academic Performance again.");$("studentAnalyticsContent").innerHTML='<div class="performance-empty">Your participant session is not active. <a href="student.html">Return to Participant Panel</a> and sign in.</div>';return;}
+ if(!user||user.isAnonymous){
+  // A protected page must not remain visible after explicit sign-out.
+  // Replace this history entry so Back cannot keep showing this old page.
+  window.location.replace("student.html?session=expired");
+  return;
+ }
  try{
   const snap=await get(ref(db,`participants/${user.uid}`));
   if(!snap.exists()||snap.val()?.status!=="approved"){showMessage("An approved participant account is required to view this page.");return;}
