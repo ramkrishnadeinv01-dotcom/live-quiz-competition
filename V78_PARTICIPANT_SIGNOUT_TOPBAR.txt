@@ -1,0 +1,9 @@
+V78 – Participant Sign Out in Top Navigation
+
+- Moved the existing participantSignOut button into the participant top navigation bar.
+- Positioned it immediately beside the existing connection/approval status badge.
+- The button is shown only while the participant dashboard is active and remains hidden on the login screen.
+- Preserved the existing participantSignOut element ID and existing JavaScript click handler, including confirmation and Firebase signOut behavior.
+- Removed the old dashboard-header placement to avoid duplicate controls.
+- Added desktop, tablet and mobile responsive styling.
+- No Firebase rules, database paths, profile persistence, examination logic, result links or academic functionality changed.
