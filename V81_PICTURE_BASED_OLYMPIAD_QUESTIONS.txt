@@ -1,0 +1,18 @@
+V81 — PICTURE-BASED OLYMPIAD QUESTIONS
+
+Changes in this patch:
+1. Added a question image picker to each Olympiad question in academic-host.html / academic-host.js.
+2. Supports JPG, PNG and WebP, maximum 5 MB per image.
+3. Uploads images to Firebase Storage at olympiad-question-images/{adminUid}/{roomId}/...
+4. Stores imageUrl and imagePath with the question record when the host saves the room.
+5. Displays question images in the participant examination and the host's question-wise answer detail.
+6. Allows an image-only question stem, provided all four options and a correct answer are supplied.
+
+IMPORTANT DEPLOYMENT STEPS:
+- Replace academic-host.js and academic-test.js in the website with these V81 versions.
+- Publish the included storage.rules in Firebase Console > Storage > Rules (or configure and deploy Storage rules using Firebase CLI).
+- Do not deploy database.rules.json as part of this picture feature.
+- Test with one small image in a draft Olympiad room before publishing a live test.
+- Existing question records without images remain compatible.
+
+Security note: Storage rules restrict uploads/deletes to the configured academic administrator and allow reads only to signed-in users. The host page currently identifies the administrator by the configured email, consistent with the existing project.
