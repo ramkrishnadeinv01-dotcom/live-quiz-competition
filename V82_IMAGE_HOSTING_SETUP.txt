@@ -1,0 +1,27 @@
+WORLD OF EXAM V82 — PICTURE-BASED OLYMPIAD (NO FIREBASE STORAGE REQUIRED)
+
+WHY THIS VERSION
+Your Firebase Console shows that Cloud Storage is unavailable on the current Spark plan. V82 therefore sends question pictures directly to Cloudinary using an unsigned image-upload preset. Firebase Realtime Database continues to store the question and its secure image URL. No Firebase Storage bucket, Storage rules or CORS setup is required for this image upload flow.
+
+ONE-TIME SETUP REQUIRED
+1. Create/sign in to a Cloudinary account and open the Dashboard.
+2. Copy the Cloud name.
+3. Open Settings -> Upload -> Upload presets -> Add upload preset.
+4. Set Signing Mode to Unsigned. Restrict allowed formats to jpg, jpeg, png and webp. Set a maximum file size of 5 MB if the dashboard offers this setting. Save the preset and copy its name.
+5. Open image-hosting-config.js and replace YOUR_CLOUD_NAME and YOUR_UNSIGNED_UPLOAD_PRESET with the values copied above. Do not put an API secret in this file.
+6. Upload the complete V82 project to your existing GitHub Pages repository, preserving all other files.
+7. Open academic-host.html, hard refresh (Ctrl+Shift+R), load an Olympiad room, select a picture and wait for “Picture attached…”. Then click “Save Settings & Questions”. Reload the room and confirm the picture preview remains.
+8. Open the participant exam link and confirm the same picture appears above the options.
+
+IMPORTANT
+- An unsigned preset is intentionally usable from a browser; anyone who discovers it may attempt uploads. Keep the preset restricted to images, formats and size; monitor usage in Cloudinary. Do not place Cloudinary API secrets in frontend code.
+- Images uploaded this way are public question assets. Do not upload private/student-identifying images.
+- Existing imageUrl values continue to be read by the Host and Participant pages. New uploads are stored with imageProvider='cloudinary' and imagePath=Cloudinary public_id.
+- This ZIP does not deploy itself. No Firebase rules, production database data or Firebase billing settings are changed.
+- Cloudinary free-plan quotas and terms can change; check your account's current plan and usage.
+
+TROUBLESHOOTING
+- “Image hosting is not configured yet”: check image-hosting-config.js and the two values.
+- HTTP 400: check Cloud name, unsigned preset name, allowed formats and preset settings.
+- HTTP 401/403: confirm preset Signing Mode is Unsigned and enabled.
+- Upload succeeds but image does not remain after reload: click “Save Settings & Questions” after the upload completes.
