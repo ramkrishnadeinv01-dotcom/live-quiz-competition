@@ -114,6 +114,24 @@ async function downloadResultPdf(a,attempt,rows){
 }
 async function handleResultAction(btn){const a=assignments.find(x=>x.id===btn.dataset.id);if(!a)return;const attempt=await latestAttempt(a);if(!attempt){alert("The saved submission could not be found.");return;}try{btn.disabled=true;btn.textContent="Loading result…";const rows=await getQuestionReview(a,attempt);if(btn.dataset.action==="view-result"){openResultModal(rows);}else await downloadResultPdf(a,attempt,rows);}catch(e){console.error(e);alert("Unable to load detailed result: "+(e.message||e));}finally{btn.disabled=false;btn.textContent=btn.dataset.action==="view-result"?"📋 View Detailed Result":"⬇ Download Result PDF";}}
 
+// Use event delegation so buttons keep working after the subject filter redraws cards.
+document.addEventListener("click", async event => {
+ const btn=event.target.closest("[data-action]");
+ if(!btn || !btn.closest("#pendingList, #completedList, #resultsList")) return;
+ const a=assignments.find(x=>x.id===btn.dataset.id);
+ if(!a) return;
+ const action=btn.dataset.action;
+ if(action==="view-result"||action==="download-result"){await handleResultAction(btn);return;}
+ if(action==="start"||action==="reattempt"){startExam(a);return;}
+ if(action==="delete"){
+  const latest=await latestAttempt(a);
+  if(!latest&&a.status!=="SUBMITTED"){alert("Only a completed assignment can be deleted.");return;}
+  if(!confirm(`Delete the completed assignment “${a.testTitle||"this examination"}”? Your saved result history will remain in the examination records.`))return;
+  try{await update(ref(db,`testAssignments/${uid}/${a.id}`),{status:"ARCHIVED",archivedAt:Date.now(),archivedBy:uid,isLatest:false});await loadAssignments();}
+  catch(e){alert("Unable to archive this completed assignment: "+(e.message||e));}
+ }
+});
+
 async function loadAssignments(){
  if(!uid)return;
  status("Loading your assignments and examination history…");
@@ -138,16 +156,6 @@ async function loadAssignments(){
   $("pendingCount").textContent=`${pending.length} examination(s) awaiting submission`;
   $("completedCount").textContent=`${completed.length} submitted examination(s)`;
   $("resultCount").textContent=`${results.length} result record(s) available`;
-  document.querySelectorAll("[data-action]").forEach(btn=>btn.addEventListener("click",async()=>{
-   const a=assignments.find(x=>x.id===btn.dataset.id);if(!a)return;
-   if(btn.dataset.action==="view-result"||btn.dataset.action==="download-result"){await handleResultAction(btn);return;}
-   if(btn.dataset.action==="start"||btn.dataset.action==="reattempt"){startExam(a);return;}
-   if(btn.dataset.action==="delete"){
-    const latest=await latestAttempt(a);if(!latest&&a.status!=="SUBMITTED"){alert("Only a completed assignment can be deleted.");return;}
-    if(!confirm(`Delete the completed assignment “${a.testTitle||"this examination"}”? Your saved result history will remain in the examination records.`))return;
-    try{await update(ref(db,`testAssignments/${uid}/${a.id}`),{status:"ARCHIVED",archivedAt:Date.now(),archivedBy:uid,isLatest:false});await loadAssignments();}catch(e){alert("Unable to archive this completed assignment: "+(e.message||e));}
-   }
-  }));
   status(`Loaded ${assignments.length} allotted examination(s). Your profile and saved results remain linked to your account.`);
  }catch(e){console.error(e);status("Unable to load allotted tests: "+(e.message||e));}
 }
