@@ -1,0 +1,11 @@
+V83 PREVIEW — HOST/PARTICIPANT MAPPING
+
+Added optional host selection for approved participants, host-side approval/rejection inbox, participant transfer requests with Administrator-only approval, and host-specific participant index reads for the allotment screen.
+
+Restricted participantDirectory and testAssignments reads to the participant, Administrator, or the currently mapped approved host. Host assignment writes now require the authoritative participantHostMapping record to point to the acting approved host.
+
+Preserved the existing Cloudinary unsigned upload settings and existing website modules.
+
+Validation performed in this package: JavaScript syntax checks passed for host-mapping.js, host.js, administrator.js, and student.js; database.rules.json parses and contains the intended mapping rule structure.
+
+Not performed: Firebase Emulator rule compilation/integration tests. This is therefore a preview package and must not be deployed to production until the supplied emulator checklist passes.

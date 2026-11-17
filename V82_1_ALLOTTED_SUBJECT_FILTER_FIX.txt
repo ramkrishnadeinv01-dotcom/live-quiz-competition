@@ -1,0 +1,21 @@
+WORLD OF EXAM V82.1 — ALLOTTED TEST SUBJECT FILTER FIX
+
+Issue fixed:
+When a participant selected a subject (for example, Science), the pending test cards were redrawn with innerHTML. The old code attached click handlers only to the original buttons, so newly rendered Start Examination buttons did nothing.
+
+Correction:
+The allotted-tests.js file now uses one delegated click handler on the document for actions inside pendingList, completedList and resultsList. Buttons continue working after subject filtering and re-rendering. Existing exam navigation, result viewing, reattempt and archive actions are preserved.
+
+Cloudinary configuration included:
+Cloud name: wf3podst
+Unsigned preset: ankg8d03
+
+Installation:
+1. Back up your current project folder.
+2. Replace the project files with this package, or at minimum replace allotted-tests.js and image-hosting-config.js in the existing GitHub repository.
+3. Commit the changes.
+4. Wait for GitHub Pages to publish, then press Ctrl+Shift+R in the browser.
+5. Open Participant Panel > Allotted Tests, select Science, and test Start Examination.
+6. Also test All Subjects and one other subject.
+
+No Firebase database rules, production records or Storage settings are changed by this fix.

@@ -1,0 +1,37 @@
+WORLD OF EXAM — V83 HOST/PARTICIPANT MAPPING (PREVIEW PACKAGE)
+
+BASE
+V82.1 Allotted Filter Fix. Existing portal pages/modules and Cloudinary unsigned-upload configuration are retained.
+
+FEATURES ADDED
+1. Approved participants can optionally request an approved host.
+2. The selected host sees only requests addressed to that host and may approve or reject.
+3. Approval creates an authoritative participantHostMapping/{participantUid} record and a host-side index.
+4. Unmapped/free participants remain under Administrator management; host selection is optional.
+5. A mapped participant may request transfer. Only the Administrator can approve/reject the transfer.
+6. Host allotment list loads only the host's participant index and the corresponding assignment records.
+7. Participant-directory and assignment reads are no longer granted broadly to every approved host.
+8. Reverse-index writes are constrained to participants whose authoritative mapping already points to that host.
+
+IMPORTANT SECURITY / TEST STATUS
+This is a PREVIEW package, not a production-certified release. The JSON structure is validated, but Firebase Realtime Database rules have NOT been compiled or exercised against the Firebase Emulator in this environment. Do not deploy database.rules.json to the live project yet.
+
+The existing project uses client-side Firebase operations. The mapping flow is rules-gated, but multi-location approval/transfer updates are not transactionally atomic. A trusted server function would provide stronger consistency, but is not included because production Cloud Functions may require a paid Firebase plan. A failed multi-step operation may need Administrator reconciliation.
+
+The existing broader rules for rooms, public result hashes, and Olympiad test records are unchanged and remain separate security-review items. Existing host pages, admin actions, and older assignments require regression testing.
+
+LOCAL TESTS — FIREBASE EMULATOR ONLY
+1. Start the Auth and Realtime Database emulators using your local firebase.json configuration.
+2. Use separate test accounts: Administrator, approved Host H1, approved Host H2, approved Participant P1, and an unmapped/free Participant P2.
+3. P1 requests H1. Confirm H1 can read the request and H2 cannot.
+4. H1 approves. Confirm P1 and H1 can read P1's participantDirectory and testAssignments records.
+5. As H2, directly read P1's participantDirectory and testAssignments paths. Both must return permission denied.
+6. As H2, try to add P1 to hostParticipantMappings/H2. It must be denied unless participantHostMapping/P1 already points to H2.
+7. P1 requests transfer to H2. H2 must not be able to approve it. Only Administrator can approve/reject.
+8. Administrator approves transfer. Confirm H1 loses access and H2 gains access after all transfer writes complete.
+9. Confirm P2 remains usable without selecting a host; ordinary hosts must be denied access to P2's private profile/assignments.
+10. Confirm host allotment only lists mapped participants and attempts to allot to an unmapped or differently mapped participant are denied.
+11. Regression-test participant login, live quiz, MCQ, General Exam, Academic/Olympiad, result publication, Cloudinary picture questions, and Administrator host management.
+
+DEPLOYMENT
+Do not run firebase deploy and do not upload these rules to production until the emulator tests above pass. This ZIP does not change the live Firebase project or live data.

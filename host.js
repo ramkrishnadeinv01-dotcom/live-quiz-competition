@@ -803,15 +803,15 @@ async function refreshAllotmentLists(){
  if(!isApproved()&&!isAdmin())return;
  const msgEl=$("allotmentMsg"),cat=$("allotCategory"),testSel=$("allotTest"),partSel=$("allotParticipant");
  try{
-  const [dirSnap,roomSnap,olympSnap]=await Promise.all([get(ref(db,"participantDirectory")),get(ref(db,"rooms")),get(ref(db,"academicOlympiadTests"))]);
-  const directory=dirSnap.val()||{};partSel.innerHTML='<option value="">Select an approved participant</option>'+Object.entries(directory).filter(([id,p])=>p&&p.status==="approved").map(([id,p])=>`<option value="${allotEsc(id)}">${allotEsc(p.name||p.email)} — ${allotEsc(p.email||"")}${p.className?" — "+allotEsc(p.className):""}</option>`).join("");
+  const [mapSnap,roomSnap,olympSnap]=await Promise.all([get(ref(db,isAdmin()?"participantDirectory":`hostParticipantMappings/${uid}`)),get(ref(db,"rooms")),get(ref(db,"academicOlympiadTests"))]);
+  const directory=mapSnap.val()||{};partSel.innerHTML='<option value="">Select an approved participant</option>'+Object.entries(directory).filter(([id,p])=>p&&p.status==="approved").map(([id,p])=>`<option value="${allotEsc(id)}">${allotEsc(p.name||p.email)} — ${allotEsc(p.email||"")}${p.className?" — "+allotEsc(p.className):""}</option>`).join("");
   const subjectSel=$("allotSubject");let availableTests=[];
   const subjectOf=t=>String(t.subject||t.mcqSubject||t.generalSubject||"").trim()||"Other Tests";
   const renderTests=()=>{const c=cat.value;availableTests=[];if(c==="olympiad"){availableTests=Object.entries(olympSnap.val()||{}).filter(([id,t])=>t&&(!t.hostUid||t.hostUid===uid||isAdmin())).map(([id,t])=>({id,title:t.title||`${t.className||""} ${t.subject||""} Olympiad`,meta:`${t.className||""} · ${t.subject||""}`,type:"olympiad",subject:subjectOf(t)}));}else{availableTests=Object.entries(roomSnap.val()||{}).filter(([id,r])=>r&&r.examType===c&&(r.hostUid===uid||isAdmin())).map(([id,r])=>({id,title:r.mcqTitle||r.generalTitle||r.title||id,meta:`${id} · ${String(r.examStatus||"NOT STARTED")}`,type:c,subject:subjectOf(r)}));}
    const subjects=[...new Set(availableTests.map(t=>t.subject))].sort((a,b)=>a.localeCompare(b));subjectSel.innerHTML='<option value="">Select a subject</option>'+subjects.map(x=>`<option value="${allotEsc(x)}">${allotEsc(x)}</option>`).join("");testSel.disabled=true;testSel.innerHTML='<option value="">First select a subject</option>';};
   const renderSubjectTests=()=>{const chosen=subjectSel.value,arr=availableTests.filter(t=>t.subject===chosen);testSel.disabled=!chosen;testSel.innerHTML=chosen?'<option value="">Select an examination</option>'+arr.map(t=>`<option value="${allotEsc(t.id)}" data-title="${allotEsc(t.title)}">${allotEsc(t.title)} — ${allotEsc(t.meta)}</option>`).join(""):'<option value="">First select a subject</option>';};
   renderTests();cat.onchange=renderTests;subjectSel.onchange=renderSubjectTests;
-  const ownSnap=await get(ref(db,"testAssignments"));let rows=[];Object.entries(ownSnap.val()||{}).forEach(([studentId,items])=>Object.entries(items||{}).forEach(([id,a])=>{if(a&&a.assignedBy===uid&&a.status!=="ARCHIVED")rows.push({...a,studentId,id});}));
+  let rows=[];for(const studentId of Object.keys(directory)){const ownSnap=await get(ref(db,`testAssignments/${studentId}`));Object.entries(ownSnap.val()||{}).forEach(([id,a])=>{if(a&&a.assignedBy===uid&&a.status!=="ARCHIVED")rows.push({...a,studentId,id});});}
   const participantFilter=$("hostAssignmentParticipant"),subjectFilter=$("hostAssignmentSubject");
   const participantOptions=[...new Map(rows.map(a=>[a.studentId,{id:a.studentId,name:a.participantName||a.participantEmail||a.studentId}])).values()].sort((a,b)=>a.name.localeCompare(b.name));
   const subjectOptions=[...new Set(rows.map(a=>a.subject||"Other Tests"))].sort((a,b)=>a.localeCompare(b));
@@ -832,7 +832,7 @@ async function createTestAllotment(){
  if(!testId||!studentId){$("allotmentMsg").textContent="Select an examination and an approved participant.";return;}
  try{
   const [pSnap,tSnap]=await Promise.all([get(ref(db,`participantDirectory/${studentId}`)),get(ref(db,category==="olympiad"?`academicOlympiadTests/${testId}`:`rooms/${testId}`))]);
-  if(!pSnap.exists()||pSnap.val().status!=="approved")throw Error("The selected participant is not approved.");if(!tSnap.exists())throw Error("The selected examination no longer exists.");
+  if(!pSnap.exists()||pSnap.val().status!=="approved")throw Error("The selected participant is not approved.");if(!isAdmin()){const m=(await get(ref(db,`participantHostMapping/${studentId}`))).val();if(!m||m.hostUid!==uid||m.status!=="approved")throw Error("This participant is not mapped to your host account.");}if(!tSnap.exists())throw Error("The selected examination no longer exists.");
   const p=pSnap.val(),t=tSnap.val(),id=crypto.randomUUID(),allSnap=await get(ref(db,`testAssignments/${studentId}`));
   const previous=Object.entries(allSnap.val()||{}).map(([oldId,a])=>({id:oldId,...a})).filter(a=>a&&a.category===category&&a.testId===testId);
   let freshGeneration=1;

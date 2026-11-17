@@ -1,16 +1,16 @@
 {
   "rules": {
     "hosts": {
-      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))",
-        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (auth.uid === $uid && !data.exists() && newData.child('email').val() === auth.token.email && newData.child('status').val() === 'pending'))"
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $uid && !data.exists() && newData.child('email').val() == auth.token.email && newData.child('status').val() == 'pending'))"
       }
     },
     "rooms": {
       "$room": {
         ".read": "auth != null",
-        ".write": "auth != null && ((data.exists() && data.child('hostUid').val() === auth.uid && (root.child('hosts').child(auth.uid).child('status').val() === 'approved' || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))) || (!data.exists() && newData.child('hostUid').val() === auth.uid && (root.child('hosts').child(auth.uid).child('status').val() === 'approved' || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))))",
+        ".write": "auth != null && ((data.exists() && data.child('hostUid').val() == auth.uid && (root.child('hosts').child(auth.uid).child('status').val() == 'approved' || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))) || (!data.exists() && newData.child('hostUid').val() == auth.uid && (root.child('hosts').child(auth.uid).child('status').val() == 'approved' || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))))",
         "participants": {
           "$student": {
             ".read": "auth != null",
@@ -19,14 +19,14 @@
         },
         "questions": {
           "$q": {
-            ".read": "auth != null && (root.child('rooms').child($room).child('hostUid').val() === auth.uid || (root.child('rooms').child($room).child('state').val() === 'open' && root.child('rooms').child($room).child('currentQuestion').val() == $q))",
-            ".write": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid"
+            ".read": "auth != null && (root.child('rooms').child($room).child('hostUid').val() == auth.uid || (root.child('rooms').child($room).child('state').val() == 'open' && root.child('rooms').child($room).child('currentQuestion').val() == $q))",
+            ".write": "auth != null && root.child('rooms').child($room).child('hostUid').val() == auth.uid"
           }
         },
         "answers": {
           "$q": {
             "$student": {
-              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() == auth.uid",
               ".write": "auth != null && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()"
             }
           }
@@ -34,7 +34,7 @@
         "violations": {
           "$student": {
             "$event": {
-              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+              ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() == auth.uid",
               ".write": "auth != null && !data.exists()"
             }
           }
@@ -46,8 +46,8 @@
         },
         "mcqAnswers": {
           "$student": {
-            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
-            ".write": "auth != null && (!data.exists() || data.child('status').val() !== 'SUBMITTED' || data.child('runId').val() !== newData.child('runId').val() || data.child('authUid').val() === auth.uid)"
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() == auth.uid",
+            ".write": "auth != null && (!data.exists() || data.child('status').val() != 'SUBMITTED' || data.child('runId').val() != newData.child('runId').val() || data.child('authUid').val() == auth.uid)"
           }
         },
         "generalQuestions": {
@@ -57,89 +57,126 @@
         },
         "generalAnswers": {
           "$student": {
-            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() == auth.uid",
             ".write": "auth != null && !data.exists()"
           }
         },
         "mcqLive": {
           "$student": {
-            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() === auth.uid",
+            ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() == auth.uid",
             ".write": "auth != null"
           }
         }
       },
-      ".read": "auth != null && (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com' || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
-      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
+      ".read": "auth != null && (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com' || root.child('hosts').child(auth.uid).child('status').val() == 'approved')",
+      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'"
     },
     "otherExamResults": {
       "$phoneHash": {
         ".read": "true",
-        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() == 'approved')"
       }
     },
     "otherExamPublications": {
-      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
-      ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() == 'approved')",
+      ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() == 'approved')"
     },
     "hindiPakhwadaResults": {
       "$phoneHash": {
         ".read": "true",
-        ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+        ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() == 'approved')"
       }
     },
     "hindiPakhwadaPublications": {
-      ".read": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
-      ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')"
+      ".read": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() == 'approved')",
+      ".write": "auth != null && ((auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() == 'approved')"
     },
     "academicMaterials": {
       ".read": "auth != null",
-      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
+      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'"
     },
     "academicOlympiadTests": {
       ".read": "auth != null",
-      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'"
+      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'"
     },
     "academicOlympiadAttempts": {
       "$testId": {
-        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
         "$uid": {
-          ".read": "auth != null && auth.uid === $uid",
+          ".read": "auth != null && auth.uid == $uid",
           ".write": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))"
         }
       }
     },
     "participantRegistrationDrafts": {
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))",
-        ".write": "auth != null && auth.uid === $uid && ((!data.exists() && newData.child('status').val() === 'email_verification_pending') || (data.exists() && data.child('status').val() === 'email_verification_pending'))"
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && auth.uid == $uid && ((!data.exists() && newData.child('status').val() == 'email_verification_pending') || (data.exists() && data.child('status').val() == 'email_verification_pending'))"
       }
     },
     "participants": {
-      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))",
-        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (auth.uid === $uid && auth.token.email_verified === true && ((!data.exists() && newData.child('status').val() === 'pending') || (data.exists() && data.child('status').val() === newData.child('status').val()))))"
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $uid && auth.token.email_verified == true && ((!data.exists() && newData.child('status').val() == 'pending') || (data.exists() && data.child('status').val() == newData.child('status').val()))))"
       }
     },
     "participantDirectory": {
-      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
       "$uid": {
-        ".write": "auth != null && ((auth.uid === $uid && newData.child('status').val() === root.child('participants').child($uid).child('status').val()) || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'))"
-      }
+        ".write": "auth != null && ((auth.uid == $uid && newData.child('status').val() == root.child('participants').child($uid).child('status').val()) || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
+        ".read": "auth != null && (auth.uid == $uid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com' || (root.child('participantHostMapping').child($uid).child('status').val() == 'approved' && root.child('participantHostMapping').child($uid).child('hostUid').val() == auth.uid && root.child('hosts').child(auth.uid).child('status').val() == 'approved'))"
+      },
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'"
     },
     "testAssignments": {
-      ".read": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('hosts').child(auth.uid).child('status').val() === 'approved')",
       "$uid": {
-        ".read": "auth != null && (auth.uid === $uid || (auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || root.child('testAssignments').child($uid).child($assignmentId).child('assignedBy').val() === auth.uid)",
+        ".read": "auth != null && (auth.uid == $uid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com' || (root.child('participantHostMapping').child($uid).child('status').val() == 'approved' && root.child('participantHostMapping').child($uid).child('hostUid').val() == auth.uid && root.child('hosts').child(auth.uid).child('status').val() == 'approved'))",
         "$assignmentId": {
-          ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com') || (root.child('hosts').child(auth.uid).child('status').val() === 'approved' && ((newData.exists() && newData.child('assignedBy').val() === auth.uid) || (!newData.exists() && data.child('assignedBy').val() === auth.uid))) || (auth.uid === $uid && data.exists() && ((newData.exists() && newData.child('status').val() === 'SUBMITTED') || (!newData.exists() && data.child('status').val() === 'SUBMITTED'))))"
+          ".write": "auth != null && (auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com' || (root.child('hosts').child(auth.uid).child('status').val() == 'approved' && root.child('participantHostMapping').child($uid).child('hostUid').val() == auth.uid && root.child('participantHostMapping').child($uid).child('status').val() == 'approved' && ((newData.exists() && newData.child('assignedBy').val() == auth.uid) || (!newData.exists() && data.child('assignedBy').val() == auth.uid))) || (auth.uid == $uid && data.exists() && ((newData.exists() && newData.child('status').val() == 'SUBMITTED') || (!newData.exists() && data.child('status').val() == 'SUBMITTED'))))"
+        }
+      },
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'"
+    },
+    "websiteUserActivity": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "approvedHostsPublic": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
+      "$uid": {
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'"
+      }
+    },
+    "hostMappingRequests": {
+      "$hostUid": {
+        ".read": "auth != null && (auth.uid == $hostUid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com')",
+        "$participantUid": {
+          ".write": "auth != null && ((auth.uid == $participantUid && root.child('hosts').child($hostUid).child('status').val() == 'approved' && (!data.exists() || data.child('status').val() != 'pending') && newData.child('status').val() == 'pending' && newData.child('participantUid').val() == auth.uid && newData.child('hostUid').val() == $hostUid) || (auth.uid == $hostUid && root.child('hosts').child(auth.uid).child('status').val() == 'approved' && data.child('status').val() == 'pending' && (newData.child('status').val() == 'approved' || newData.child('status').val() == 'rejected')) || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))"
         }
       }
     },
-    "websiteUserActivity": {
-      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() === 'ramkrishnadeinv.01@gmail.com'",
+    "participantHostMapping": {
       "$uid": {
-        ".write": "auth != null && auth.uid === $uid"
+        ".read": "auth != null && (auth.uid == $uid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com' || (data.child('hostUid').val() == auth.uid && root.child('hosts').child(auth.uid).child('status').val() == 'approved'))",
+        ".write": "auth != null && (auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com' || (auth.uid == newData.child('hostUid').val() && root.child('hosts').child(auth.uid).child('status').val() == 'approved' && !data.exists() && newData.child('status').val() == 'approved' && root.child('hostMappingRequests').child(auth.uid).child($uid).child('status').val() == 'pending'))"
+      }
+    },
+    "hostParticipantMappings": {
+      "$hostUid": {
+        ".read": "auth != null && (auth.uid == $hostUid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com')",
+        "$participantUid": {
+          ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $hostUid && root.child('hosts').child(auth.uid).child('status').val() == 'approved' && root.child('participantHostMapping').child($participantUid).child('hostUid').val() == auth.uid && root.child('participantHostMapping').child($participantUid).child('status').val() == 'approved'))"
+        }
+      }
+    },
+    "hostTransferRequests": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com')",
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $uid && (!data.exists() || data.child('status').val() != 'pending') && newData.child('participantUid').val() == auth.uid && newData.child('status').val() == 'pending'))"
       }
     }
   }

@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth,onAuthStateChanged,signInWithEmailAndPassword,sendPasswordResetEmail,signOut,setPersistence,browserLocalPersistence,indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getDatabase,ref,get,update,remove,serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
+import { getDatabase,ref,get,update,set,remove,serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
@@ -23,11 +23,11 @@ function renderHosts(){
  status.textContent=`${hostCache.length} Host account/request record(s) • ${arr.length} shown`;
  if(!arr.length){body.innerHTML='<tr><td colspan="9" class="empty">No Host records match the selected filters.</td></tr>';return;}
  body.innerHTML=arr.map(h=>{let opts='<option value="">Select action</option>';if(h.uid!==currentUser.uid){if(h.status==="pending")opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';else if(h.status==="approved")opts+='<option value="revoked">Revoke</option>';else opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';opts+='<option value="delete">Delete</option>';}return `<tr><td>${esc(h.email)}</td><td><b>${esc(h.hostName)}</b></td><td>${esc(h.designation)}</td><td>${esc(h.placeOfPosting)}</td><td>${esc(h.phone)}</td><td>${esc(h.purpose)}${h.purposeDetails?`<br><small>${esc(h.purposeDetails)}</small>`:""}</td><td>${statusBadge(h.status)}</td><td>${fmt(h.requestedAt)}</td><td>${h.uid===currentUser.uid?"—":`<select class="action-select" data-uid="${esc(h.uid)}">${opts}</select>`}</td></tr>`}).join("");
- document.querySelectorAll(".action-select").forEach(s=>s.onchange=async()=>{const action=s.value,uid=s.dataset.uid;s.value="";if(!action)return;if(!confirm(`Are you sure you want to ${action.toUpperCase()} this Host?`))return;try{if(action==="delete")await remove(ref(db,`hosts/${uid}`));else await update(ref(db,`hosts/${uid}`),{status:action,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});await loadHosts();}catch(e){alert(e.message||String(e));}});
+ document.querySelectorAll(".action-select").forEach(s=>s.onchange=async()=>{const action=s.value,uid=s.dataset.uid;s.value="";if(!action)return;if(!confirm(`Are you sure you want to ${action.toUpperCase()} this Host?`))return;try{if(action==="delete"){await remove(ref(db,`hosts/${uid}`));await remove(ref(db,`approvedHostsPublic/${uid}`));}else{await update(ref(db,`hosts/${uid}`),{status:action,reviewedAt:serverTimestamp(),reviewedBy:currentUser.uid});if(action==="approved"){const h=hostCache.find(x=>x.uid===uid)||{};await set(ref(db,`approvedHostsPublic/${uid}`),{hostName:h.hostName||"",email:h.email||"",designation:h.designation||"",placeOfPosting:h.placeOfPosting||"",status:"approved"});}else await remove(ref(db,`approvedHostsPublic/${uid}`));}await loadHosts();}catch(e){alert(e.message||String(e));}});
 }
 async function loadHosts(){
  if(!admin())return;
- try{const snap=await get(ref(db,"hosts"));const obj=snap.val()||{};hostCache=Object.entries(obj).map(([uid,h])=>({uid,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));renderHosts();}
+ try{const snap=await get(ref(db,"hosts"));const obj=snap.val()||{};hostCache=Object.entries(obj).map(([uid,h])=>({uid,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));for(const h of hostCache){if(h.status==="approved")await set(ref(db,`approvedHostsPublic/${h.uid}`),{hostName:h.hostName||"",email:h.email||"",designation:h.designation||"",placeOfPosting:h.placeOfPosting||"",status:"approved"});else await remove(ref(db,`approvedHostsPublic/${h.uid}`));}renderHosts();}
  catch(e){$("status").textContent=`Unable to load Host requests: ${e.message||e}`;$("hostRequests").innerHTML=`<tr><td colspan="9">Unable to load Host requests.</td></tr>`;}
 }
 
