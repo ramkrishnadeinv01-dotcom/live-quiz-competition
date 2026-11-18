@@ -338,6 +338,54 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
 #participantHostMappingPanel .host-map-status{margin-top:10px;padding:10px 12px;border:1px solid #d9b65b66;border-radius:9px;background:#102c55;color:#fff}
 </style>
 
+<style id="v83-8-mobile-participant-signout-fix">
+/* V83.8: keep approval status and Sign Out separate on narrow screens. */
+@media(max-width:700px){
+  #studentBody .participant-topbar{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto auto auto!important;
+    align-items:center!important;
+    justify-items:stretch!important;
+    gap:9px!important;
+    padding:11px 12px!important;
+  }
+  #studentBody .participant-brand{
+    grid-column:1!important;grid-row:1!important;
+    width:auto!important;max-width:100%!important;
+    padding-right:0!important;min-width:0!important;
+    justify-content:flex-start!important;
+    white-space:normal!important;
+  }
+  #studentBody .participant-account-actions{
+    grid-column:1!important;grid-row:2!important;
+    position:static!important;display:flex!important;
+    width:100%!important;min-width:0!important;
+    justify-content:flex-end!important;align-items:center!important;
+    gap:8px!important;flex-wrap:nowrap!important;
+  }
+  #studentBody .participant-connection{
+    position:static!important;inset:auto!important;
+    display:inline-flex!important;align-items:center!important;
+    max-width:calc(100% - 112px)!important;
+    overflow:hidden!important;text-overflow:ellipsis!important;
+    font-size:10px!important;padding:6px 9px!important;
+    white-space:nowrap!important;flex:0 1 auto!important;
+  }
+  #studentBody .participant-signout{
+    position:static!important;display:inline-flex!important;
+    flex:0 0 auto!important;min-height:36px!important;
+    padding:7px 11px!important;font-size:11px!important;
+    white-space:nowrap!important;visibility:visible!important;
+  }
+  #studentBody .participant-nav{
+    grid-column:1!important;grid-row:3!important;
+    width:100%!important;min-width:0!important;
+    justify-content:flex-start!important;
+    overflow-x:auto!important;flex-wrap:nowrap!important;
+  }
+}
+</style>
 </head>
 <body id="studentBody">
 <header class="participant-topbar">
