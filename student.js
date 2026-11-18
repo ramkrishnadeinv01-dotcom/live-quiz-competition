@@ -170,6 +170,31 @@ async function saveParticipantProfile(){
   if(out)out.textContent="✓ Your Participant Profile has been updated successfully.";
  }catch(e){if(out)out.textContent=`Unable to save profile: ${e.message||e}`;}
 }
+function isHindiPakhwadaPublication(item){
+ const marker=[item?.examName,item?.publicationId,item?.exam,item?.examTitle].map(v=>String(v??"")).join(" ").normalize("NFKC").toLowerCase().replace(/[\s_-]+/g," ");
+ return /hindi pakhwada|हिंदी पखवाड़ा|हिन्दी पखवाड़ा/.test(marker);
+}
+async function refreshParticipantDashboardMetrics(){
+ const assessmentEl=$("p2AssessmentModeCount"),publishedEl=$("p2PublishedResultCount"),sessionEl=$("p2ActiveSessionCount");
+ // Count the actual assessment choices rendered in the participant assignment panel.
+ if(assessmentEl)assessmentEl.textContent=String(document.querySelectorAll("#assignmentPanel .assignment-grid .assignment-card").length);
+ // This is a live count of published Other Examination result sets, not the
+ // number of result records for an individual mobile number.
+ if(publishedEl){
+  publishedEl.textContent="…";
+  try{
+   const snap=await get(ref(db,"otherExamPublications"));
+   const publications=snap.val()||{};
+   const count=Object.values(publications).filter(item=>item&&!isHindiPakhwadaPublication(item)).length;
+   publishedEl.textContent=String(count);
+  }catch(error){
+   console.warn("Unable to load published result service count:",error);
+   publishedEl.textContent="—";
+   publishedEl.title="Published result count is unavailable because the publication list could not be read.";
+  }
+ }
+ if(sessionEl)sessionEl.textContent=String(auth.currentUser?1:0);
+}
 function showDashboard(p){
  $("joinCard").classList.add("hidden");$("dashboardCard").classList.remove("hidden");$("quizCard").classList.add("hidden");
  $("participantWelcome").textContent=`Welcome, ${p.name} • ${p.designation} • ${p.placeOfPosting}`;
@@ -178,6 +203,7 @@ function showDashboard(p){
  Object.entries(editFields).forEach(([id,value])=>{const el=$(id);if(el)el.value=value||"";});
  Object.entries(profileFields).forEach(([id,value])=>{const el=$(id);if(el)el.textContent=value||"—";});
  $("connection").textContent="Ready";
+ refreshParticipantDashboardMetrics();
 }
 async function renderStudentAnalytics(uid){
  const target=$("studentAnalyticsContent");if(!target||!uid)return;
