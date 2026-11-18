@@ -415,6 +415,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <div class="card hidden" id="hostAccessCard">
 <h2>🔐 Host Permission</h2>
 <div class="status" id="hostAccessStatus"></div>
+<div class="row" style="margin-top:12px"><button class="secondary hidden" id="editHostProfileBtn" type="button">✏️ Edit Profile</button></div>
 <div class="status hidden" id="hostProfileUpdate" style="margin-top:12px">
 <b>Complete / Update Host Registration</b>
 <p class="muted">Please provide the following information so the Administrator can review your host request.</p>
@@ -430,7 +431,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <div class="field"><label>Purpose of Hosting *</label><select id="updateHostPurpose"><option value="">Select purpose</option><option>Official / Departmental Quiz</option><option>Educational / Academic Quiz</option><option>Training / Workshop Quiz</option><option>Competition / Event</option><option>Other</option></select></div>
 <div class="field"><label>Purpose Details *</label><input autocomplete="off" id="updateHostPurposeDetails" type="text"/></div>
 </div>
-<div class="row" style="margin-top:12px"><button class="success" id="saveHostProfileBtn" type="button">💾 Save Registration Details</button></div>
+<div class="row" style="margin-top:12px"><button class="success" id="saveHostProfileBtn" type="button">💾 Save Changes</button><button class="secondary" id="cancelHostProfileBtn" type="button">Cancel</button></div>
 <p id="hostProfileUpdateMsg"></p>
 </div>
 <div class="row" style="margin-top:12px"><button class="secondary" id="pendingLogoutBtn" type="button">🚪 Sign Out</button></div>
@@ -550,7 +551,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="host.js?v=20261106-v4020261030-hindi-independent-navfix" type="module"></script>
+<script src="host.js?v=83.7-profile-edit" type="module"></script>
 <script type="module" src="host-mapping.js?v=83.5"></script>
 
 <script>

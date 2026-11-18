@@ -151,10 +151,31 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 function msg(t,cls=""){$("joinMsg").textContent=t;$("joinMsg").className=cls;}
 function normalizePhone(v){v=v.trim().replace(/[\s()-]/g,"");if(/^\+91\d{10}$/.test(v))return v;if(/^91\d{10}$/.test(v))return "+"+v;if(/^\d{10}$/.test(v))return "+91"+v;return "";}
 function phoneKey(phone){return phone.replace(/\D/g,"");}
+async function saveParticipantProfile(){
+ if(!authUser||!participantProfile||participantProfile.status!=="approved")return;
+ const name=$("editParticipantName").value.trim(),designation=$("editParticipantDesignation").value.trim(),placeOfPosting=$("editParticipantPlace").value.trim(),phone=$("editParticipantPhone").value.trim();
+ const out=$("participantProfileMsg");
+ if(!name||!designation||!placeOfPosting||!phone){if(out)out.textContent="Please complete all profile fields.";return;}
+ if(!/^[0-9+()\- ]{7,15}$/.test(phone)){if(out)out.textContent="Please enter a valid mobile number.";return;}
+ try{
+  const changes={name,designation,placeOfPosting,phone,updatedAt:Date.now()};
+  await update(ref(db,`participants/${authUser.uid}`),changes);
+  await update(ref(db,`participantDirectory/${authUser.uid}`),{name,designation,placeOfPosting,phone,updatedAt:Date.now()});
+  participantProfile={...participantProfile,...changes};
+  const participant={uid:authUser.uid,email:authUser.email,name,designation,placeOfPosting,phone};
+  sessionStorage.setItem("quizParticipant",JSON.stringify(participant));
+  showDashboard(participant);
+  $("participantProfileEditor")?.classList.add("hidden");
+  $("editParticipantProfileBtn")?.classList.remove("hidden");
+  if(out)out.textContent="✓ Your Participant Profile has been updated successfully.";
+ }catch(e){if(out)out.textContent=`Unable to save profile: ${e.message||e}`;}
+}
 function showDashboard(p){
  $("joinCard").classList.add("hidden");$("dashboardCard").classList.remove("hidden");$("quizCard").classList.add("hidden");
  $("participantWelcome").textContent=`Welcome, ${p.name} • ${p.designation} • ${p.placeOfPosting}`;
  const profileFields={p2ProfileName:p.name,p2ProfileDesignation:p.designation,p2ProfilePlace:p.placeOfPosting,p2ProfilePhone:p.phone};
+ const editFields={editParticipantName:p.name,editParticipantDesignation:p.designation,editParticipantPlace:p.placeOfPosting,editParticipantPhone:p.phone};
+ Object.entries(editFields).forEach(([id,value])=>{const el=$(id);if(el)el.value=value||"";});
  Object.entries(profileFields).forEach(([id,value])=>{const el=$(id);if(el)el.textContent=value||"—";});
  $("connection").textContent="Ready";
 }
@@ -332,6 +353,9 @@ function startCountdown(serverOpen,seconds){
 }
 function disable(){answered=true;$("submitBtn").disabled=true;document.querySelectorAll(".option").forEach(b=>b.disabled=true);}
 document.addEventListener("DOMContentLoaded",()=>{
+ $("editParticipantProfileBtn")?.addEventListener("click",()=>{$("participantProfileEditor")?.classList.remove("hidden");$("editParticipantProfileBtn")?.classList.add("hidden");$("participantProfileMsg").textContent="Update your details and save your changes.";});
+ $("saveParticipantProfileBtn")?.addEventListener("click",saveParticipantProfile);
+ $("cancelParticipantProfileBtn")?.addEventListener("click",()=>{$("participantProfileEditor")?.classList.add("hidden");$("editParticipantProfileBtn")?.classList.remove("hidden");if(participantProfile)showDashboard({uid:authUser.uid,email:authUser.email,name:participantProfile.name,designation:participantProfile.designation,placeOfPosting:participantProfile.placeOfPosting,phone:participantProfile.phone});});
  $("participantRegisterBtn")?.addEventListener("click",registerParticipant);
  $("showRegisterBtn")?.addEventListener("click",()=>{$("participantLoginFields")?.classList.add("hidden");$("participantRegisterFields")?.classList.remove("hidden");$("backToLoginBtn")?.classList.remove("hidden");setJoinMessage("Create your participant profile. If your email is already registered as a Host, use the same account password to add the Participant role.");});
  $("backToLoginBtn")?.addEventListener("click",()=>{$("participantRegisterFields")?.classList.add("hidden");$("participantLoginFields")?.classList.remove("hidden");$("backToLoginBtn")?.classList.add("hidden");setJoinMessage("");});

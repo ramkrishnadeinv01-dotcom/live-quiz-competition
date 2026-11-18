@@ -407,6 +407,14 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
           <div><small>PLACE OF POSTING</small><b id="p2ProfilePlace">—</b></div>
           <div><small>MOBILE NUMBER</small><b id="p2ProfilePhone">—</b></div>
         </div>
+        <div style="margin-top:14px"><button id="editParticipantProfileBtn" class="secondary" type="button">✏️ Edit Profile</button></div>
+        <div id="participantProfileEditor" class="hidden" style="margin-top:14px;padding:14px;border:1px solid #d8b65b;border-radius:12px;background:#ffffff12">
+          <h3 style="margin-top:0">Edit Participant Profile</h3>
+          <div class="row"><div class="field"><label>Participant Name *</label><input id="editParticipantName" type="text" autocomplete="name"></div><div class="field"><label>Designation *</label><input id="editParticipantDesignation" type="text"></div></div>
+          <div class="row" style="margin-top:10px"><div class="field"><label>Place of Posting *</label><input id="editParticipantPlace" type="text"></div><div class="field"><label>Mobile Number *</label><input id="editParticipantPhone" type="tel" inputmode="tel" maxlength="15"></div></div>
+          <div class="row" style="margin-top:12px"><button id="saveParticipantProfileBtn" class="success" type="button">💾 Save Changes</button><button id="cancelParticipantProfileBtn" class="secondary" type="button">Cancel</button></div>
+          <p id="participantProfileMsg" role="status" aria-live="polite"></p>
+        </div>
       </div>
       <div class="p2-metrics">
         <div class="p2-metric"><span>🧩</span><div><b>03</b><small>Assessment modes</small></div></div>
@@ -484,7 +492,7 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
 </div>
 
 
-<script type="module" src="student.js?v=20261113-v79"></script>
+<script type="module" src="student.js?v=83.7-profile-edit"></script>
 <script type="module" src="host-mapping.js?v=83.5"></script>
 <script type="module" src="academic.js?v=20261113-v77"></script>
 

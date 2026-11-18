@@ -96,7 +96,7 @@ function fillHostProfileForm(p=hostProfile){
   if($("updateHostPurposeDetails"))$("updateHostPurposeDetails").value=p.purposeDetails||"";
 }
 function renderAccess(){
-  const launcher=$("adminLauncher"), access=$("hostAccessCard"), appBox=$("hostApp"), updateBox=$("hostProfileUpdate");
+  const launcher=$("adminLauncher"), access=$("hostAccessCard"), appBox=$("hostApp"), updateBox=$("hostProfileUpdate"), editBtn=$("editHostProfileBtn");
   if(launcher)launcher.classList.toggle("hidden",!isAdmin());
   if(!currentUser){
     if(appBox)appBox.classList.add("hidden");
@@ -119,7 +119,9 @@ function renderAccess(){
     else if(hostProfile?.status==="rejected"||hostProfile?.status==="revoked") st.innerHTML="🚫 <b>Host permission is not active.</b><br>Please contact the Administrator.";
     else st.textContent="Host permission is active.";
     fillHostProfileForm();
-    if(updateBox)updateBox.classList.toggle("hidden",!!hostProfile?.status && profileComplete(hostProfile));
+    const complete=!!hostProfile?.status && profileComplete(hostProfile);
+    if(editBtn)editBtn.classList.toggle("hidden",!complete);
+    if(updateBox)updateBox.classList.toggle("hidden",complete && !window.__hostProfileEditing);
   }
 }
 function clearHostRegistrationFields(){
@@ -248,7 +250,8 @@ async function saveHostProfile(){
     const data={email:(currentUser.email||"").toLowerCase(),hostName,designation,placeOfPosting,phone,purpose,purposeDetails,status:existing.status||"pending",requestedAt:existing.requestedAt||Date.now(),updatedAt:serverTimestamp()};
     await update(ref(db,`hosts/${currentUser.uid}`),data);
     hostProfile={...existing,...data,updatedAt:Date.now(),requestedAt:existing.requestedAt||Date.now()};
-    if(out)out.textContent="✓ Registration details saved. The Administrator can now review the complete information.";
+    if(out)out.textContent="✓ Your Host Profile has been updated successfully.";
+    window.__hostProfileEditing=false;
     renderAccess();
     if(isAdmin())await loadHostRequests();
   }catch(e){if(out)out.textContent=e.message||String(e);}
@@ -651,6 +654,8 @@ $("openAdminApprovalBtn").onclick=openAdminModal;
 $("closeAdminApprovalBtn").onclick=closeAdminModal;
 $("backToMainBtn").onclick=closeAdminModal;
 $("saveHostProfileBtn").onclick=saveHostProfile;
+$("editHostProfileBtn")?.addEventListener("click",()=>{window.__hostProfileEditing=true;fillHostProfileForm();$("hostProfileUpdate")?.classList.remove("hidden");$("editHostProfileBtn")?.classList.add("hidden");$("hostProfileUpdateMsg").textContent="You can update your Host Profile details below.";});
+$("cancelHostProfileBtn")?.addEventListener("click",()=>{window.__hostProfileEditing=false;fillHostProfileForm();$("hostProfileUpdateMsg").textContent="No changes were saved.";renderAccess();});
 
 $("importWordBtn").onclick=importWordQuestions;
 $("wordFileInput").addEventListener("change",()=>{const f=$("wordFileInput").files?.[0]; $("wordImportMsg").textContent=f?`Selected: ${f.name}`:"";});
