@@ -31,7 +31,32 @@ async function participantUI(u){
   box.innerHTML=`<h2 style="color:#ffe2a0">${title}</h2>${intro}${warning}<label for="${selectId}">${isMapped?'Select another approved host':'Select an approved host'}</label><select id="${selectId}" ${hostsReadError?'disabled':''}><option value="">${options?'— Select host —':'No approved hosts listed'}</option>${options}</select><button id="${isMapped?'sendTransfer':'sendHostRequest'}" type="button" ${!options||hostsReadError?'disabled':''}>${action}</button><p id="mapMsg" class="host-map-status" role="status" aria-live="polite">${options?'Select a host, then press the button to send your request.':(hostsReadError?'Host list could not be loaded.':'No approved hosts are currently available. Your account remains managed by the Administrator.')}</p>`;
   const showError=e=>{const m=$('mapMsg');if(m)m.textContent=`Request failed: ${e?.message||e}. Please verify that the V83 database rules have been published.`;};
   if(!isMapped){
-   $('sendHostRequest')?.addEventListener('click',async()=>{const hid=$(selectId)?.value;if(!hid){$('mapMsg').textContent='Please select a host first.';return;}const btn=$('sendHostRequest');btn.disabled=true;try{await set(ref(db,`hostMappingRequests/${hid}/${u.uid}`),{hostUid:hid,participantUid:u.uid,participantName:p.name||'',participantEmail:u.email||'',status:'pending',requestedAt:Date.now()});$('mapMsg').textContent='Request sent successfully. The selected host must approve it.';}catch(e){showError(e);}finally{btn.disabled=false;}});
+   $('sendHostRequest')?.addEventListener('click',async()=>{
+    const hid=$(selectId)?.value;
+    if(!hid){$('mapMsg').textContent='Please select a host first.';return;}
+    const btn=$('sendHostRequest');btn.disabled=true;
+    try{
+     // Re-read the mapping immediately before writing; the page may have been open
+     // while the host approved an earlier request in another tab.
+     const fresh=(await get(ref(db,`participantHostMapping/${u.uid}`))).val()||null;
+     if(fresh?.status==='approved' && fresh.hostUid===hid){
+      alert('You are already mapped to this host. Your account is currently managed by this host. No new request is required.');
+      $('mapMsg').textContent='You are already mapped to this host. No new request has been created.';
+      await participantUI(u);return;
+     }
+     if(fresh?.status==='approved' && fresh.hostUid!==hid){
+      alert('You are already mapped to another host. Please use the Host Transfer Request option. Administrator approval is required.');
+      await participantUI(u);return;
+     }
+     const existing=(await get(ref(db,`hostMappingRequests/${hid}/${u.uid}`))).val()||null;
+     if(existing?.status==='pending'){
+      alert('You have already sent a request to this host. Your request is still pending.');
+      $('mapMsg').textContent='Your request to this host is already pending.';return;
+     }
+     await set(ref(db,`hostMappingRequests/${hid}/${u.uid}`),{hostUid:hid,participantUid:u.uid,participantName:p.name||'',participantEmail:u.email||'',status:'pending',requestedAt:Date.now()});
+     $('mapMsg').textContent='Request sent successfully. The selected host must approve it.';
+    }catch(e){showError(e);}finally{if($('sendHostRequest'))$('sendHostRequest').disabled=false;}
+   });
   }else{
    $('sendTransfer')?.addEventListener('click',async()=>{const hid=$(selectId)?.value;if(!hid){$('mapMsg').textContent='Please select another host first.';return;}const btn=$('sendTransfer');btn.disabled=true;try{await set(ref(db,`hostTransferRequests/${u.uid}`),{participantUid:u.uid,currentHostUid:mapping.hostUid,requestedHostUid:hid,status:'pending',requestedAt:Date.now()});$('mapMsg').textContent='Transfer request sent to the Administrator for approval.';}catch(e){showError(e);}finally{btn.disabled=false;}});
   }
@@ -41,7 +66,24 @@ async function participantUI(u){
  }
 }
 async function hostUI(u){const h=(await get(ref(db,`hosts/${u.uid}`))).val();if(h?.status!=='approved')return;const box=panel('hostMappingInbox','🔔 Participant Host Requests','<p>Loading requests…</p>');const req=(await get(ref(db,`hostMappingRequests/${u.uid}`))).val()||{};const rows=Object.entries(req).filter(([id,x])=>x?.status==='pending');box.innerHTML=`<h2 style="color:#ffe2a0">🔔 Participant Host Requests</h2>${rows.length?rows.map(([id,x])=>`<div style="padding:12px;margin:8px 0;background:#17365f;border-radius:10px"><b>${esc(x.participantName||x.participantEmail||id)}</b><p>${esc(x.participantEmail||'')}</p><button data-map="approve" data-uid="${esc(id)}">Approve</button> <button data-map="reject" data-uid="${esc(id)}">Reject</button></div>`).join(''):'<p>No pending host requests.</p>'}`;
- box.querySelectorAll('[data-map]').forEach(b=>b.onclick=async()=>{const pid=b.dataset.uid,action=b.dataset.map;if(!confirm(`${action==='approve'?'Approve':'Reject'} this participant request?`))return;try{const requestRecord=req[pid]||{};if(action==='approve'){await set(ref(db,`participantHostMapping/${pid}`),{hostUid:u.uid,hostName:h.hostName||u.email,status:'approved',mappedAt:Date.now()});await set(ref(db,`hostParticipantMappings/${u.uid}/${pid}`),{participantUid:pid,name:requestRecord.participantName||'',email:requestRecord.participantEmail||'',status:'approved',mappedAt:Date.now()});}await update(ref(db,`hostMappingRequests/${u.uid}/${pid}`),{status:action==='approve'?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:u.uid});await hostUI(u);}catch(e){alert('Unable to process request: '+e.message);}});
+ box.querySelectorAll('[data-map]').forEach(b=>b.onclick=async()=>{const pid=b.dataset.uid,action=b.dataset.map;if(!confirm(`${action==='approve'?'Approve':'Reject'} this participant request?`))return;try{const requestRecord=req[pid]||{};if(action==='approve'){
+  const existing=(await get(ref(db,`participantHostMapping/${pid}`))).val()||null;
+  if(existing?.status==='approved' && existing.hostUid===u.uid){
+   // Recover safely if an earlier approval wrote the authoritative mapping
+   // but failed before writing the host-side participant index.
+   await set(ref(db,`hostParticipantMappings/${u.uid}/${pid}`),{participantUid:pid,name:requestRecord.participantName||'',email:requestRecord.participantEmail||'',status:'approved',mappedAt:existing.mappedAt||Date.now()});
+   await update(ref(db,`hostMappingRequests/${u.uid}/${pid}`),{status:'approved',reviewedAt:Date.now(),reviewedBy:u.uid});
+   alert('This participant is already mapped to your host account. The host participant list has been checked and the request is now closed.');
+   await hostUI(u);return;
+  }
+  if(existing?.status==='approved' && existing.hostUid!==u.uid){
+   await update(ref(db,`hostMappingRequests/${u.uid}/${pid}`),{status:'rejected',reviewedAt:Date.now(),reviewedBy:u.uid});
+   alert('This participant is already mapped to another host. A host transfer must be approved by the Administrator.');
+   await hostUI(u);return;
+  }
+  await set(ref(db,`participantHostMapping/${pid}`),{hostUid:u.uid,hostName:h.hostName||u.email,status:'approved',mappedAt:Date.now()});
+  await set(ref(db,`hostParticipantMappings/${u.uid}/${pid}`),{participantUid:pid,name:requestRecord.participantName||'',email:requestRecord.participantEmail||'',status:'approved',mappedAt:Date.now()});
+ }await update(ref(db,`hostMappingRequests/${u.uid}/${pid}`),{status:action==='approve'?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:u.uid});await hostUI(u);}catch(e){alert('Unable to process request: '+e.message);}});
 }
 async function adminUI(u){if(!isAdmin(u))return;const box=panel('adminHostTransferPanel','🔁 Host Transfer Approval','<p>Loading transfer requests…</p>');const req=(await get(ref(db,'hostTransferRequests'))).val()||{};const rows=Object.entries(req).filter(([id,x])=>x?.status==='pending');box.innerHTML=`<h2 style="color:#ffe2a0">🔁 Host Transfer Approval</h2>${rows.length?rows.map(([pid,x])=>`<div style="padding:12px;margin:8px 0;background:#17365f;border-radius:10px"><b>${esc(pid)}</b><p>Current host: ${esc(x.currentHostUid)} → Requested host: ${esc(x.requestedHostUid)}</p><button data-transfer="approve" data-uid="${esc(pid)}">Approve transfer</button> <button data-transfer="reject" data-uid="${esc(pid)}">Reject</button></div>`).join(''):'<p>No pending transfer requests.</p>'}`;
  box.querySelectorAll('[data-transfer]').forEach(b=>b.onclick=async()=>{const pid=b.dataset.uid,action=b.dataset.transfer,x=req[pid];if(!confirm(`${action==='approve'?'Approve':'Reject'} this transfer?`))return;try{if(action==='approve'){const next=x.requestedHostUid,hs=(await get(ref(db,`approvedHostsPublic/${next}`))).val()||{};await set(ref(db,`participantHostMapping/${pid}`),{hostUid:next,hostName:hs.hostName||hs.email||next,status:'approved',mappedAt:Date.now(),transferredBy:u.uid});await remove(ref(db,`hostParticipantMappings/${x.currentHostUid}/${pid}`));await set(ref(db,`hostParticipantMappings/${next}/${pid}`),{participantUid:pid,status:'approved',mappedAt:Date.now()});}await update(ref(db,`hostTransferRequests/${pid}`),{status:action==='approve'?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:u.uid});await adminUI(u);}catch(e){alert('Transfer update failed: '+e.message);}});

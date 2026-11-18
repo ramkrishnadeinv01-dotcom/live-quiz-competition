@@ -1,0 +1,10 @@
+V83.4 — Duplicate Host Request Guard and Admin Transfer Panel Diagnostics
+
+1. Uses the exact current database rules supplied by the user as the base.
+2. Prevents a participant from creating another request to a host when participantHostMapping already says that participant is approved under that same host.
+3. Participant UI shows a clear popup if the prior request is already approved or still pending.
+4. Host approval handles a duplicate/race idempotently: it closes the duplicate request as approved and ensures the host-side index exists without creating a second mapping.
+5. Administrator Host Transfer Approval now displays a readable database error instead of leaving the panel blank if the request read fails.
+6. Script cache versions bumped to 83.4.
+
+IMPORTANT: This package is for LOCAL EMULATOR TESTING ONLY. Do not publish database.rules.json to the live Firebase project until emulator tests pass. The package has been JSON-validated, but not run against the user's local emulator in this environment.

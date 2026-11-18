@@ -1,0 +1,11 @@
+V83.3 - Duplicate Host Request Protection
+
+Changes:
+1. Participant panel re-reads the current host mapping before submitting a host request.
+2. If the participant is already mapped to the selected host, a popup explains that no new request is required; no Firebase request is written.
+3. If a participant already has another approved host mapping, the standard host request is blocked and the participant is directed to the Administrator-approved transfer flow.
+4. If the same request is already pending, a popup prevents a duplicate pending request.
+5. Host approval re-checks the participant's current mapping. A stale duplicate request is closed instead of attempting to overwrite an existing mapping, avoiding the permission-denied error.
+6. Script cache versions are bumped to v83.3.
+
+No Firebase database rules are changed in this package. Continue testing with the local Firebase emulator before publishing any rules.

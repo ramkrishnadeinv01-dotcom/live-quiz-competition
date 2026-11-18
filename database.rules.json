@@ -27,7 +27,7 @@
           "$q": {
             "$student": {
               ".read": "auth != null && root.child('rooms').child($room).child('hostUid').val() == auth.uid",
-              ".write": "auth != null && !data.exists() && !root.child('rooms').child($room).child('participants').child($student).child('blocked').val()"
+              ".write": "auth != null && !data.exists() && root.child('rooms').child($room).child('participants').child($student).child('blocked').val() != true"
             }
           }
         },
@@ -154,7 +154,7 @@
       "$hostUid": {
         ".read": "auth != null && (auth.uid == $hostUid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com')",
         "$participantUid": {
-          ".write": "auth != null && ((auth.uid == $participantUid && root.child('hosts').child($hostUid).child('status').val() == 'approved' && (!data.exists() || data.child('status').val() != 'pending') && newData.child('status').val() == 'pending' && newData.child('participantUid').val() == auth.uid && newData.child('hostUid').val() == $hostUid) || (auth.uid == $hostUid && root.child('hosts').child(auth.uid).child('status').val() == 'approved' && data.child('status').val() == 'pending' && (newData.child('status').val() == 'approved' || newData.child('status').val() == 'rejected')) || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))"
+          ".write": "auth != null && ((auth.uid == $participantUid && root.child('hosts').child($hostUid).child('status').val() == 'approved' && (!data.exists() || data.child('status').val() != 'pending') && !(root.child('participantHostMapping').child($participantUid).child('status').val() == 'approved' && root.child('participantHostMapping').child($participantUid).child('hostUid').val() == $hostUid) && newData.child('status').val() == 'pending' && newData.child('participantUid').val() == auth.uid && newData.child('hostUid').val() == $hostUid) || (auth.uid == $hostUid && root.child('hosts').child(auth.uid).child('status').val() == 'approved' && data.child('status').val() == 'pending' && (newData.child('status').val() == 'approved' || newData.child('status').val() == 'rejected')) || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))"
         }
       }
     },

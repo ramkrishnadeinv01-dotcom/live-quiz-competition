@@ -1,0 +1,17 @@
+WORLD OF EXAM — V83.5 GITHUB UPLOAD BUILD
+
+BASE
+Built from the supplied V83.4 Host Request Guard project. Existing pages, visual design, quiz/exam modules, academic and Olympiad modules, result modules, assets, and Firebase configuration are retained.
+
+FIX IN V83.5
+1. Corrected the host-approval recovery path. If the authoritative participantHostMapping record was written successfully but the hostParticipantMappings index write failed, a host retry now repairs the missing host-side index and closes the request as approved.
+2. The retry path no longer marks an already-approved same-host request as rejected.
+3. Host-mapping script cache references were bumped to 83.5 in student.html, host.html, and administrator.html.
+
+IMPORTANT FIREBASE NOTE
+This is a GitHub Pages website-code package. It does not update the live Firebase project, database contents, Authentication settings, or Realtime Database Rules.
+The database.rules.json file is retained as part of the project archive for reference/local configuration only. Do NOT deploy it to the live Firebase project as part of this GitHub upload. The latest rules file supplied separately by the user differs from the rules bundled in V83.4; reconcile and test rules separately before any Firebase Rules deployment.
+
+TEST STATUS / LIMITATIONS
+- JavaScript syntax checks and JSON parsing checks are performed for this package.
+- A live Firebase approval/transfer test has NOT been performed here. This package therefore does not claim to certify or guarantee the live host-approval workflow. After uploading, test with one approved host and one approved participant before using the feature with real accounts.
