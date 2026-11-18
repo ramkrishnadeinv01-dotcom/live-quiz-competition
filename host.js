@@ -663,7 +663,7 @@ $("closeAdminApprovalBtn").onclick=closeAdminModal;
 $("backToMainBtn").onclick=closeAdminModal;
 $("saveHostProfileBtn").onclick=saveHostProfile;
 $("editHostProfileBtn")?.addEventListener("click",()=>{window.__hostProfileEditing=true;fillHostProfileForm();$("hostProfileUpdate")?.classList.remove("hidden");$("editHostProfileBtn")?.classList.add("hidden");$("hostProfileUpdateMsg").textContent="You can update your Host Profile details below.";});
-$("homeEditHostProfileBtn")?.addEventListener("click",()=>{window.__hostProfileEditing=true;fillHostProfileForm();$("hostProfileUpdate")?.classList.remove("hidden");$("editHostProfileBtn")?.classList.add("hidden");$("hostProfileUpdateMsg").textContent="You can update your Host Profile details below.";$("hostProfileUpdate")?.scrollIntoView({behavior:"smooth",block:"center"});});
+$("homeEditHostProfileBtn")?.addEventListener("click",()=>{window.__hostProfileEditing=true;const form=$("hostProfileUpdate");const menu=$("hostMenu");const card=$("hostHomeProfileCard");if(form&&menu&&form.parentElement!==menu){if(card&&card.parentElement===menu)card.insertAdjacentElement("afterend",form);else menu.prepend(form);}fillHostProfileForm();form?.classList.remove("hidden");$("editHostProfileBtn")?.classList.add("hidden");const note=$("hostProfileUpdateMsg");if(note)note.textContent="You can update your Host Profile details below.";form?.scrollIntoView({behavior:"smooth",block:"center"});});
 $("cancelHostProfileBtn")?.addEventListener("click",()=>{window.__hostProfileEditing=false;fillHostProfileForm();$("hostProfileUpdateMsg").textContent="No changes were saved.";renderAccess();});
 
 $("importWordBtn").onclick=importWordQuestions;
