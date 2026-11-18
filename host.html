@@ -437,10 +437,22 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <div class="row" style="margin-top:12px"><button class="secondary" id="pendingLogoutBtn" type="button">🚪 Sign Out</button></div>
 </div>
 <div class="hidden" id="hostMenu">
+
 <section class="we-welcome-panel" id="weWelcomePanel">
   <div class="we-welcome-copy"><span class="we-eyebrow">WORLD OF EXAM · HOST WORKSPACE</span><h1>Welcome to Your <span>Host Dashboard</span></h1><p>Your central workspace to manage examinations, participants, assignments and results.</p></div>
   <div class="we-host-profile" id="weHostProfile"><div class="we-avatar">♟</div><div class="we-profile-copy"><span class="we-profile-label">HOST PROFILE</span><strong id="weHostName">Welcome, Host</strong><span id="weHostEmail">Signed-in host account</span></div><span class="we-active-pill">● Host Access Active</span></div>
   <div class="we-academic-art" aria-hidden="true"><span>🎓</span><span>📚</span><span>💻</span></div>
+</section>
+<section class="card" id="hostHomeProfileCard" style="margin:18px 0;border:1px solid #dbe5f3;border-radius:18px;padding:20px;background:#fff;box-shadow:0 8px 24px rgba(20,40,80,.06)">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0 0 5px;color:#123d91">👤 My Host Profile</h2><p style="margin:0;color:#64748b">Your saved host information</p></div><button class="secondary" id="homeEditHostProfileBtn" type="button">✏️ Edit Profile</button></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:16px">
+    <div><small style="color:#64748b">Host Name</small><div id="homeHostProfileName">—</div></div>
+    <div><small style="color:#64748b">Designation</small><div id="homeHostProfileDesignation">—</div></div>
+    <div><small style="color:#64748b">Place of Posting</small><div id="homeHostProfilePlace">—</div></div>
+    <div><small style="color:#64748b">Mobile Number</small><div id="homeHostProfilePhone">—</div></div>
+    <div><small style="color:#64748b">Purpose of Hosting</small><div id="homeHostProfilePurpose">—</div></div>
+    <div><small style="color:#64748b">Purpose Details</small><div id="homeHostProfilePurposeDetails">—</div></div>
+  </div>
 </section>
 <section class="host-hero we-old-hero">
 <h2>Host Control Centre</h2>
