@@ -386,6 +386,23 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
   }
 }
 </style>
+
+<style id="v83-9-participant-dashboard-order">
+/* V83.9: keep public result cards on the login screen only. */
+#studentBody:has(#dashboardCard:not(.hidden)) #publicResultButtons{display:none!important}
+/* Dashboard content order: learning space, profile, metrics, insights, host mapping, workspace, quick links. */
+#dashboardCard:not(.hidden) #participantHostMappingPanel{order:2}
+#dashboardCard:not(.hidden)>.p2-overview{order:1}
+#dashboardCard:not(.hidden)>.card:has(#academicPanel){order:3}
+#dashboardCard:not(.hidden)>.p2-quicklinks{order:4}
+#dashboardCard:not(.hidden) #participantHostMappingPanel{margin:0!important}
+@media(max-width:650px){
+  #dashboardCard:not(.hidden)>.p2-overview{gap:12px!important}
+  #dashboardCard:not(.hidden) #participantHostMappingPanel{padding:16px!important}
+  #dashboardCard:not(.hidden)>.card:has(#academicPanel){margin-top:0!important}
+}
+</style>
+
 </head>
 <body id="studentBody">
 <header class="participant-topbar">
@@ -432,11 +449,7 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
   </div>
 
   <div id="dashboardCard" class="hidden">
-    <section id="participantHostMappingPanel" class="host-mapping-panel" aria-live="polite">
-      <h2>👥 Choose Your Host</h2>
-      <p>Host selection is optional. If you do not choose a host, your account remains managed by the Administrator.</p>
-      <p>Host selection is optional. Without a host, your account remains managed by the Administrator.</p><div class="host-mapping-loading">Loading approved hosts…</div>
-    </section>
+
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
         <div><h2 style="margin:0">Participant Dashboard</h2><div class="muted" id="participantWelcome"></div></div>
@@ -444,7 +457,7 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
     </div>
     <section class="p2-overview" aria-label="Participant overview">
       <div class="p2-welcome">
-        <div><span class="p2-kicker">YOUR LEARNING SPACE</span><h2>Welcome to your examination workspace</h2><p>Choose an assignment, review your examination performance, or open a published result service.</p></div>
+        <div><span class="p2-kicker">YOUR LEARNING SPACE</span><h2>Welcome to your examination workspace</h2><p>Choose an assignment, track your learning progress, and explore study resources.</p></div>
         <div class="p2-avatar" aria-hidden="true">✦</div>
       </div>
       <div class="p2-profile">
@@ -466,7 +479,7 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
       </div>
       <div class="p2-metrics">
         <div class="p2-metric"><span>🧩</span><div><b>03</b><small>Assessment modes</small></div></div>
-        <div class="p2-metric"><span>📄</span><div><b>02</b><small>Published result services</small></div></div>
+        <div class="p2-metric"><span>📄</span><div><b>01</b><small>Published result service</small></div></div>
         <div class="p2-metric"><span>🔐</span><div><b>01</b><small>Active participant session</small></div></div>
       </div>
       <div class="p2-result-shortcuts" id="studentAnalyticsPanel" style="display:block!important;grid-area:rail;">
@@ -476,6 +489,10 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
           <em>↗</em>
         </a>
       </div>
+    </section>
+    <section id="participantHostMappingPanel" class="host-mapping-panel" aria-live="polite">
+      <h2>👥 Choose Your Host</h2>
+      <p>Host selection is optional. If you do not choose a host, your account remains managed by the Administrator.</p><div class="host-mapping-loading">Loading approved hosts…</div>
     </section>
     <div class="card">
       <div class="dashboard-tabs">
@@ -513,7 +530,7 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
     <nav class="p2-quicklinks" aria-label="Participant quick access">
       <a href="student.html"><span>⌂</span>Home</a>
       <a href="#assignmentPanel" onclick="document.getElementById('assignmentTab').click()"><span>🎯</span>Assignment</a>
-      <a href="#resultPanel" onclick="document.getElementById('resultTab').click()"><span>📊</span>Result</a>
+      <a href="./other-result.html?v=20261118-dashboard-redesign" aria-label="Open Other Examination Results"><span>▤</span>Other Results</a>
       <a href="academic-test.html"><span>🏅</span>Olympiad Mock Test</a>
       <a href="#academicPanel" onclick="document.getElementById('academicTab').click()"><span>📚</span>Study Materials</a>
       <a href="#resultPanel" onclick="document.getElementById('resultTab').click()"><span>🏆</span>Achievements</a>
