@@ -85,7 +85,37 @@ async function hostUI(u){const h=(await get(ref(db,`hosts/${u.uid}`))).val();if(
   await set(ref(db,`hostParticipantMappings/${u.uid}/${pid}`),{participantUid:pid,name:requestRecord.participantName||'',email:requestRecord.participantEmail||'',status:'approved',mappedAt:Date.now()});
  }await update(ref(db,`hostMappingRequests/${u.uid}/${pid}`),{status:action==='approve'?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:u.uid});await hostUI(u);}catch(e){alert('Unable to process request: '+e.message);}});
 }
-async function adminUI(u){if(!isAdmin(u))return;const box=panel('adminHostTransferPanel','🔁 Host Transfer Approval','<p>Loading transfer requests…</p>');const req=(await get(ref(db,'hostTransferRequests'))).val()||{};const rows=Object.entries(req).filter(([id,x])=>x?.status==='pending');box.innerHTML=`<h2 style="color:#ffe2a0">🔁 Host Transfer Approval</h2>${rows.length?rows.map(([pid,x])=>`<div style="padding:12px;margin:8px 0;background:#17365f;border-radius:10px"><b>${esc(pid)}</b><p>Current host: ${esc(x.currentHostUid)} → Requested host: ${esc(x.requestedHostUid)}</p><button data-transfer="approve" data-uid="${esc(pid)}">Approve transfer</button> <button data-transfer="reject" data-uid="${esc(pid)}">Reject</button></div>`).join(''):'<p>No pending transfer requests.</p>'}`;
- box.querySelectorAll('[data-transfer]').forEach(b=>b.onclick=async()=>{const pid=b.dataset.uid,action=b.dataset.transfer,x=req[pid];if(!confirm(`${action==='approve'?'Approve':'Reject'} this transfer?`))return;try{if(action==='approve'){const next=x.requestedHostUid,hs=(await get(ref(db,`approvedHostsPublic/${next}`))).val()||{};await set(ref(db,`participantHostMapping/${pid}`),{hostUid:next,hostName:hs.hostName||hs.email||next,status:'approved',mappedAt:Date.now(),transferredBy:u.uid});await remove(ref(db,`hostParticipantMappings/${x.currentHostUid}/${pid}`));await set(ref(db,`hostParticipantMappings/${next}/${pid}`),{participantUid:pid,status:'approved',mappedAt:Date.now()});}await update(ref(db,`hostTransferRequests/${pid}`),{status:action==='approve'?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:u.uid});await adminUI(u);}catch(e){alert('Transfer update failed: '+e.message);}});
+async function adminUI(u){
+ if(!isAdmin(u))return;
+ const box=panel('adminHostTransferPanel','🔁 Host Transfer Approval','<p>Loading transfer requests…</p>');
+ const req=(await get(ref(db,'hostTransferRequests'))).val()||{};
+ const rows=Object.entries(req).filter(([id,x])=>x?.status==='pending');
+ // Resolve UIDs using the existing participant and host profile records.
+ const participantIds=[...new Set(rows.map(([pid])=>pid))];
+ const hostIds=[...new Set(rows.flatMap(([pid,x])=>[x?.currentHostUid,x?.requestedHostUid]).filter(Boolean))];
+ const [participantSnaps,hostSnaps]=await Promise.all([
+  Promise.all(participantIds.map(id=>get(ref(db,`participants/${id}`)))),
+  Promise.all(hostIds.map(id=>get(ref(db,`hosts/${id}`))))
+ ]);
+ const participantNames={},hostNames={},hostRecords={};
+ participantIds.forEach((id,i)=>{const p=participantSnaps[i].val()||{};participantNames[id]=p.name||p.participantName||p.fullName||p.displayName||p.email||id;});
+ hostIds.forEach((id,i)=>{const h=hostSnaps[i].val()||{};hostRecords[id]=h;hostNames[id]=h.hostName||h.name||h.fullName||h.displayName||h.email||id;});
+ const personLabel=(name,id)=>`${esc(name||id)} <small style="opacity:.78;font-weight:400">(${esc(id)})</small>`;
+ box.innerHTML=`<h2 style="color:#ffe2a0">🔁 Host Transfer Approval</h2>${rows.length?rows.map(([pid,x])=>`<div style="padding:12px;margin:8px 0;background:#17365f;border-radius:10px"><b>Participant: ${personLabel(participantNames[pid],pid)}</b><p>Current host: ${personLabel(hostNames[x.currentHostUid],x.currentHostUid)} → Requested host: ${personLabel(hostNames[x.requestedHostUid],x.requestedHostUid)}</p><button data-transfer="approve" data-uid="${esc(pid)}">Approve transfer</button> <button data-transfer="reject" data-uid="${esc(pid)}">Reject</button></div>`).join(''):'<p>No pending transfer requests.</p>'}`;
+ box.querySelectorAll('[data-transfer]').forEach(b=>b.onclick=async()=>{
+  const pid=b.dataset.uid,action=b.dataset.transfer,x=req[pid];
+  if(!confirm(`${action==='approve'?'Approve':'Reject'} this transfer for ${participantNames[pid]||pid}?`))return;
+  try{
+   if(action==='approve'){
+    const next=x.requestedHostUid;
+    const hs=(await get(ref(db,`approvedHostsPublic/${next}`))).val()||hostRecords[next]||{};
+    await set(ref(db,`participantHostMapping/${pid}`),{hostUid:next,hostName:hs.hostName||hs.name||hs.email||next,status:'approved',mappedAt:Date.now(),transferredBy:u.uid});
+    await remove(ref(db,`hostParticipantMappings/${x.currentHostUid}/${pid}`));
+    await set(ref(db,`hostParticipantMappings/${next}/${pid}`),{participantUid:pid,name:participantNames[pid]||'',status:'approved',mappedAt:Date.now()});
+   }
+   await update(ref(db,`hostTransferRequests/${pid}`),{status:action==='approve'?'approved':'rejected',reviewedAt:Date.now(),reviewedBy:u.uid});
+   await adminUI(u);
+  }catch(e){alert('Transfer update failed: '+e.message);}
+ });
 }
 onAuthStateChanged(auth,async u=>{if(!u||u.isAnonymous)return;try{const page=location.pathname.split('/').pop().toLowerCase();if(page==='student.html'||page==='')await participantUI(u);else if(page==='host.html')await hostUI(u);else if(page==='administrator.html')await adminUI(u);}catch(e){console.error('Host mapping UI could not load',e);}});
