@@ -5,7 +5,7 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
 let currentUser=null, selectedRoom="";
-let hostCache=[], participantCache=[], roomCache=[], publicationCache=[];
+let hostCache=[], participantCache=[], roomCache=[], publicationCache=[], academicTestCache=[];
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const isAdmin=u=>String(u?.email||"").toLowerCase()===ADMIN_EMAIL;
 async function persist(){try{return await setPersistence(auth,browserLocalPersistence)}catch(e){try{return await setPersistence(auth,indexedDBLocalPersistence)}catch(e2){}}}
@@ -156,10 +156,50 @@ async function deletePublication(pub){
  if(!admin())return;const snap=await get(ref(db,`otherExamPublications/${pub}`));if(!snap.exists())return alert("Publication not found.");const meta=snap.val()||{};const ok=confirm(`DELETE OTHER EXAM RESULT\n\nPublication: ${pub}\nExam: ${meta.examName||""}\nRecords: ${meta.recordCount||0}\n\nAll candidate results belonging to this publication will be deleted. This cannot be undone. Continue?`);if(!ok)return;
  try{for(const [rid,m] of Object.entries(meta.resultIndex||{})){if(m?.phoneHash)await remove(ref(db,`otherExamResults/${m.phoneHash}/${rid}`));}await remove(ref(db,`otherExamPublications/${pub}`));await loadOtherPublications();}catch(e){alert(`Delete failed: ${e.message||e}`);}}
 
-function render(u){currentUser=u||null;$("authStatus").textContent=u?(isAdmin(u)?"Administrator signed in":"Not authorized"):"Not signed in";$("adminLoginCard").classList.toggle("hidden",!!u&&isAdmin(u));$("adminApp").classList.toggle("hidden",!(u&&isAdmin(u)));if(u&&isAdmin(u)){loadHosts();loadParticipants();loadRooms();loadOtherPublications();}}
+
+function renderAcademicTests(){
+ const body=$("academicTestRows");if(!body)return;
+ const q=String($("academicTestSearch")?.value||"").toLowerCase().trim();
+ const cat=String($("academicTestCategory")?.value||"");
+ const st=String($("academicTestStatus")?.value||"");
+ const arr=academicTestCache.filter(x=>(!cat||(x.examCategory||"olympiad")===cat)&&(!st||String(x.status||"DRAFT").toUpperCase()===st)&&(!q||[x.title,x.roomCode,x.className,x.subject,x.hostUid,x.createdBy].join(" ").toLowerCase().includes(q)));
+ $("academicTestStatusText").textContent=`${academicTestCache.length} test(s) across all Hosts • ${arr.length} shown`;
+ if(!arr.length){body.innerHTML='<tr><td colspan="9" class="empty">No Academic or Olympiad tests match these filters.</td></tr>';return;}
+ body.innerHTML=arr.map(x=>{const cat=(x.examCategory||"olympiad"),mode=cat==="academic"?"academic":"olympiad",active=x.active!==false;return `<tr><td><b>${cat==="academic"?"Academic":"Olympiad"}</b></td><td><b>${esc(x.title||"Untitled test")}</b><br><small>${esc(x.roomCode||x.id)}</small></td><td>${esc(x.className||"—")}</td><td>${esc(x.subject||"—")}</td><td><small>${esc(x.hostUid||x.createdBy||"—")}</small></td><td>${Number(x.questionsCount||x.questions?.length||0)}</td><td>${esc(x.status||"DRAFT")}</td><td>${active?"Published / enabled":"Unpublished / disabled"}</td><td><div class="toolbar"><button class="secondary academicManage" data-id="${esc(x.id)}" data-mode="${mode}">Manage / Edit</button><button class="secondary academicToggle" data-id="${esc(x.id)}" data-active="${active?"1":"0"}">${active?"Unpublish":"Publish"}</button><button class="secondary academicClose" data-id="${esc(x.id)}">Close Test</button><button class="danger academicDelete" data-id="${esc(x.id)}">Delete</button></div></td></tr>`}).join("");
+ document.querySelectorAll(".academicManage").forEach(b=>b.onclick=()=>location.href=`academic-host.html?id=${encodeURIComponent(b.dataset.id)}&mode=${b.dataset.mode}`);
+ document.querySelectorAll(".academicToggle").forEach(b=>b.onclick=()=>toggleAcademicTest(b.dataset.id,b.dataset.active==="1"));
+ document.querySelectorAll(".academicClose").forEach(b=>b.onclick=()=>closeAcademicTest(b.dataset.id));
+ document.querySelectorAll(".academicDelete").forEach(b=>b.onclick=()=>deleteAcademicTest(b.dataset.id));
+}
+async function loadAcademicTests(){
+ if(!admin())return;
+ const body=$("academicTestRows");if(body)body.innerHTML='<tr><td colspan="9">Loading…</td></tr>';
+ try{const snap=await get(ref(db,"academicOlympiadTests"));const data=snap.val()||{};academicTestCache=Object.entries(data).filter(([,x])=>x&&x.roomCode).map(([id,x])=>({id,...x})).sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));renderAcademicTests();}
+ catch(e){if(body)body.innerHTML=`<tr><td colspan="9">Unable to load tests: ${esc(e.message||e)}</td></tr>`;}
+}
+async function toggleAcademicTest(id,currentlyActive){
+ if(!admin())return;const action=currentlyActive?"unpublish":"publish";
+ if(!confirm(`${action.toUpperCase()} this test? ${currentlyActive?"It will no longer appear in the public catalogue.":"It will be enabled again if its access mode is public."}`))return;
+ try{await update(ref(db,`academicOlympiadTests/${id}`),{active:!currentlyActive});await loadAcademicTests();}
+ catch(e){alert(`Unable to ${action} test: ${e.message||e}`);}
+}
+async function closeAcademicTest(id){
+ if(!admin())return;if(!confirm("Close this test now? Participants will not be able to start or continue it."))return;
+ try{await update(ref(db,`academicOlympiadTests/${id}`),{status:"CLOSED",closedAt:Date.now()});await loadAcademicTests();}
+ catch(e){alert(`Unable to close test: ${e.message||e}`);}
+}
+async function deleteAcademicTest(id){
+ if(!admin())return;const x=academicTestCache.find(v=>v.id===id);if(!x)return;
+ if(!confirm(`PERMANENTLY DELETE TEST\n\n${x.title||"Untitled"}\nRoom: ${x.roomCode||id}\nClass: ${x.className||"—"} • ${x.subject||"—"}\n\nThis also deletes every attempt/result stored for this test. This cannot be undone. Continue?`))return;
+ if(!confirm("FINAL CONFIRMATION: permanently delete this test and all its attempts?"))return;
+ try{await remove(ref(db,`academicOlympiadTests/${id}`));await remove(ref(db,`academicOlympiadAttempts/${id}`));await loadAcademicTests();alert("Test and its attempts were deleted.");}
+ catch(e){alert(`Delete failed: ${e.message||e}`);}
+}
+
+function render(u){currentUser=u||null;$("authStatus").textContent=u?(isAdmin(u)?"Administrator signed in":"Not authorized"):"Not signed in";$("adminLoginCard").classList.toggle("hidden",!!u&&isAdmin(u));$("adminApp").classList.toggle("hidden",!(u&&isAdmin(u)));if(u&&isAdmin(u)){loadHosts();loadParticipants();loadRooms();loadOtherPublications();loadAcademicTests();}}
 $("loginBtn").onclick=async()=>{try{await persist();const email=$("email").value.trim().toLowerCase();if(email!==ADMIN_EMAIL){msg("This page is restricted to the Administrator account.");return;}if(auth.currentUser&&!isAdmin(auth.currentUser)){await signOut(auth);await new Promise(r=>setTimeout(r,200));}await signInWithEmailAndPassword(auth,email,$("password").value);}catch(e){msg(e.message||String(e));}};
 $("forgotBtn").onclick=async()=>{try{const email=$("email").value.trim().toLowerCase();if(email!==ADMIN_EMAIL){msg("Enter the Administrator email address first.");return;}await sendPasswordResetEmail(auth,email);msg("Password reset link sent. Check Inbox and Spam/Junk folder.");}catch(e){msg(e.message||String(e));}};
-$("refreshBtn").onclick=()=>{loadHosts();loadParticipants();loadRooms();loadOtherPublications();};$("openWebsiteAnalyticsAdminBtn")?.addEventListener("click",()=>location.href="website-analytics.html");$("logoutBtn").onclick=()=>signOut(auth);$("backBtn").onclick=$("backBtn2").onclick=()=>location.href="host.html";$("manageRoomBtn").onclick=manageRoom;$("closeRoomManager").onclick=()=>$("roomManager").classList.add("hidden");
+$("refreshBtn").onclick=()=>{loadHosts();loadParticipants();loadRooms();loadOtherPublications();loadAcademicTests();};$("openWebsiteAnalyticsAdminBtn")?.addEventListener("click",()=>location.href="website-analytics.html");$("logoutBtn").onclick=()=>signOut(auth);$("backBtn").onclick=$("backBtn2").onclick=()=>location.href="host.html";$("manageRoomBtn").onclick=manageRoom;$("closeRoomManager").onclick=()=>$("roomManager").classList.add("hidden");
 ["hostSearch","hostStatusFilter"].forEach(id=>$(id)?.addEventListener("input",renderHosts));
 ["roomSearch","roomTypeFilter","roomStatusFilter"].forEach(id=>$(id)?.addEventListener("input",renderRooms));
 $("publicationSearch")?.addEventListener("input",renderPublications);
@@ -167,3 +207,5 @@ $("refreshHostsBtn")?.addEventListener("click",loadHosts);$("refreshParticipants
 ["participantSearch","participantStatusFilter"].forEach(id=>$(id)?.addEventListener("input",renderParticipants));
 $("deleteAllResultsHint")?.addEventListener("click",()=>alert("Permanent deletion is performed publication-by-publication using the Delete Result Set button."));
 onAuthStateChanged(auth,u=>{if(u&&!isAdmin(u)){currentUser=null;$("authStatus").textContent="Not authorized";$("adminLoginCard").classList.remove("hidden");$("adminApp").classList.add("hidden");return;}render(u);});
+
+$("refreshAcademicTestsBtn")?.addEventListener("click",loadAcademicTests);["academicTestSearch","academicTestCategory","academicTestStatus"].forEach(id=>$(id)?.addEventListener("input",renderAcademicTests));

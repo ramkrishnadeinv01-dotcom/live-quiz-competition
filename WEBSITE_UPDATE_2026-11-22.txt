@@ -1,0 +1,18 @@
+WORLD OF EXAM — WEBSITE UPDATE (22 NOVEMBER 2026)
+
+New features
+1. Host Portal now has a separate Academic Chapter-wise Mock Test Setup entry.
+2. Academic test records are tagged examCategory="academic" and stored alongside existing Olympiad records in academicOlympiadTests. Existing records without examCategory remain Olympiad records.
+3. Academic tests have a test-level Chapter / Unit field, in addition to the per-question Chapter / Unit / Topic field.
+4. Participant Portal has a separate Academic Chapter-wise Mock Tests entry and public catalogue.
+5. Admin Portal now lists Academic and Olympiad tests created by all Hosts. Admin can open/manage a test, publish/unpublish it, close it, or permanently delete the test and its attempts (with two confirmations).
+
+Important compatibility notes
+- firebase-config.js has NOT been changed.
+- No Firebase Realtime Database or Storage rules have been changed.
+- Existing Olympiad test records and attempts are not migrated or deleted.
+- Legacy records with no examCategory are treated as Olympiad.
+- Academic and Olympiad tests continue to use the existing academicOlympiadTests and academicOlympiadAttempts database paths, so this update does not require a new database rules path.
+- Test deletion from Admin Portal permanently removes that test's attempt/result data. Use the delete action carefully.
+- Existing platform permissions and Firebase rules remain responsible for access control. This change does not add new server-side security guarantees.
+- Upload the complete website folder contents to the existing GitHub repository, preserving firebase-config.js and all existing files.

@@ -13,6 +13,13 @@ const pageParams=new URLSearchParams(location.search);
 const assignedMode=pageParams.has('assignment');
 const publicMode=pageParams.get('public')==='1';
 let publicParticipant=null;
+function setCategoryLabels(record){
+ const label=record?.examCategory==='academic'?'Academic':'Olympiad';
+ document.title=`${label} Mock Examination`;
+ const top=document.querySelector('.wrap>a');if(top)top.textContent='← Back to Participant Dashboard';
+ const h=document.querySelector('.wrap>h1');if(h)h.textContent=label==='Academic'?'📚 Academic Chapter-wise Mock Test':'🏆 Olympiad Mock Test';
+ const joinHeading=document.querySelector('#joinPanel h1');if(joinHeading)joinHeading.textContent=`${label} Examination`;
+}
 if(assignedMode){
  const heading=document.querySelector('#joinPanel h1');
  const intro=document.querySelector('#joinPanel .muted');
@@ -26,7 +33,7 @@ if(assignedMode){
 if(publicMode){
  const heading=document.querySelector('#joinPanel h1');
  const intro=document.querySelector('#joinPanel .muted');
- if(heading)heading.textContent='Free Public Olympiad Examination';
+ if(heading)heading.textContent='Free Public examination Examination';
  if(intro)intro.textContent='Your saved participant profile will be used automatically. No room code or manual details are required.';
  ['pName','pMobile','pSubject','pCode'].forEach(id=>{const el=$(id);if(el){el.readOnly=true;el.required=false;}});
  const cls=$('pClass');if(cls){cls.disabled=true;cls.required=false;}
@@ -51,6 +58,7 @@ async function init(){try{
    const cls=$('pClass');if(cls){cls.innerHTML=`<option value="${esc(publicParticipant.className||'')}">${esc(publicParticipant.className||'Class not specified')}</option>`;cls.value=publicParticipant.className||'';}
    const testSnap=await get(ref(db,`academicOlympiadTests/${pageParams.get('id')}`));
    const publicTest=testSnap.val();
+   setCategoryLabels(publicTest);
    if(!publicTest||publicTest.active===false||publicTest.accessMode==='private'||(publicTest.accessMode&&publicTest.accessMode!=='public'))throw Error('This public Olympiad is no longer available.');
    $('pSubject').value=publicTest.subject||'';
    $('pCode').value='';
@@ -62,7 +70,7 @@ async function init(){try{
   }
   return;
  }
- if(publicMode)throw Error('Please sign in to your participant account first. Public Olympiad tests use your saved profile and cannot be taken as a guest.');
+ if(publicMode)throw Error('Please sign in to your participant account first. Public examination tests use your saved profile and cannot be taken as a guest.');
  const cred=await signInAnonymously(auth);uid=cred.user.uid;
  }catch(e){$('joinStatus').textContent=e.message||'Unable to connect. Please refresh and try again.'}}init();
 $('joinBtn').onclick=async()=>{try{
@@ -79,7 +87,7 @@ $('joinBtn').onclick=async()=>{try{
  if(assignmentId){
   if(!uid)throw Error('Please sign in to your approved participant account again.');
   assignment=(await get(ref(db,`testAssignments/${uid}/${assignmentId}`))).val();
-  if(!assignment||assignment.category!=='olympiad'||assignment.participantUid!==uid)throw Error('This Olympiad examination is not assigned to your participant account.');
+  if(!assignment||assignment.category!=='olympiad'||assignment.participantUid!==uid)throw Error('This examination is not assigned to your participant account.');
   if(assignment.dueAt&&Date.now()>assignment.dueAt)throw Error('The deadline for this assigned examination has passed.');
   code=String(assignment.roomCode||'').trim().toUpperCase();
   if(!code)throw Error('The Host assignment does not contain a room code. Please ask the Host to refresh or recreate this allotment.');
@@ -88,10 +96,11 @@ $('joinBtn').onclick=async()=>{try{
  const found=requestedId&&all[requestedId]?[requestedId,all[requestedId]]:Object.entries(all).find(([id,x])=>x?.roomCode===code);
  if(!found)throw Error('The allotted Olympiad test could not be found. Please ask the Host to verify the selected test.');
  [testId,test]=found;
+ setCategoryLabels(test);
  if(publicMode){
   if(test.active===false||test.status==='CLOSED'||test.examStatus==='CLOSED'||test.accessMode==='private'||(test.accessMode&&test.accessMode!=='public'))throw Error('This examination is not published or is no longer available.');
   className=publicParticipant.className||test.className||'';
-  if(publicParticipant.className&&test.className&&String(publicParticipant.className).trim().toLowerCase()!==String(test.className).trim().toLowerCase())throw Error('This Olympiad is for '+test.className+'. Your saved profile is registered for '+publicParticipant.className+'.');
+  if(publicParticipant.className&&test.className&&String(publicParticipant.className).trim().toLowerCase()!==String(test.className).trim().toLowerCase())throw Error('This examination is for '+test.className+'. Your saved profile is registered for '+publicParticipant.className+'.');
   subject=test.subject||'';
   $('pSubject').value=subject;
   $('pCode').value='';
@@ -127,7 +136,7 @@ $('joinBtn').onclick=async()=>{try{
   else priorList=Object.entries(v||{}).map(([id,a])=>({id,...a})).filter(a=>a&&typeof a==='object');
  }
  const last=priorList.filter(a=>a.status==='SUBMITTED').sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0))[0];
- // Assigned Olympiad examinations allow reattempts; every attempt is stored under a new attemptId.
+ // Assigned examinations allow reattempts; every attempt is stored under a new attemptId.
  if(last&&!assignment&&!confirm('You have already attempted this examination. Do you want to reattempt?')){$('joinStatus').textContent='Your previous result is retained. You may return to the Participant Panel.';return;}
  attemptId=push(ref(db,`academicOlympiadAttempts/${testId}/${uid}`)).key;
  started=Date.now();
@@ -138,7 +147,7 @@ function renderExam(){
  const qs=Array.isArray(test.questions)?test.questions:[];
  if(!qs.length){$('joinStatus').textContent='No questions have been published for this room.';return;}
  $('joinPanel').classList.add('hidden');$('examPanel').classList.remove('hidden');
- $('testTitle').textContent=test.title;$('testMeta').textContent=`${test.className} · ${test.subject} · ${qs.length} questions · ${test.durationMinutes} minutes`;
+ $('testTitle').textContent=test.title;$('testMeta').textContent=`${test.className} · ${test.subject}${test.chapter?` · ${test.chapter}`:''} · ${qs.length} questions · ${test.durationMinutes} minutes`;
  $('testArea').classList.remove('hidden');$('testArea').innerHTML=qs.map((q,i)=>`<div class="q"><b>${i+1}. ${esc(q.question)}</b>${q.imageUrl?`<img src="${esc(q.imageUrl)}" alt="Question ${i+1} illustration" loading="lazy" style="display:block;max-width:100%;max-height:320px;object-fit:contain;margin:12px auto;border:1px solid #d9e4f1;border-radius:10px;padding:6px;background:#fff">`:''}${['A','B','C','D'].map(k=>`<label><input type="radio" name="q${i}" value="${k}"> ${k}. ${esc(q.options?.[k]||'')}</label>`).join('')}</div>`).join('');
  $('testArea').addEventListener('change',onAnswerChanged);
  $('testResult').innerHTML='';$('submitBtn').classList.remove('hidden');$('submitBtn').disabled=false;
