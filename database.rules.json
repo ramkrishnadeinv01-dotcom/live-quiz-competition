@@ -1,5 +1,11 @@
 {
   "rules": {
+    "subscriptions": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'"
+      }
+    },
     "hosts": {
       ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
       "$uid": {

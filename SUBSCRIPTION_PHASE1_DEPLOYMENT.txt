@@ -1,0 +1,33 @@
+WORLD OF EXAM — SUBSCRIPTION FOUNDATION (PHASE 1)
+Base archive: live-quiz-competition-main (44).zip
+
+FILES TO REPLACE IN THE GITHUB REPOSITORY
+1. host.html
+2. host.js
+3. administrator.html
+4. administrator.js
+5. database.rules.json (Firebase Realtime Database rules)
+
+WHAT THIS UPDATE DOES
+- Adds Individual Host / Coaching Centre account type to the existing Host registration form.
+- Coaching Centre registration additionally asks for Centre Name and Centre Address.
+- Existing Host registration approval remains in place; new accounts remain pending until Administrator approval.
+- Administrator Host list identifies Coaching Centre accounts and shows the centre name/address.
+- Adds Administrator Membership & Subscription Management for approved Host / Coaching Centre accounts.
+- Administrator can assign Free Access, Free Trial, Student Premium, Coaching Centre Basic, or Coaching Centre Pro, with Active / Trial / Expired / Suspended status and start/end dates.
+- Subscription records are stored separately at subscriptions/{uid}.
+- Payment collection is NOT enabled. This update does not charge anyone and does not yet restrict exam features based on subscription status.
+
+DEPLOYMENT ORDER
+1. Back up the current GitHub repository files and export the current Firebase Realtime Database rules.
+2. Replace the four website files in the repository root and commit/push them to GitHub Pages.
+3. In Firebase Console > Realtime Database > Rules, merge the new top-level "subscriptions" rule from the supplied database.rules.json into the current rules, preserving all other existing rules. Do not replace the entire ruleset if the live rules contain newer changes not present in this archive.
+4. Publish the merged rules.
+5. Open the Host Portal in a private/incognito window or hard-refresh (Ctrl+F5). Test Individual Host registration and Coaching Centre registration.
+6. Sign in to the Administrator page, approve a test Coaching Centre account, then assign a trial subscription and verify it appears in the subscription table.
+
+SECURITY / SCOPE
+- Only the configured Administrator email can write subscription records.
+- An account can read only its own subscription record; the Administrator can read all records.
+- Existing hosts/participants/rooms and existing Firebase data are not migrated or deleted.
+- Do not activate paid plans or promise premium restrictions yet. Payment gateway integration and server-side payment verification are later phases.

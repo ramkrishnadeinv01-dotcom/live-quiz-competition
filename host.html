@@ -375,6 +375,11 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <h3>📝 Complete Host Registration</h3>
 <p class="muted">All information marked with * is required. The account and host approval request will be created only after you submit this completed form.</p>
 <div class="row" style="margin-top:12px">
+<div class="field"><label>Account Type *</label><select id="hostAccountType"><option value="individual">Individual Host</option><option value="coaching_centre">Coaching Centre</option></select></div>
+<div class="field" id="centreNameField" style="display:none"><label>Coaching Centre Name *</label><input autocomplete="organization" id="centreName" placeholder="Name of coaching centre" type="text"/></div>
+</div>
+<div class="row" id="centreAddressRow" style="margin-top:12px;display:none"><div class="field"><label>Coaching Centre Address *</label><input autocomplete="street-address" id="centreAddress" placeholder="Full centre address" type="text"/></div></div>
+<div class="row" style="margin-top:12px">
 <div class="field"><label>Host Name *</label><input autocomplete="off" id="hostName" placeholder="Full name" type="text"/></div>
 <div class="field"><label>Designation *</label><input autocomplete="off" id="hostDesignation" placeholder="Designation" type="text"/></div>
 </div>
@@ -564,7 +569,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="host.js?v=20261122-academic-assignment-fix" type="module"></script>
+<script src="host.js?v=20261122-coaching-centre-registration" type="module"></script>
 <script type="module" src="host-mapping.js?v=83.5"></script>
 
 <script>
