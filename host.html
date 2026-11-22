@@ -418,6 +418,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <div class="card hidden" id="hostAccessCard">
 <h2>🔐 Host Permission</h2>
 <div class="status" id="hostAccessStatus"></div>
+<div id="hostSubscriptionMount" data-account-type="individual_host"></div>
 <div class="row" style="margin-top:12px"><button class="secondary hidden" id="editHostProfileBtn" type="button">✏️ Edit Profile</button></div>
 <div class="status hidden" id="hostProfileUpdate" style="margin-top:12px">
 <b>Complete / Update Host Registration</b>
@@ -689,4 +690,5 @@ body:not(.host-authenticated) #hostMenu{display:none!important;visibility:hidden
 </script>
 
 <script type="module" src="website-analytics-tracker.js?v=65"></script>
+<script type="module">import {mountSubscriptionPanel} from "./subscription-client.js?v=20261122-phase3";mountSubscriptionPanel(document.getElementById("hostSubscriptionMount"),"individual_host");</script>
 </body></html>

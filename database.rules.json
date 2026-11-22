@@ -191,6 +191,13 @@
         ".read": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
         ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $uid && !data.exists() && newData.child('email').val() == auth.token.email && newData.child('status').val() == 'pending'))"
       }
+    },
+    "subscriptionRequests": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $uid && newData.child('uid').val() == auth.uid && newData.child('accountType').isString() && newData.child('plan').isString() && newData.child('status').val() == 'pending'))"
+      }
     }
   }
 }

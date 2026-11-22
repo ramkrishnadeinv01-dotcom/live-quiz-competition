@@ -503,6 +503,8 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
       <h2>👥 Choose Your Host</h2>
       <p>Host selection is optional. If you do not choose a host, your account remains managed by the Administrator.</p><div class="host-mapping-loading">Loading approved hosts…</div>
     </section>
+    <section class="sub-self-card" id="mySubscriptionPanel" data-account-type="individual_participant"><h3>💳 My Subscription</h3><div id="mySubscriptionCurrent">Loading current subscription…</div><div class="sub-self-grid"><label>Select a plan<select id="mySubscriptionPlan"></select></label><button id="requestSubscriptionBtn" type="button">Request Plan</button></div><div class="sub-self-note">Your request will be sent to the Administrator. The plan becomes active only after approval. No payment is collected through this request.</div><div class="sub-self-status" id="mySubscriptionMessage">Choose a plan to submit a request.</div></section>
+
     <div class="card">
       <div class="dashboard-tabs">
         <button id="assignmentTab" class="tab active">📚 Assignment</button>
@@ -572,4 +574,5 @@ body#studentBody:has(#dashboardCard:not(.hidden))>.container{
 <script type="module" src="academic.js?v=20261113-v77"></script>
 
 <script type="module" src="website-analytics-tracker.js?v=65"></script>
+<script type="module" src="subscription-client.js?v=20261122-phase3"></script>
 </body></html>
