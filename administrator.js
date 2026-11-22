@@ -200,7 +200,7 @@ async function deleteAcademicTest(id){
 function subscriptionDate(ts){if(!ts)return "—";const d=new Date(ts);return Number.isNaN(d.getTime())?String(ts):d.toLocaleDateString("en-IN");}
 function renderSubscriptions(){
  const body=$("subscriptionRows");if(!body)return;
- const activeHosts=hostCache.filter(h=>h.status==="approved");
+ const activeHosts=hostCache.filter(h=>h.status==="approved" && h.accountType!=="coaching_centre");
  const select=$("subscriptionAccountSelect");if(select){const old=select.value;select.innerHTML='<option value="">Select an approved Host / Coaching Centre</option>'+activeHosts.map(h=>`<option value="${esc(h.uid)}">${esc(h.accountType==="coaching_centre"?(h.centreName||h.hostName):h.hostName)} — ${esc(h.email)}</option>`).join("");if(activeHosts.some(h=>h.uid===old))select.value=old;}
  const rows=activeHosts.map(h=>({host:h,sub:subscriptionCache.find(x=>x.uid===h.uid)?.data||{}}));
  $("subscriptionStatusText").textContent=`${rows.length} approved account(s) • ${rows.filter(x=>x.sub.status==="active"||x.sub.status==="trial").length} active/trial subscription(s)`;
@@ -208,8 +208,8 @@ function renderSubscriptions(){
  body.innerHTML=rows.map(({host,sub})=>`<tr><td><b>${esc(host.accountType==="coaching_centre"?(host.centreName||host.hostName):host.hostName)}</b><br><small>${esc(host.email)}</small></td><td>${host.accountType==="coaching_centre"?"Coaching Centre":"Individual Host"}</td><td>${esc(sub.plan||"Not assigned")}</td><td>${statusBadge(sub.status||"not_set")}</td><td>${subscriptionDate(sub.startDate)}</td><td>${subscriptionDate(sub.endDate)}</td><td><button class="secondary subscriptionEdit" data-uid="${esc(host.uid)}">Edit</button></td></tr>`).join("");
  document.querySelectorAll(".subscriptionEdit").forEach(b=>b.onclick=()=>{const h=hostCache.find(x=>x.uid===b.dataset.uid),sub=subscriptionCache.find(x=>x.uid===b.dataset.uid)?.data||{};$("subscriptionAccountSelect").value=b.dataset.uid;$("subscriptionPlan").value=sub.plan||((h?.accountType==="coaching_centre")?"coaching_basic":"free");$("subscriptionStatus").value=sub.status||"active";$("subscriptionStartDate").value=sub.startDate||"";$("subscriptionEndDate").value=sub.endDate||"";$("subscriptionAccountSelect").scrollIntoView({behavior:"smooth",block:"center"});});
 }
-async function loadSubscriptions(){if(!admin())return;try{const snap=await get(ref(db,"subscriptions"));const obj=snap.val()||{};subscriptionCache=Object.entries(obj).map(([uid,data])=>({uid,data:data||{}}));renderSubscriptions();}catch(e){$("subscriptionStatusText").textContent=`Unable to load subscription records: ${e.message||e}`;}}
-async function saveSubscription(){if(!admin())return;const uid=$("subscriptionAccountSelect").value;if(!uid)return alert("Select an approved account first.");const host=hostCache.find(h=>h.uid===uid);if(!host||host.status!=="approved")return alert("Only approved Host or Coaching Centre accounts can receive a subscription.");const startDate=$("subscriptionStartDate").value,endDate=$("subscriptionEndDate").value;if(startDate&&endDate&&endDate<startDate)return alert("End date cannot be earlier than start date.");const plan=$("subscriptionPlan").value,status=$("subscriptionStatus").value;try{await set(ref(db,`subscriptions/${uid}`),{uid,accountType:host.accountType||"individual",plan,status,startDate,endDate,updatedAt:Date.now(),updatedBy:currentUser.uid,paymentEnabled:false});await loadSubscriptions();alert("Subscription record saved. No payment has been collected.");}catch(e){alert(`Unable to save subscription: ${e.message||e}`);}}
+async function loadSubscriptions(){if(!admin())return;try{const snap=await get(ref(db,"subscriptions"));const obj=snap.val()||{};subscriptionCache=Object.entries(obj).map(([uid,data])=>({uid,data:data||{}}));renderSubscriptions();renderCentreSubscriptions();}catch(e){$("subscriptionStatusText").textContent=`Unable to load subscription records: ${e.message||e}`;}}
+async function saveSubscription(){if(!admin())return;const uid=$("subscriptionAccountSelect").value;if(!uid)return alert("Select an approved account first.");const host=hostCache.find(h=>h.uid===uid);if(!host||host.status!=="approved"||host.accountType==="coaching_centre")return alert("Select an approved Individual Host. Coaching Centre subscriptions are managed in the separate section.");const startDate=$("subscriptionStartDate").value,endDate=$("subscriptionEndDate").value;if(startDate&&endDate&&endDate<startDate)return alert("End date cannot be earlier than start date.");const plan=$("subscriptionPlan").value,status=$("subscriptionStatus").value;try{await set(ref(db,`subscriptions/${uid}`),{uid,accountType:host.accountType||"individual",plan,status,startDate,endDate,updatedAt:Date.now(),updatedBy:currentUser.uid,paymentEnabled:false});await loadSubscriptions();alert("Subscription record saved. No payment has been collected.");}catch(e){alert(`Unable to save subscription: ${e.message||e}`);}}
 
 
 let coachingCentreCache=[];
@@ -219,11 +219,45 @@ async function loadCoachingCentres(){
  try{
   const snap=await get(ref(db,"coachingCentres"));const obj=snap.val()||{};
   coachingCentreCache=Object.entries(obj).map(([uid,p])=>({uid,...(p||{})})).sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));
-  status.textContent=`${coachingCentreCache.length} separate Coaching Centre application(s)`;
+  status.textContent=`${coachingCentreCache.length} separate Coaching Centre application(s)`;renderCentreSubscriptions();
   if(!coachingCentreCache.length){body.innerHTML='<tr><td colspan="9">No Coaching Centre applications yet.</td></tr>';return;}
   body.innerHTML=coachingCentreCache.map(c=>{const st=String(c.status||"pending").toLowerCase();let opts='<option value="">Select action</option>';if(st==="pending")opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';else if(st==="approved")opts+='<option value="revoked">Revoke</option>';else opts+='<option value="approved">Approve</option><option value="rejected">Reject</option>';opts+='<option value="delete">Delete profile</option>';return `<tr><td><b>${esc(c.centreName)}</b></td><td>${esc(c.ownerName)}</td><td>${esc(c.email)}</td><td>${esc(c.phone)}</td><td>${esc(c.address)}</td><td>${esc(c.centreCode)}</td><td>${statusBadge(st)}</td><td>${fmt(c.requestedAt||c.createdAt)}</td><td><select class="centre-action" data-uid="${esc(c.uid)}">${opts}</select></td></tr>`;}).join("");
   document.querySelectorAll(".centre-action").forEach(sel=>sel.onchange=async()=>{const action=sel.value,uid=sel.dataset.uid;sel.value="";if(!action)return;if(!confirm(`${action.toUpperCase()} this Coaching Centre application?`))return;try{if(action==="delete")await remove(ref(db,`coachingCentres/${uid}`));else await update(ref(db,`coachingCentres/${uid}`),{status:action,reviewedAt:Date.now(),reviewedBy:currentUser.uid});await loadCoachingCentres();}catch(e){alert(e.message||String(e));}});
  }catch(e){status.textContent=`Unable to load Coaching Centre applications: ${e.message||e}`;body.innerHTML=`<tr><td colspan="9">Unable to load applications.</td></tr>`;}
+}
+
+
+function centrePlanLimit(plan){
+ const limits={free:null,premium_25:25,premium_50:50,premium_100:100,premium_250:250};
+ return Object.prototype.hasOwnProperty.call(limits,plan)?limits[plan]:undefined;
+}
+function renderCentreSubscriptions(){
+ const select=$("centreSubscriptionSelect"),body=$("centreSubscriptionRows");if(!body)return;
+ const approved=coachingCentreCache.filter(c=>String(c.status||"").toLowerCase()==="approved");
+ if(select){const old=select.value;select.innerHTML='<option value="">Select an approved Coaching Centre</option>'+approved.map(c=>`<option value="${esc(c.uid)}">${esc(c.centreName||"Coaching Centre")} — ${esc(c.email||"")}</option>`).join("");if(approved.some(c=>c.uid===old))select.value=old;}
+ const rows=approved.map(centre=>({centre,sub:subscriptionCache.find(x=>x.uid===centre.uid)?.data||{}}));
+ $("centreSubscriptionStatusText").textContent=`${approved.length} approved Coaching Centre(s) • ${rows.filter(x=>["active","trial"].includes(String(x.sub.status||"").toLowerCase())).length} active/trial centre subscription(s)`;
+ if(!rows.length){body.innerHTML='<tr><td colspan="7" class="empty">No approved Coaching Centres available for subscription assignment.</td></tr>';return;}
+ body.innerHTML=rows.map(({centre,sub})=>`<tr><td><b>${esc(centre.centreName||"Coaching Centre")}</b><br><small>${esc(centre.email||"")}</small></td><td>${esc(sub.planLabel||sub.plan||"Not assigned")}</td><td>${sub.studentLimit===null?"No student limit":(sub.studentLimit!==undefined?esc(sub.studentLimit):"—")}</td><td>${statusBadge(sub.status||"not_set")}</td><td>${subscriptionDate(sub.startDate)}</td><td>${subscriptionDate(sub.endDate)}</td><td><button class="secondary centreSubscriptionEdit" data-uid="${esc(centre.uid)}">Edit</button></td></tr>`).join("");
+ document.querySelectorAll(".centreSubscriptionEdit").forEach(btn=>btn.onclick=()=>{
+  const sub=subscriptionCache.find(x=>x.uid===btn.dataset.uid)?.data||{};
+  $("centreSubscriptionSelect").value=btn.dataset.uid;$("centreSubscriptionPlan").value=sub.plan||"free";
+  $("centreStudentLimit").value=sub.studentLimit==null?"":sub.studentLimit;$("centreSubscriptionStatus").value=sub.status||"active";
+  $("centreSubscriptionStartDate").value=sub.startDate||"";$("centreSubscriptionEndDate").value=sub.endDate||"";
+  $("centreSubscriptionSelect").scrollIntoView({behavior:"smooth",block:"center"});
+ });
+}
+async function saveCentreSubscription(){
+ if(!admin())return;const uid=$("centreSubscriptionSelect").value;if(!uid)return alert("Select an approved Coaching Centre first.");
+ const centre=coachingCentreCache.find(c=>c.uid===uid);if(!centre||String(centre.status||"").toLowerCase()!=="approved")return alert("Only approved Coaching Centres can receive a subscription.");
+ const plan=$("centreSubscriptionPlan").value,entered=String($("centreStudentLimit").value||"").trim();let studentLimit=centrePlanLimit(plan);
+ if(plan==="premium_custom"){studentLimit=Number(entered);if(!Number.isInteger(studentLimit)||studentLimit<1||studentLimit>100000)return alert("Enter a custom student limit between 1 and 100000.");}
+ else if(studentLimit===undefined)return alert("Select a valid Coaching Centre plan.");
+ else if(plan==="free"&&entered){studentLimit=Number(entered);if(!Number.isInteger(studentLimit)||studentLimit<1||studentLimit>100000)return alert("Enter a valid positive student limit, or leave it blank for no limit.");}
+ const startDate=$("centreSubscriptionStartDate").value,endDate=$("centreSubscriptionEndDate").value;if(startDate&&endDate&&endDate<startDate)return alert("End date cannot be earlier than start date.");
+ const status=$("centreSubscriptionStatus").value,labels={free:"Free Access",premium_25:"Premium – up to 25 students",premium_50:"Premium – up to 50 students",premium_100:"Premium – up to 100 students",premium_250:"Premium – up to 250 students",premium_custom:`Premium – ${studentLimit} students`};
+ try{await set(ref(db,`subscriptions/${uid}`),{uid,accountType:"coaching_centre",centreName:centre.centreName||"",centreCode:centre.centreCode||"",plan,planLabel:labels[plan]||plan,studentLimit,status,startDate,endDate,updatedAt:Date.now(),updatedBy:currentUser.uid,paymentEnabled:false});await loadSubscriptions();renderCentreSubscriptions();alert("Coaching Centre subscription saved. No payment has been collected.");}
+ catch(e){alert(`Unable to save Coaching Centre subscription: ${e.message||e}`);}
 }
 
 function render(u){currentUser=u||null;$("authStatus").textContent=u?(isAdmin(u)?"Administrator signed in":"Not authorized"):"Not signed in";$("adminLoginCard").classList.toggle("hidden",!!u&&isAdmin(u));$("adminApp").classList.toggle("hidden",!(u&&isAdmin(u)));if(u&&isAdmin(u)){loadHosts();loadParticipants();loadRooms();loadOtherPublications();loadAcademicTests();loadSubscriptions();loadCoachingCentres();}}
@@ -241,3 +275,4 @@ onAuthStateChanged(auth,u=>{if(u&&!isAdmin(u)){currentUser=null;$("authStatus").
 $("refreshAcademicTestsBtn")?.addEventListener("click",loadAcademicTests);["academicTestSearch","academicTestCategory","academicTestStatus"].forEach(id=>$(id)?.addEventListener("input",renderAcademicTests));
 
 $("refreshCoachingCentresBtn")?.addEventListener("click",loadCoachingCentres);$("refreshSubscriptionsBtn")?.addEventListener("click",()=>{loadHosts().then(loadSubscriptions);});$("saveSubscriptionBtn")?.addEventListener("click",saveSubscription);
+$("refreshCentreSubscriptionsBtn")?.addEventListener("click",()=>{loadCoachingCentres().then(loadSubscriptions);});$("saveCentreSubscriptionBtn")?.addEventListener("click",saveCentreSubscription);$("centreSubscriptionPlan")?.addEventListener("change",()=>{const p=$("centreSubscriptionPlan").value,limit=centrePlanLimit(p);$("centreStudentLimit").value=limit===undefined||limit===null?"":limit;});
