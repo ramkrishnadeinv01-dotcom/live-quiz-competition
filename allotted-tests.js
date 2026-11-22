@@ -16,9 +16,9 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("resultModal")?.c
 $("backBtn").onclick=()=>location.href="student.html";
 $("refreshBtn").onclick=()=>loadAssignments();
 $("logoutBtn").onclick=async()=>{if(!confirm("Log out of your participant account? Your profile and examination history will remain saved."))return;await signOut(auth);location.href="student.html";};
-function startExam(a){if(a.category==="olympiad")location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="mcq")location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="general")location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else alert("Unsupported examination category.");}
+function startExam(a){if(a.category==="olympiad"||a.category==="academic")location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="mcq")location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="general")location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else alert("Unsupported examination category.");}
 async function latestAttempt(a){
- if(a.category==="olympiad"){
+ if(a.category==="olympiad"||a.category==="academic"){
   const snap=await get(ref(db,`academicOlympiadAttempts/${a.testId}/${uid}`)),v=snap.val()||{};
   const arr=v.status?[v]:Object.values(v).filter(x=>x&&typeof x==="object");
   return arr.filter(x=>x.status==="SUBMITTED" && (x.assignmentId===a.id || (!x.assignmentId && Number(a.generation||1)===1))).sort((x,y)=>(y.submittedAt||0)-(x.submittedAt||0))[0]||null;
@@ -43,7 +43,7 @@ function card(a,latest,done,expired){
 
 async function getQuestionReview(a,attempt){
  let questions=[];
- if(a.category==="olympiad"){
+ if(a.category==="olympiad"||a.category==="academic"){
   const snap=await get(ref(db,`academicOlympiadTests/${a.testId}`));
   questions=Array.isArray(snap.val()?.questions)?snap.val().questions:[];
   return questions.map((q,i)=>{const chosen=String(attempt.answers?.[String(i)]||"").toUpperCase(),key=String(q.correct||"").toUpperCase(),opt=k=>k?`${k}. ${q.options?.[k]||""}`:"Not answered";return{number:i+1,question:q.question||`Question ${i+1}`,your:opt(chosen),correct:opt(key),status:!chosen?"Unanswered":chosen===key?"Correct":"Wrong"};});
@@ -146,11 +146,24 @@ async function loadAssignments(){
    if(done){completed.push(html);results.push(html);}else pending.push({html,a});
   }
   pendingEntries=pending;
-  const pendingSubjectFilter=$("pendingSubjectFilter");
-  const pendingSubjects=[...new Set(pendingEntries.map(x=>String(x.a?.subject||"").trim()||"Other Tests"))].sort((a,b)=>a.localeCompare(b));
-  if(pendingSubjectFilter){const previous=pendingSubjectFilter.value;pendingSubjectFilter.innerHTML='<option value="">All Subjects</option>'+pendingSubjects.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");pendingSubjectFilter.value=pendingSubjects.includes(previous)?previous:"";}
-  const renderPendingBySubject=()=>{const selected=pendingSubjectFilter?.value||"";const filtered=pendingEntries.filter(x=>!selected||(String(x.a?.subject||"").trim()||"Other Tests")===selected);$("pendingList").innerHTML=filtered.map(x=>x.html).join("")||'<div class="at-empty">No pending examinations under this subject.</div>';};
-  if(pendingSubjectFilter)pendingSubjectFilter.onchange=renderPendingBySubject;renderPendingBySubject();
+  const pendingExamFilter=$("pendingExamFilter"),pendingSubjectFilter=$("pendingSubjectFilter");
+  const examLabel=a=>a?.category==="academic"?"Academic":a?.category==="olympiad"?"Olympiad":"Other";
+  const previousExam=pendingExamFilter?.value||"",previousSubject=pendingSubjectFilter?.value||"";
+  const rebuildPendingSubjects=()=>{
+   const selectedExam=pendingExamFilter?.value||"";
+   const eligible=pendingEntries.filter(x=>!selectedExam||x.a?.category===selectedExam);
+   const pendingSubjects=[...new Set(eligible.map(x=>String(x.a?.subject||"").trim()||"Other Tests"))].sort((a,b)=>a.localeCompare(b));
+   if(pendingSubjectFilter){pendingSubjectFilter.innerHTML='<option value="">All Subjects</option>'+pendingSubjects.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("");pendingSubjectFilter.value=pendingSubjects.includes(previousSubject)?previousSubject:"";}
+  };
+  const renderPendingFilters=()=>{
+   const selectedExam=pendingExamFilter?.value||"",selectedSubject=pendingSubjectFilter?.value||"";
+   const filtered=pendingEntries.filter(x=>(!selectedExam||x.a?.category===selectedExam)&&(!selectedSubject||(String(x.a?.subject||"").trim()||"Other Tests")===selectedSubject));
+   $("pendingList").innerHTML=filtered.map(x=>x.html).join("")||'<div class="at-empty">No pending examinations match the selected exam and subject.</div>';
+  };
+  if(pendingExamFilter){pendingExamFilter.value=previousExam;pendingExamFilter.onchange=()=>{rebuildPendingSubjects();renderPendingFilters();};}
+  rebuildPendingSubjects();
+  if(pendingSubjectFilter)pendingSubjectFilter.onchange=renderPendingFilters;
+  renderPendingFilters();
   $("completedList").innerHTML=completed.join("")||'<div class="at-empty">No completed examinations yet.</div>';
   $("resultsList").innerHTML=results.join("")||'<div class="at-empty">Your submitted results will appear here after you complete an allotted test.</div>';
   $("pendingCount").textContent=`${pending.length} examination(s) awaiting submission`;
