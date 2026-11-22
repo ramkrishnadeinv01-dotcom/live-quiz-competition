@@ -75,7 +75,7 @@ async function loadMyAllottedTests(){
   for(const a of items){
    const expired=a.dueAt&&Date.now()>a.dueAt;
    let latest=null;
-   if(a.category==='olympiad'){
+   if(a.category==='olympiad'||a.category==='academic'){
     const h=await get(ref(db,`academicOlympiadAttempts/${a.testId}/${uid}`));
     const v=h.val()||{};const attempts=v.status?[v]:Object.values(v).filter(x=>x&&typeof x==='object');
     latest=attempts.filter(x=>x.status==='SUBMITTED'&&(x.assignmentId===a.id||(!x.assignmentId&&Number(a.generation||1)===1))).sort((x,y)=>(y.submittedAt||0)-(x.submittedAt||0))[0]||null;
@@ -90,9 +90,9 @@ async function loadMyAllottedTests(){
    const detail=`${String(a.category||'').toUpperCase()} · ${a.testTitle||'Examination'} · ${a.roomCode||a.testId||''}`;
    const due=a.dueAt?new Date(a.dueAt).toLocaleString('en-IN'):'No deadline';
    const action=isDone?`<button type="button" class="success allottedReattemptBtn" data-id="${esc(a.id)}">↻ Reattempt Test</button>`:(!expired?`<button type="button" class="success allottedStartBtn" data-id="${esc(a.id)}">Start Examination</button>`:'<span class="status blocked">Deadline passed</span>');
-   const card=`<article class="card allotted-detail-card" style="margin:10px 0;padding:16px;border:1px solid #d9b65b;background:#102b50;color:#fff"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${esc(a.testTitle||'Assigned Examination')}</b><span>${isDone?'COMPLETED':expired?'OVERDUE':esc(a.status||'PENDING')}</span></div><p style="margin:7px 0;color:#d7e3f5">${esc(detail)}</p><p style="margin:4px 0;color:#d7e3f5">Assigned: ${a.assignedAt?new Date(a.assignedAt).toLocaleString('en-IN'):'—'} · Due: ${esc(due)}</p><p style="margin:4px 0;color:#d7e3f5">Attempts: ${a.category==='olympiad'?(latest?.attemptNo||1):isDone?'Completed':'Not attempted'} · Status: ${isDone?'Submitted':'Awaiting submission'}</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${action}${isDone?`<button type="button" class="secondary allottedDeleteBtn" data-id="${esc(a.id)}">Delete completed record</button>`:''}</div></article>`;
+   const card=`<article class="card allotted-detail-card" style="margin:10px 0;padding:16px;border:1px solid #d9b65b;background:#102b50;color:#fff"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${esc(a.testTitle||'Assigned Examination')}</b><span>${isDone?'COMPLETED':expired?'OVERDUE':esc(a.status||'PENDING')}</span></div><p style="margin:7px 0;color:#d7e3f5">${esc(detail)}</p><p style="margin:4px 0;color:#d7e3f5">Assigned: ${a.assignedAt?new Date(a.assignedAt).toLocaleString('en-IN'):'—'} · Due: ${esc(due)}</p><p style="margin:4px 0;color:#d7e3f5">Attempts: ${(a.category==='olympiad'||a.category==='academic')?(latest?.attemptNo||1):isDone?'Completed':'Not attempted'} · Status: ${isDone?'Submitted':'Awaiting submission'}</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">${action}${isDone?`<button type="button" class="secondary allottedDeleteBtn" data-id="${esc(a.id)}">Delete completed record</button>`:''}</div></article>`;
    (isDone?completed:pending).push({html:card,a,latest});
-   if(isDone)results.push({html:`<article class="card" style="margin:8px 0;padding:14px;background:#0c2548;color:#fff;border:1px solid #d9b65b"><b>${esc(a.testTitle||'Assigned Examination')}</b><p>${esc(String(a.category||'').toUpperCase())} · ${latest?.submittedAt?new Date(latest.submittedAt).toLocaleString('en-IN'):'Submission recorded'}</p>${latest&&a.category==='olympiad'?`<p>Score: <b>${Number(latest.score||0).toFixed(2)}</b> · Correct: ${Number(latest.correct||0)} · Wrong: ${Number(latest.wrong||0)} · Unanswered: ${Number(latest.unanswered||0)}</p>`:latest&&a.category==='mcq'?`<p>Correct: ${Number(latest.correctCount||0)} · Wrong: ${Number(latest.wrongCount||0)} · Answered: ${Number(latest.answeredCount||0)}</p>`:'<p>Submission recorded. Detailed result is available in the examination result service.</p>'}</article>`});
+   if(isDone)results.push({html:`<article class="card" style="margin:8px 0;padding:14px;background:#0c2548;color:#fff;border:1px solid #d9b65b"><b>${esc(a.testTitle||'Assigned Examination')}</b><p>${esc(String(a.category||'').toUpperCase())} · ${latest?.submittedAt?new Date(latest.submittedAt).toLocaleString('en-IN'):'Submission recorded'}</p>${latest&&(a.category==='olympiad'||a.category==='academic')?`<p>Score: <b>${Number(latest.score||0).toFixed(2)}</b> · Correct: ${Number(latest.correct||0)} · Wrong: ${Number(latest.wrong||0)} · Unanswered: ${Number(latest.unanswered||0)}</p>`:latest&&a.category==='mcq'?`<p>Correct: ${Number(latest.correctCount||0)} · Wrong: ${Number(latest.wrongCount||0)} · Answered: ${Number(latest.answeredCount||0)}</p>`:'<p>Submission recorded. Detailed result is available in the examination result service.</p>'}</article>`});
   }
   box.innerHTML=`<section class="allotted-section"><h3>1. Pending Tasks (${pending.length})</h3>${pending.length?pending.map(x=>x.html).join(''):'<p class="status">No pending tasks.</p>'}</section><section class="allotted-section" style="margin-top:22px"><h3>2. Completed Tests (${completed.length})</h3>${completed.length?completed.map(x=>x.html).join(''):'<p class="status">No completed tests yet.</p>'}</section><section class="allotted-section" style="margin-top:22px"><h3>3. Results of Allotted Tests (${results.length})</h3>${results.length?results.map(x=>x.html).join(''):'<p class="status">Your submitted results will appear here.</p>'}</section>`;
   box.querySelectorAll('.allottedStartBtn,.allottedReattemptBtn').forEach(btn=>btn.onclick=()=>startAllottedTest(items.find(a=>a.id===btn.dataset.id)));
@@ -395,8 +395,17 @@ $("roomCancelBtn").onclick=closeRoomModal;
 $("roomContinueBtn").onclick=()=>enterAssignment($("roomContinueBtn").dataset.type);
 function activateParticipantTab(which){
  const ids={assignment:["assignmentTab","assignmentPanel"],allotted:["allottedTab","allottedPanel"],result:["resultTab","resultPanel"],academic:["academicTab","academicPanel"]};
- Object.entries(ids).forEach(([key,[tab,panel]])=>{const t=$(tab),p=$(panel);if(t)t.classList.toggle("active",key===which);if(p)p.classList.toggle("hidden",key!==which);});
+ Object.entries(ids).forEach(([key,[tab,panel]])=>{
+  const t=$(tab),p=$(panel),active=key===which;
+  if(t)t.classList.toggle("active",active);
+  if(p){
+   p.classList.toggle("hidden",!active);
+   if(active){p.hidden=false;p.style.removeProperty("display");}
+   else{p.hidden=true;p.style.setProperty("display","none","important");}
+  }
+ });
 }
+activateParticipantTab("assignment");
 $("assignmentTab").onclick=()=>activateParticipantTab("assignment");
 $("allottedTab")?.addEventListener("click",()=>{location.href="allotted-tests.html";});
 $("refreshAllottedTests")?.addEventListener("click",loadMyAllottedTests);
