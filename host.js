@@ -778,7 +778,7 @@ onAuthStateChanged(auth,async user=>{
 const allotEsc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 async function hostLatestAssignmentAttempt(a){
  try{
-  if(a.category==="olympiad"){
+  if(a.category==="olympiad"||a.category==="academic"){
    const snap=await get(ref(db,`academicOlympiadAttempts/${a.testId}/${a.studentId}`)),v=snap.val()||{};
    const arr=v.status?[v]:Object.values(v).filter(x=>x&&typeof x==="object");
    return arr.filter(x=>x.status==="SUBMITTED"&&(x.assignmentId===a.id||(!x.assignmentId&&Number(a.generation||1)===1))).sort((x,y)=>(Number(y.submittedAt)||0)-(Number(x.submittedAt)||0))[0]||null;
@@ -797,7 +797,7 @@ async function renderHostAllotments(){
 }
 async function hostAssignmentReview(a,attempt){
  let qs=[];
- if(a.category==="olympiad"){const s=await get(ref(db,`academicOlympiadTests/${a.testId}`));qs=Array.isArray(s.val()?.questions)?s.val().questions:[];}
+ if(a.category==="olympiad"||a.category==="academic"){const s=await get(ref(db,`academicOlympiadTests/${a.testId}`));qs=Array.isArray(s.val()?.questions)?s.val().questions:[];}
  else if(a.category==="mcq"){const s=await get(ref(db,`rooms/${a.testId}/mcqQuestions`));const raw=s.val()||{};qs=Array.isArray(raw)?raw:Object.values(raw);}
  else {const s=await get(ref(db,`rooms/${a.testId}/generalQuestions`));const raw=s.val()||{};qs=Array.isArray(raw)?raw:Object.values(raw);}
  return qs.map((q,i)=>{const chosen=attempt.answers?.[String(i)]??attempt.answers?.[`q${i+1}`]??"";const key=String(q.correct||q.answer||"").toUpperCase();const opts=q.options||{};const opt=v=>{const k=String(v||"").toUpperCase();return k&&opts[k]?`${k}. ${opts[k]}`:String(v||"Not answered")};return{n:i+1,q:q.question||q.text||`Question ${i+1}`,your:opt(chosen),correct:a.category==="general"?"Not applicable — descriptive response":opt(key),status:a.category==="general"?"Submitted":!chosen?"Unanswered":!key?"Answer key unavailable":String(chosen).toUpperCase()===key?"Correct":"Wrong"};});
@@ -821,7 +821,7 @@ async function refreshAllotmentLists(){
   const directory=mapSnap.val()||{};partSel.innerHTML='<option value="">Select an approved participant</option>'+Object.entries(directory).filter(([id,p])=>p&&p.status==="approved").map(([id,p])=>`<option value="${allotEsc(id)}">${allotEsc(p.name||p.email)} — ${allotEsc(p.email||"")}${p.className?" — "+allotEsc(p.className):""}</option>`).join("");
   const subjectSel=$("allotSubject");let availableTests=[];
   const subjectOf=t=>String(t.subject||t.mcqSubject||t.generalSubject||"").trim()||"Other Tests";
-  const renderTests=()=>{const c=cat.value;availableTests=[];if(c==="olympiad"){availableTests=Object.entries(olympSnap.val()||{}).filter(([id,t])=>t&&(!t.hostUid||t.hostUid===uid||isAdmin())).map(([id,t])=>({id,title:t.title||`${t.className||""} ${t.subject||""} Olympiad`,meta:`${t.className||""} · ${t.subject||""}`,type:"olympiad",subject:subjectOf(t)}));}else{availableTests=Object.entries(roomSnap.val()||{}).filter(([id,r])=>r&&r.examType===c&&(r.hostUid===uid||isAdmin())).map(([id,r])=>({id,title:r.mcqTitle||r.generalTitle||r.title||id,meta:`${id} · ${String(r.examStatus||"NOT STARTED")}`,type:c,subject:subjectOf(r)}));}
+  const renderTests=()=>{const c=cat.value;availableTests=[];if(c==="olympiad"||c==="academic"){availableTests=Object.entries(olympSnap.val()||{}).filter(([id,t])=>t&&(!t.hostUid||t.hostUid===uid||isAdmin())&&(c==="academic"?t.examCategory==="academic":t.examCategory!=="academic")).map(([id,t])=>({id,title:t.title||`${t.className||""} ${t.subject||""} ${c==="academic"?"Academic":"Olympiad"}`,meta:`${t.className||""} · ${t.subject||""}`,type:c,subject:subjectOf(t)}));}else{availableTests=Object.entries(roomSnap.val()||{}).filter(([id,r])=>r&&r.examType===c&&(r.hostUid===uid||isAdmin())).map(([id,r])=>({id,title:r.mcqTitle||r.generalTitle||r.title||id,meta:`${id} · ${String(r.examStatus||"NOT STARTED")}`,type:c,subject:subjectOf(r)}));}
    const subjects=[...new Set(availableTests.map(t=>t.subject))].sort((a,b)=>a.localeCompare(b));subjectSel.innerHTML='<option value="">Select a subject</option>'+subjects.map(x=>`<option value="${allotEsc(x)}">${allotEsc(x)}</option>`).join("");testSel.disabled=true;testSel.innerHTML='<option value="">First select a subject</option>';};
   const renderSubjectTests=()=>{const chosen=subjectSel.value,arr=availableTests.filter(t=>t.subject===chosen);testSel.disabled=!chosen;testSel.innerHTML=chosen?'<option value="">Select an examination</option>'+arr.map(t=>`<option value="${allotEsc(t.id)}" data-title="${allotEsc(t.title)}">${allotEsc(t.title)} — ${allotEsc(t.meta)}</option>`).join(""):'<option value="">First select a subject</option>';};
   renderTests();cat.onchange=renderTests;subjectSel.onchange=renderSubjectTests;
@@ -845,7 +845,7 @@ async function createTestAllotment(){
  if(!isApproved()&&!isAdmin())return;
  if(!testId||!studentId){$("allotmentMsg").textContent="Select an examination and an approved participant.";return;}
  try{
-  const [pSnap,tSnap]=await Promise.all([get(ref(db,`participantDirectory/${studentId}`)),get(ref(db,category==="olympiad"?`academicOlympiadTests/${testId}`:`rooms/${testId}`))]);
+  const [pSnap,tSnap]=await Promise.all([get(ref(db,`participantDirectory/${studentId}`)),get(ref(db,(category==="olympiad"||category==="academic")?`academicOlympiadTests/${testId}`:`rooms/${testId}`))]);
   if(!pSnap.exists()||pSnap.val().status!=="approved")throw Error("The selected participant is not approved.");if(!isAdmin()){const m=(await get(ref(db,`participantHostMapping/${studentId}`))).val();if(!m||m.hostUid!==uid||m.status!=="approved")throw Error("This participant is not mapped to your host account.");}if(!tSnap.exists())throw Error("The selected examination no longer exists.");
   const p=pSnap.val(),t=tSnap.val(),id=crypto.randomUUID(),allSnap=await get(ref(db,`testAssignments/${studentId}`));
   const previous=Object.entries(allSnap.val()||{}).map(([oldId,a])=>({id:oldId,...a})).filter(a=>a&&a.category===category&&a.testId===testId);
@@ -859,7 +859,7 @@ async function createTestAllotment(){
     if(old.status!=="ARCHIVED") await update(ref(db,`testAssignments/${studentId}/${old.id}`),{isLatest:false,supersededBy:id,supersededAt:Date.now()});
    }
   }
-  const record={assignmentId:id,category,testId,roomCode:category==="olympiad"?(t.roomCode||""):testId,testTitle:t.title||t.mcqTitle||t.generalTitle||`${t.className||""} ${t.subject||""} ${category.toUpperCase()}`,className:t.className||"",subject:String(t.subject||t.mcqSubject||t.generalSubject||"").trim()||"Other Tests",participantUid:studentId,participantName:p.name||"",participantEmail:p.email||"",assignedBy:uid,assignedByEmail:currentUser.email||"",assignedAt:Date.now(),dueAt:dueRaw?new Date(dueRaw).getTime():null,status:"ASSIGNED",attemptLimit:0,generation:freshGeneration,isLatest:true,previousAssignmentCount:previous.length};
+  const record={assignmentId:id,category,testId,roomCode:(category==="olympiad"||category==="academic")?(t.roomCode||""):testId,testTitle:t.title||t.mcqTitle||t.generalTitle||`${t.className||""} ${t.subject||""} ${category.toUpperCase()}`,className:t.className||"",subject:String(t.subject||t.mcqSubject||t.generalSubject||"").trim()||"Other Tests",participantUid:studentId,participantName:p.name||"",participantEmail:p.email||"",assignedBy:uid,assignedByEmail:currentUser.email||"",assignedAt:Date.now(),dueAt:dueRaw?new Date(dueRaw).getTime():null,status:"ASSIGNED",attemptLimit:0,generation:freshGeneration,isLatest:true,previousAssignmentCount:previous.length};
   await set(ref(db,`testAssignments/${studentId}/${id}`),record);
   $("allotmentMsg").textContent=previous.length?"Fresh examination allotment created. The participant will see it as a new pending task; previous results are retained.":"Examination assigned successfully. The participant can now find it under My Allotted Tests.";await refreshAllotmentLists();
  }catch(e){console.error(e);$("allotmentMsg").textContent=`Assignment failed: ${e.message||e}`;}
