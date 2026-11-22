@@ -27,7 +27,7 @@ function addPanel(host,kind){
  select.addEventListener("change",()=>document.getElementById("customLimitWrap").style.display=select.value==="premium_custom"?"flex":"none");
 }
 async function init(user){
- if(!document.getElementById("subscriptionClientStyles"))document.head.insertAdjacentHTML("beforeend",css.replace("<style>","<style id=\\"subscriptionClientStyles\\">"));
+ if(!document.getElementById("subscriptionClientStyles"))document.head.insertAdjacentHTML("beforeend",css.replace("<style>","<style id=\"subscriptionClientStyles\">"));
  const panel=document.getElementById("mySubscriptionPanel");if(!panel)return;
  const kind=panel.dataset.accountType,uid=user.uid;
  const planSelect=document.getElementById("mySubscriptionPlan");

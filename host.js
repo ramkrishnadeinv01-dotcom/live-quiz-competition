@@ -627,7 +627,7 @@ async function exportExcel(){
  XLSX.writeFile(wb,`Quiz_Results_${room}_${safeDate}.xlsx`);
 }
 
-syncHostAccountTypeFields();
+// Removed undefined syncHostAccountTypeFields() call; no implementation exists in this version.
 $("signupBtn").onclick=()=>{
   $("registrationBox").classList.remove("hidden");
   $("signupBtn").classList.add("hidden");
