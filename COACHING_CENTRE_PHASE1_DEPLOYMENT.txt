@@ -1,0 +1,32 @@
+WORLD OF EXAM — SEPARATE COACHING CENTRE PORTAL (PHASE 1)
+Base: live-quiz-competition-main (45).zip
+
+FILES TO REPLACE / ADD IN GITHUB ROOT
+Replace: index.html, host.html, host.js, administrator.html, administrator.js
+Add: host-entry.html, coaching-centre.html, coaching-centre.js
+Firebase: merge only the top-level coachingCentres rule from database.rules.json into live rules.
+
+DESIGN
+- Website Host Panel entry now opens host-entry.html.
+- Individual Host continues to host.html with its established Individual Host workflow.
+- Coaching Centre opens coaching-centre.html with separate Firebase Authentication registration/login and separate coachingCentres/{uid} profile records.
+- Registration fields: centre name, owner/authorised person, email, mobile, address, password.
+- New centre profiles remain pending until Administrator approval.
+- A unique Centre Code is generated and displayed. Student enrolment and centre examination management are later phases.
+- Existing Individual Host accounts remain in hosts/{uid}; centre profiles are stored separately at coachingCentres/{uid}.
+
+FIREBASE RULES
+Do not replace all live rules with this archive's database.rules.json if live rules contain additional changes. Merge only the top-level coachingCentres rule into the current live rules under "rules". Preserve the existing subscriptions rule and all other rules.
+
+ADMINISTRATION
+This phase establishes separate centre registration/login/profile. Administrator centre approval UI and centre-specific subscription assignment are the next sub-phase; do not assume approval is available in the current Host list yet.
+
+TEST
+1. Deploy files.
+2. Website Home > Host Panel should show the account selection page.
+3. Individual Host should continue to existing host.html.
+4. Coaching Centre should open separate portal; register a test centre.
+5. Confirm dashboard shows PENDING and a unique Centre Code.
+6. Sign out and sign in again to confirm profile persistence.
+
+Payment collection remains disabled. No participant or examination data is migrated or deleted.

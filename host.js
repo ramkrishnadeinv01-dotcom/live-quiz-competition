@@ -132,17 +132,11 @@ function renderAccess(){
   }
 }
 function clearHostRegistrationFields(){
-  ["hostName","hostDesignation","hostPlace","hostPhone","hostPurposeDetails","centreName","centreAddress","updateHostName","updateHostDesignation","updateHostPlace","updateHostPhone","updateHostPurposeDetails"].forEach(id=>{const el=$(id);if(el)el.value="";});
+  ["hostName","hostDesignation","hostPlace","hostPhone","hostPurposeDetails","updateHostName","updateHostDesignation","updateHostPlace","updateHostPhone","updateHostPurposeDetails"].forEach(id=>{const el=$(id);if(el)el.value="";});
   ["hostPurpose","updateHostPurpose"].forEach(id=>{const el=$(id);if(el)el.value="";});
-  const type=$("hostAccountType");if(type)type.value="individual";
-  syncHostAccountTypeFields();
+
 }
-function syncHostAccountTypeFields(){
-  const centre=$("hostAccountType")?.value==="coaching_centre";
-  const name=$("centreNameField"),address=$("centreAddressRow");
-  if(name)name.style.display=centre?"":"none";
-  if(address)address.style.display=centre?"":"none";
-}
+
 
 function openAdminModal(){
   if(!isAdmin())return;
@@ -632,7 +626,7 @@ async function exportExcel(){
  const safeDate=String(run.runDate||"result").replace(/[^0-9-]/g,"-");
  XLSX.writeFile(wb,`Quiz_Results_${room}_${safeDate}.xlsx`);
 }
-$("hostAccountType")?.addEventListener("change",syncHostAccountTypeFields);
+
 syncHostAccountTypeFields();
 $("signupBtn").onclick=()=>{
   $("registrationBox").classList.remove("hidden");
@@ -643,14 +637,13 @@ $("signupBtn").onclick=()=>{
 };
 $("registrationSubmitBtn").onclick=async()=>{try{
   const email=$("email").value.trim().toLowerCase(), password=$("password").value, hostName=$("hostName").value.trim(), designation=$("hostDesignation").value.trim(), placeOfPosting=$("hostPlace").value.trim(), phone=$("hostPhone").value.trim(), purpose=$("hostPurpose").value, purposeDetails=$("hostPurposeDetails").value.trim();
-  const accountType=$("hostAccountType")?.value||"individual", centreName=$("centreName")?.value.trim()||"", centreAddress=$("centreAddress")?.value.trim()||"";
-  if(!email||!password||!hostName||!designation||!placeOfPosting||!phone||!purpose||!purposeDetails||(accountType==="coaching_centre"&&(!centreName||!centreAddress))){msg("Please fill in all required registration fields marked with *.");return;}
+  if(!email||!password||!hostName||!designation||!placeOfPosting||!phone||!purpose||!purposeDetails){msg("Please fill in all required registration fields marked with *.");return;}
   if(password.length<6){msg("Password must be at least 6 characters.");return;}
   if(!/^[0-9+()\- ]{7,15}$/.test(phone)){msg("Please enter a valid phone number.");return;}
   $("registrationSubmitBtn").disabled=true;
   await ensureAuthPersistence();
   const cred=await createUserWithEmailAndPassword(auth,email,password);
-  const profile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,accountType,centreName:accountType==="coaching_centre"?centreName:"",centreAddress:accountType==="coaching_centre"?centreAddress:"",status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()};
+  const profile={email,hostName,designation,placeOfPosting,phone,purpose,purposeDetails,accountType:"individual",status:isAdmin(cred.user)?"approved":"pending",requestedAt:serverTimestamp()};
   await set(ref(db,`hosts/${cred.user.uid}`),profile);
   hostProfile={...profile,requestedAt:Date.now()};
   msg(isAdmin(cred.user)?"Administrator account created and activated.":"Host registration submitted. Please wait for Administrator approval.");

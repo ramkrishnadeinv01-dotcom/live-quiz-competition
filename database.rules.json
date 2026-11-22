@@ -184,6 +184,13 @@
         ".read": "auth != null && (auth.uid == $uid || auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com')",
         ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $uid && (!data.exists() || data.child('status').val() != 'pending') && newData.child('participantUid').val() == auth.uid && newData.child('status').val() == 'pending'))"
       }
+    },
+    "coachingCentres": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || (auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com'))",
+        ".write": "auth != null && ((auth.token.email != null && auth.token.email.toLowerCase() == 'ramkrishnadeinv.01@gmail.com') || (auth.uid == $uid && !data.exists() && newData.child('email').val() == auth.token.email && newData.child('status').val() == 'pending'))"
+      }
     }
   }
 }
