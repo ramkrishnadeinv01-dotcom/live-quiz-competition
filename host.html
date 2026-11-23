@@ -695,4 +695,76 @@ body:not(.host-authenticated) #hostMenu{display:none!important;visibility:hidden
 
 <script type="module" src="website-analytics-tracker.js?v=65"></script>
 <script type="module">import {mountSubscriptionPanel} from "./subscription-client.js?v=20261122-phase3";mountSubscriptionPanel(document.getElementById("hostSubscriptionMount"),"individual_host");</script>
+
+<style id="world-of-exam-individual-host-navigation-v1">
+#hostMenu.we-host-nav-enabled{display:grid!important;grid-template-columns:270px minmax(0,1fr);gap:18px;align-items:start;max-width:1500px;margin:22px auto;padding:0 14px}
+#hostMenu.we-host-nav-enabled>.we-host-topbar{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:linear-gradient(110deg,#071b3a,#1557b7);color:#fff;border-radius:18px;padding:18px 24px;box-shadow:0 10px 26px rgba(7,27,58,.18)}
+.we-host-topbar h2{margin:0;color:#fff;font-size:clamp(20px,2.2vw,28px)}.we-host-topbar p{margin:5px 0 0;color:#d9e8ff;font-size:13px}
+.we-host-topbar .we-host-signout{border:0;border-radius:12px;padding:12px 20px;background:#f3f6fc;color:#17345d;font-weight:800;cursor:pointer}
+#hostMenu>.we-host-sidebar{grid-column:1;grid-row:2;position:sticky;top:14px;align-self:start;background:#071b3a;color:#fff;border:1px solid #244a7d;border-radius:18px;padding:16px;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 12px 28px rgba(7,27,58,.18)}
+.we-host-sidebar .we-side-brand{font-weight:900;font-size:18px;padding:5px 8px 15px;border-bottom:1px solid #355174;margin-bottom:12px}.we-host-sidebar .we-side-brand small{display:block;color:#bcd2f2;font-size:12px;font-weight:500;margin-top:4px}
+.we-host-sidebar button{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:1px solid transparent;border-radius:11px;padding:11px 10px;margin:4px 0;background:transparent;color:#eaf2ff;font-weight:700;cursor:pointer}
+.we-host-sidebar button:hover,.we-host-sidebar button.active{background:#173e75;border-color:#4c83ca;color:#fff}.we-host-sidebar button span{font-size:18px;width:24px;text-align:center}
+#hostMenu>.we-welcome-panel,#hostMenu>.card,#hostMenu>.host-hero,#hostMenu>.host-menu-grid,#hostMenu>.host-home-note,#hostMenu>.we-host-page-panel{grid-column:2;min-width:0;margin-top:0!important}
+#hostMenu>.we-welcome-panel{grid-row:2}#hostMenu>.we-host-page-panel{background:#fff;border:1px solid #d8e5f5;border-radius:18px;padding:22px;box-shadow:0 8px 24px rgba(20,40,80,.06)}
+#hostMenu .we-host-page-title{color:#123d91;margin:0 0 6px}.we-host-page-subtitle{color:#64748b;margin:0 0 16px}
+#hostMenu .host-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px}
+#hostMenu .host-menu-card{min-width:0}
+#hostMenu.we-host-nav-enabled>.hidden{display:none!important}
+@media(max-width:900px){#hostMenu.we-host-nav-enabled{grid-template-columns:1fr}#hostMenu>.we-host-sidebar{grid-column:1;grid-row:auto;position:relative;top:auto;max-height:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}#hostMenu>.we-welcome-panel,#hostMenu>.card,#hostMenu>.host-hero,#hostMenu>.host-menu-grid,#hostMenu>.host-home-note,#hostMenu>.we-host-page-panel{grid-column:1}#hostMenu .host-menu-grid{grid-template-columns:1fr!important}}
+@media(max-width:520px){#hostMenu>.we-host-topbar{padding:15px}#hostMenu>.we-host-sidebar{grid-template-columns:1fr 1fr;padding:10px} .we-host-sidebar button{font-size:12px;padding:9px 7px}}
+/* Keep login, registration and host approval screens untouched. */
+#hostMenu.hidden{display:none!important}
+</style>
+<script id="world-of-exam-individual-host-navigation-controller-v1">
+(function(){
+ const $=id=>document.getElementById(id);
+ function initHostNavigation(){
+  const menu=$('hostMenu'); if(!menu||menu.dataset.weNavReady==='1')return;
+  menu.dataset.weNavReady='1'; menu.classList.add('we-host-nav-enabled');
+  const grid=menu.querySelector('.host-menu-grid');
+  const resultCard=[...menu.children].find(el=>el.querySelector('#openMcqResultsBtn'));
+  const note=menu.querySelector('.host-home-note');
+  const hero=menu.querySelector('.host-hero');
+  const profile=$('hostHomeProfileCard'), allot=$('testAllotmentCard'), welcome=$('weWelcomePanel');
+  const subscription=$('hostSubscriptionSection'), subNotice=$('hostSubscriptionAccessNotice');
+  const nav=document.createElement('aside'); nav.className='we-host-sidebar'; nav.innerHTML='<div class="we-side-brand">♟ Host Workspace<small>World of Exam · Individual Host</small></div><div class="we-side-links"></div>';
+  const top=document.createElement('div'); top.className='we-host-topbar'; top.innerHTML='<div><h2>Host Control Centre</h2><p>Manage examinations, assignments, participants and results</p></div><button type="button" class="we-host-signout" id="weHostTopSignOut">↪ Sign Out</button>';
+  menu.insertBefore(top,menu.firstChild); menu.insertBefore(nav,top.nextSibling);
+  $('weHostTopSignOut').addEventListener('click',()=>{const old=$('homeLogoutBtn'); if(old)old.click();});
+  const links=nav.querySelector('.we-side-links');
+  const entries=[
+   ['dashboard','🏠','Dashboard'],['profile','👤','My Host Profile'],['subscription','💳','Subscription'],['allotment','📌','Test Allotment'],['assignment','📋','Test Assignment'],['live','🏆','Live Quiz Competition'],['mcq','📝','MCQ Exam Setup'],['general','✍️','General Question Exam'],['olympiad','🎓','Olympiad Mock Tests'],['academic','📚','Academic Mock Tests'],['other','📊','Other Exam Results'],['hindi','🏅','Hindi Pakhwada Results'],['results','📈','Result Management']
+  ];
+  let active='dashboard';
+  function hide(el){if(el)el.style.display='none';}
+  function show(el,display=''){if(el)el.style.display=display;}
+  function setPage(key){
+   active=key; entries.forEach(([k])=>{const b=links.querySelector('[data-page="'+k+'"]');if(b)b.classList.toggle('active',k===key);});
+   [welcome,profile,subscription,subNotice,hero,allot,grid,resultCard,note].forEach(hide);
+   const editForm=$('hostProfileUpdate'); if(editForm && editForm.parentElement===menu)hide(editForm);
+   if(key==='dashboard'){show(welcome);show(subscription);show(subNotice);show(hero);show(note);}
+   if(key==='profile'){show(profile);if(editForm&&editForm.parentElement===menu)show(editForm);}
+   if(key==='subscription'){show(subscription);show(subNotice);}
+   if(key==='allotment'){show(allot);}
+   if(key==='assignment'){const b=$('openTestAssignmentPageBtn');if(b)b.click();else location.href='host.html?module=assignment';return;}
+   const launch={live:'openLiveQuizBtn',mcq:'openMcqBtn',general:'openGeneralBtn',other:'openOtherResultsBtn',hindi:'openHindiResultsBtn',results:'openMcqResultsBtn'};
+   if(launch[key]){const b=$(launch[key]);if(b)b.click();return;}
+   if(key==='olympiad'||key==='academic'){const cards=[...menu.querySelectorAll('.host-menu-card')];const card=cards.find(c=>c.textContent.toLowerCase().includes(key==='olympiad'?'olympiad mock test':'academic mock test'));const b=card&&card.querySelector('button');if(b)b.click();return;}
+   if(key==='results'){show(resultCard);}
+   if(key!=='dashboard')menu.scrollIntoView({behavior:'smooth',block:'start'});
+   if(location.hash!=='#host-'+key)history.replaceState(null,'','#host-'+key);
+  }
+  entries.forEach(([key,icon,label])=>{const b=document.createElement('button');b.type='button';b.dataset.page=key;b.innerHTML='<span>'+icon+'</span>'+label;b.addEventListener('click',()=>setPage(key));links.appendChild(b);});
+  // Keep the existing standalone assignment route behaviour intact.
+  if(new URLSearchParams(location.search).get('module')==='assignment')return;
+  const initial=location.hash.startsWith('#host-')?location.hash.slice(6):'dashboard';
+  setPage(entries.some(x=>x[0]===initial)?initial:'dashboard');
+ }
+ const observer=new MutationObserver(()=>{const m=$('hostMenu');if(m&&!m.classList.contains('hidden'))initHostNavigation();});
+ observer.observe(document.documentElement,{subtree:true,attributes:true,attributeFilter:['class']});
+ document.addEventListener('DOMContentLoaded',initHostNavigation);setTimeout(initHostNavigation,600);setTimeout(initHostNavigation,1800);
+})();
+</script>
+
 </body></html>
