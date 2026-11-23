@@ -5,6 +5,8 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const $=id=>document.getElementById(id);
 let profile=null,uid=null,assignments=[],pendingEntries=[];
+const premiumCategory=new URLSearchParams(location.search).get("premium");
+const premiumMode=["academic","olympiad"].includes(premiumCategory);
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function status(t){$("pageStatus").textContent=t;}
 
@@ -153,7 +155,7 @@ async function loadAssignments(){
  ["pendingList","completedList","resultsList"].forEach(id=>$(id).innerHTML='<div class="at-empty">Loading…</div>');
  try{
   const snap=await get(ref(db,`testAssignments/${uid}`));
-  assignments=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).filter(a=>a&&a.status!=="ARCHIVED").sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
+  assignments=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).filter(a=>a&&a.status!=="ARCHIVED"&&(!premiumMode||a.category===premiumCategory)).sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
   const pending=[],completed=[],results=[];
   for(const a of assignments){
    const latest=await latestAttempt(a),done=!!latest||a.status==="SUBMITTED",expired=!!(a.dueAt&&Date.now()>a.dueAt);
@@ -184,7 +186,7 @@ async function loadAssignments(){
   $("pendingCount").textContent=`${pending.length} examination(s) awaiting submission`;
   $("completedCount").textContent=`${completed.length} submitted examination(s)`;
   $("resultCount").textContent=`${results.length} result record(s) available`;
-  status(`Loaded ${assignments.length} allotted examination(s). Your profile and saved results remain linked to your account.`);
+  status(premiumMode?`Loaded ${assignments.length} ${premiumCategory} premium examination(s) allotted to your account.`:`Loaded ${assignments.length} allotted examination(s). Your profile and saved results remain linked to your account.`);
  }catch(e){console.error(e);status("Unable to load allotted tests: "+(e.message||e));}
 }
 onAuthStateChanged(auth,async user=>{

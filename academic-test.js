@@ -103,7 +103,7 @@ if(assignmentId){
   if(!uid)throw Error('Please sign in to your approved participant account again.');
   if(!(await checkAllottedEntitlement(uid)))throw Error('Your free access period has expired. Free Academic and Olympiad mock tests remain available, but Host-allotted examinations require an active subscription.');
   assignment=(await get(ref(db,`testAssignments/${uid}/${assignmentId}`))).val();
-  if(!assignment||assignment.category!=='olympiad'||assignment.participantUid!==uid)throw Error('This examination is not assigned to your participant account.');
+  if(!assignment||!['olympiad','academic'].includes(assignment.category)||assignment.participantUid!==uid)throw Error('This examination is not assigned to your participant account.');
   if(assignment.dueAt&&Date.now()>assignment.dueAt)throw Error('The deadline for this assigned examination has passed.');
   code=String(assignment.roomCode||'').trim().toUpperCase();
   if(!code)throw Error('The Host assignment does not contain a room code. Please ask the Host to refresh or recreate this allotment.');
