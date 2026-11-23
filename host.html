@@ -458,7 +458,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <h2>Host Control Centre</h2>
 <p>Select the examination mode you want to conduct. Each module opens in its dedicated setup page.</p>
 </section>
-<div class="card" id="testAllotmentCard" style="margin:18px 0;border:2px solid #d9b65b;background:#071b3a;color:#fff"><h2 style="color:#ffe2a0">📋 Test Assignment &amp; Monitoring</h2><p style="color:#d7e3f5">Assign an existing Olympiad, MCQ or General Examination to selected approved participants. Assigned students can open it from their Participant Panel without entering a room code.</p><div class="row"><div class="field"><label style="color:#ffe2a0">Examination Category</label><select id="allotCategory"><option value="olympiad">Olympiad</option><option value="academic">Academic</option><option value="mcq">MCQ Examination</option><option value="general">General Examination</option></select></div><div class="field"><label style="color:#ffe2a0">Select Subject</label><select id="allotSubject"><option value="">Select a subject</option></select></div><div class="field"><label style="color:#ffe2a0">Select Examination</label><select id="allotTest" disabled><option value="">First select a subject</option></select></div></div><div class="row" style="margin-top:10px"><div class="field"><label style="color:#ffe2a0">Select Participant</label><select id="allotParticipant"><option value="">Load approved participants…</option></select></div><div class="field"><label style="color:#ffe2a0">Due date &amp; time (optional)</label><input id="allotDue" type="datetime-local"/></div></div><div class="row" style="margin-top:12px"><button class="success" id="createAllotmentBtn" type="button">Assign Examination</button><button class="secondary" id="refreshAllotmentBtn" type="button">Refresh Lists</button></div><p id="allotmentMsg" aria-live="polite"></p><h3 style="color:#ffe2a0;margin-top:22px">Assignment Monitoring &amp; Result Review</h3><p style="color:#526985">Filter assignments by participant and subject, then switch between Pending and Completed to review submitted work.</p><div class="row" style="margin:12px 0"><div class="field"><label>Participant</label><select id="hostAssignmentParticipant"><option value="">All Participants</option></select></div><div class="field"><label>Subject</label><select id="hostAssignmentSubject"><option value="">All Subjects</option></select></div><div class="field"><label>Assignment Status</label><select id="hostAssignmentStatus"><option value="ALL">All Assignments</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option></select></div></div><div style="overflow-x:auto"><table style="width:100%;color:#fff"><thead><tr><th>Examination</th><th>Subject</th><th>Participant</th><th>Category</th><th>Due</th><th>Status</th><th>Result / Action</th></tr></thead><tbody id="hostAllotmentRows"><tr><td colspan="7">No allotments loaded.</td></tr></tbody></table></div><div id="hostAssignmentDetailModal" class="detail-modal"><div class="detail-card" style="max-height:85vh;overflow:auto"><div class="toolbar" style="justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2"><h2 id="hostAssignmentDetailTitle">Detailed Assignment Result</h2><button class="btn secondary" id="hostAssignmentCloseDetail" type="button">✕ Close</button></div><div id="hostAssignmentDetailBody"></div></div></div><div class="we-assignment-back"><button class="secondary" id="backToHostDashboardBtn" type="button">← Back to Host Dashboard</button></div></div>
+<div class="card" id="testAllotmentCard" style="margin:18px 0;border:2px solid #d9b65b;background:#071b3a;color:#fff"><h2 style="color:#ffe2a0">📌 Test Allotment &amp; Assignment</h2><p style="color:#d7e3f5">Assign an existing Olympiad, MCQ or General Examination to selected approved participants. Assigned students can open it from their Participant Panel without entering a room code.</p><div class="row"><div class="field"><label style="color:#ffe2a0">Examination Category</label><select id="allotCategory"><option value="olympiad">Olympiad</option><option value="academic">Academic</option><option value="mcq">MCQ Examination</option><option value="general">General Examination</option></select></div><div class="field"><label style="color:#ffe2a0">Select Subject</label><select id="allotSubject"><option value="">Select a subject</option></select></div><div class="field"><label style="color:#ffe2a0">Select Examination</label><select id="allotTest" disabled><option value="">First select a subject</option></select></div></div><div class="row" style="margin-top:10px"><div class="field"><label style="color:#ffe2a0">Select Participant</label><select id="allotParticipant"><option value="">Load approved participants…</option></select></div><div class="field"><label style="color:#ffe2a0">Due date &amp; time (optional)</label><input id="allotDue" type="datetime-local"/></div></div><div class="row" style="margin-top:12px"><button class="success" id="createAllotmentBtn" type="button">Assign Examination</button><button class="secondary" id="refreshAllotmentBtn" type="button">Refresh Lists</button></div><p id="allotmentMsg" aria-live="polite"></p><h3 style="color:#ffe2a0;margin-top:22px">Assignment Monitoring &amp; Result Review</h3><p style="color:#526985">Filter assignments by participant and subject, then switch between Pending and Completed to review submitted work.</p><div class="row" style="margin:12px 0"><div class="field"><label>Participant</label><select id="hostAssignmentParticipant"><option value="">All Participants</option></select></div><div class="field"><label>Subject</label><select id="hostAssignmentSubject"><option value="">All Subjects</option></select></div><div class="field"><label>Assignment Status</label><select id="hostAssignmentStatus"><option value="ALL">All Assignments</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option></select></div></div><div style="overflow-x:auto"><table style="width:100%;color:#fff"><thead><tr><th>Examination</th><th>Subject</th><th>Participant</th><th>Category</th><th>Due</th><th>Status</th><th>Result / Action</th></tr></thead><tbody id="hostAllotmentRows"><tr><td colspan="7">No allotments loaded.</td></tr></tbody></table></div><div id="hostAssignmentDetailModal" class="detail-modal"><div class="detail-card" style="max-height:85vh;overflow:auto"><div class="toolbar" style="justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2"><h2 id="hostAssignmentDetailTitle">Detailed Assignment Result</h2><button class="btn secondary" id="hostAssignmentCloseDetail" type="button">✕ Close</button></div><div id="hostAssignmentDetailBody"></div></div></div><div class="we-assignment-back"><button class="secondary" id="backToHostDashboardBtn" type="button">← Back to Host Dashboard</button></div></div>
 <div class="host-menu-grid">
 <div class="host-menu-card assignment"><div class="host-menu-icon">📋</div><h3>Test Assignment</h3><p>Allot existing Olympiad, MCQ and General examinations to approved participants. Review assignment status and manage previous allotments.</p><button id="openTestAssignmentPageBtn" type="button">Open Test Assignment →</button></div>
 <div class="host-menu-card live"><div class="host-menu-icon">🏆</div><h3>Live Quiz Competition</h3><p>Run the original live quiz with host-controlled questions, prizes, winners, live monitoring and competition controls.</p><button id="openLiveQuizBtn" type="button">Open Live Quiz Competition →</button></div>
@@ -646,7 +646,7 @@ body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"]{borde
 body:has(#hostMenu:not(.hidden)) #hostMenu .card[style*="margin-top:18px"] p{color:#536b8b!important}
 body:has(#hostMenu:not(.hidden)) #hostMenu .host-home-note{background:#e7f1ff!important;color:#31577f!important}
 body:has(#hostMenu:not(.hidden)) #testAllotmentCard{display:none!important}
-body.host-assignment-view:has(#hostMenu:not(.hidden)) #weWelcomePanel,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostHomeProfileCard,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.we-old-hero,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.host-menu-grid,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.card[style*="margin-top:18px"],body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.host-home-note{display:none!important}
+body.host-assignment-view:has(#hostMenu:not(.hidden)) #weWelcomePanel,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.we-old-hero,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.host-menu-grid,body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.card[style*="margin-top:18px"],body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu>.host-home-note{display:none!important}
 body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard{display:block!important;max-width:1200px;margin:20px auto!important;background:#fff!important;color:#17345d!important;border:1px solid #d8e5f5!important;border-top:6px solid #1769c8!important;border-radius:22px!important;padding:26px!important;box-shadow:0 12px 30px rgba(22,64,118,.12)}
 body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard h2,body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard h3{color:#102b59!important}
 body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard p,body.host-assignment-view:has(#hostMenu:not(.hidden)) #testAllotmentCard label{color:#526985!important}
@@ -686,4 +686,40 @@ body:not(.host-authenticated) #hostMenu{display:none!important;visibility:hidden
 </script>
 
 <script type="module" src="website-analytics-tracker.js?v=65"></script>
+
+<style id="host-test-assignment-route-guard">
+  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostHomeProfileCard,
+  body.host-assignment-view:has(#hostMenu:not(.hidden)) #weWelcomePanel,
+  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu > .host-menu-grid,
+  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu > .host-hero,
+  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu > .we-old-hero {
+    display:none!important;
+  }
+</style>
+<script id="host-test-assignment-route-guard-js">
+(function () {
+  function isAssignmentControl(node) {
+    if (!node || !node.closest) return false;
+    if (node.closest('#openTestAssignmentPageBtn')) return true;
+    const control = node.closest('button, a, [role="button"]');
+    if (!control) return false;
+    const label = (control.innerText || control.textContent || '').replace(/\s+/g,' ').trim().toLowerCase();
+    return label === 'test assignment' || label.startsWith('open test assignment');
+  }
+  document.addEventListener('click', function (event) {
+    if (!isAssignmentControl(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    const target = new URL(location.href);
+    target.searchParams.set('module', 'assignment');
+    target.hash = '';
+    location.assign(target.pathname + target.search);
+  }, true);
+  if (new URLSearchParams(location.search).get('module') === 'assignment') {
+    document.body.classList.add('host-assignment-view');
+  }
+})();
+</script>
+
 </body></html>
