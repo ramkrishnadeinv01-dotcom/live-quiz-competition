@@ -210,17 +210,47 @@ function renderComplimentaryUsers(){
  const old=sel.value;sel.innerHTML='<option value="">Select an approved '+(role==="student"?'Student':'Individual Host')+'</option>'+list.map(x=>{const name=x.name||x.participantName||x.hostName||x.email||x.uid,phone=x.phone||x.mobile||"";return `<option value="${esc(x.uid)}">${esc(name)}${phone?' — '+esc(phone):''} (${esc(x.email||x.uid)})</option>`;}).join("");if(list.some(x=>x.uid===old))sel.value=old;
 }
 async function grantComplimentaryPremium(){
- if(!admin())return;const role=$("complimentaryAccountType").value,uid=$("complimentaryUserSelect").value,duration=$("complimentaryDuration").value,reason=String($("complimentaryReason").value||"").trim();if(!uid)return alert("Select an approved account.");
- const person=(role==="student"?participantCache:hostCache).find(x=>x.uid===uid);if(!person||String(person.status||"").toLowerCase()!=="approved")return alert("Only approved accounts can receive complimentary Premium access.");
- const existing=subscriptionCache.find(x=>x.uid===uid)?.data||{};if(existing.complimentary===true&&!confirm("This account already has complimentary access. Replace its duration and reason?"))return;
+ if(!admin())return;
+ const role=$("complimentaryAccountType").value,uid=$("complimentaryUserSelect").value,duration=$("complimentaryDuration").value,reason=String($("complimentaryReason").value||"").trim();
+ if(!uid)return alert("Select an approved account.");
+ const person=(role==="student"?participantCache:hostCache).find(x=>x.uid===uid);
+ if(!person||String(person.status||"").toLowerCase()!=="approved")return alert("Only approved accounts can receive complimentary Premium access.");
+ const existing=subscriptionCache.find(x=>x.uid===uid)?.data||{};
+ if(existing.complimentary===true&&!confirm("This account already has complimentary access. Replace its duration and reason?"))return;
  if(existing.status==="active"&&!existing.complimentary&&!confirm("This account already has an active subscription. Granting complimentary access will replace that subscription record. Continue?"))return;
- const start=new Date();start.setHours(0,0,0,0);let end="";if(duration!=="lifetime"){const d=new Date(start);d.setMonth(d.getMonth()+Number(duration));d.setDate(d.getDate()-1);end=d.toISOString().slice(0,10);}
- const localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;const startDate=localDate(start);if(end){const ed=new Date(start);ed.setMonth(ed.getMonth()+Number(duration));ed.setDate(ed.getDate()-1);end=localDate(ed);}const payload={uid,accountType:role==="student"?"participant":"individual_host",plan:role==="student"?"student_premium":"host_premium",planLabel:role==="student"?"Complimentary Student Premium":"Complimentary Host Premium",status:"active",startDate,endDate:end,paymentEnabled:false,complimentary:true,complimentaryReason:reason,complimentaryGrantedAt:Date.now(),complimentaryGrantedBy:currentUser.uid,complimentaryDuration:duration,updatedAt:Date.now(),updatedBy:currentUser.uid};
- try{await set(ref(db,`subscriptions/${uid}`),payload);let auditWarning="";try{await set(ref(db,`complimentaryPremiumAudit/${uid}/${Date.now()}`),{action:"granted",accountType:role,reason,duration,startDate,endDate:end,adminUid:currentUser.uid,timestamp:Date.now()});}catch(auditError){auditWarning=` Access was granted, but the audit log could not be saved: ${auditError.message||auditError}`;}await loadSubscriptions();$("complimentaryStatus").textContent=`Complimentary ${role} Premium granted successfully.${auditWarning}`;alert(`Complimentary Premium access granted successfully.${auditWarning}`);}catch(e){alert(`Unable to grant complimentary access: ${e.message||e}`);}
+ const start=new Date();start.setHours(0,0,0,0);
+ const localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+ const startDate=localDate(start);let end="";
+ if(duration!=="lifetime"){const ed=new Date(start);ed.setMonth(ed.getMonth()+Number(duration));ed.setDate(ed.getDate()-1);end=localDate(ed);}
+ const now=Date.now();
+ const entry={action:"granted",accountType:role,reason,duration,startDate,endDate:end,adminUid:currentUser.uid,timestamp:now};
+ const history={...(existing.complimentaryHistory||{}),[String(now)]:entry};
+ const payload={uid,accountType:role==="student"?"participant":"individual_host",plan:role==="student"?"student_premium":"host_premium",planLabel:role==="student"?"Complimentary Student Premium":"Complimentary Host Premium",status:"active",startDate,endDate:end,paymentEnabled:false,complimentary:true,complimentaryReason:reason,complimentaryGrantedAt:now,complimentaryGrantedBy:currentUser.uid,complimentaryDuration:duration,updatedAt:now,updatedBy:currentUser.uid,complimentaryHistory:history};
+ try{
+  // Keep the audit history inside the subscription record. The subscription write is already permitted;
+  // this avoids a separate database path that the current Firebase rules reject.
+  await set(ref(db,`subscriptions/${uid}`),payload);
+  await loadSubscriptions();
+  $("complimentaryStatus").textContent=`Complimentary ${role} Premium granted successfully. Audit history saved with the subscription record.`;
+  alert(`Complimentary Premium access granted successfully. Audit history saved.`);
+ }catch(e){alert(`Unable to grant complimentary access: ${e.message||e}`);}
 }
 async function revokeComplimentaryPremium(){
- if(!admin())return;const uid=$("complimentaryUserSelect").value;if(!uid)return alert("Select an account first.");const sub=subscriptionCache.find(x=>x.uid===uid)?.data||{};if(sub.complimentary!==true)return alert("The selected account does not have complimentary Premium access.");if(!confirm("Revoke complimentary Premium access immediately? The account will return to its Free access level."))return;
- try{const now=Date.now();await update(ref(db,`subscriptions/${uid}`),{status:"revoked",complimentaryRevokedAt:now,complimentaryRevokedBy:currentUser.uid,updatedAt:now,updatedBy:currentUser.uid});let auditWarning="";try{await set(ref(db,`complimentaryPremiumAudit/${uid}/${now}`),{action:"revoked",accountType:sub.accountType||"unknown",adminUid:currentUser.uid,timestamp:now});}catch(auditError){auditWarning=` Access was revoked, but the audit log could not be saved: ${auditError.message||auditError}`;}await loadSubscriptions();$("complimentaryStatus").textContent=`Complimentary Premium access revoked.${auditWarning}`;alert(`Complimentary Premium access revoked.${auditWarning}`);}catch(e){alert(`Unable to revoke access: ${e.message||e}`);}
+ if(!admin())return;
+ const uid=$("complimentaryUserSelect").value;
+ if(!uid)return alert("Select an account first.");
+ const sub=subscriptionCache.find(x=>x.uid===uid)?.data||{};
+ if(sub.complimentary!==true)return alert("The selected account does not have complimentary Premium access.");
+ if(!confirm("Revoke complimentary Premium access immediately? The account will return to its Free access level."))return;
+ try{
+  const now=Date.now();
+  const entry={action:"revoked",accountType:sub.accountType||"unknown",adminUid:currentUser.uid,timestamp:now};
+  const history={...(sub.complimentaryHistory||{}),[String(now)]:entry};
+  await update(ref(db,`subscriptions/${uid}`),{status:"revoked",complimentaryRevokedAt:now,complimentaryRevokedBy:currentUser.uid,updatedAt:now,updatedBy:currentUser.uid,complimentaryHistory:history});
+  await loadSubscriptions();
+  $("complimentaryStatus").textContent="Complimentary Premium access revoked. Audit history saved with the subscription record.";
+  alert("Complimentary Premium access revoked. Audit history saved.");
+ }catch(e){alert(`Unable to revoke access: ${e.message||e}`);}
 }
 function subscriptionDate(ts){if(!ts)return "—";const d=new Date(ts);return Number.isNaN(d.getTime())?String(ts):d.toLocaleDateString("en-IN");}
 function renderSubscriptions(){
