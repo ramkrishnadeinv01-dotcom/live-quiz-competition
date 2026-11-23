@@ -164,9 +164,10 @@ function renderAcademicTests(){
  const cat=String($("academicTestCategory")?.value||"");
  const st=String($("academicTestStatus")?.value||"");
  const arr=academicTestCache.filter(x=>(!cat||(x.examCategory||"olympiad")===cat)&&(!st||String(x.status||"DRAFT").toUpperCase()===st)&&(!q||[x.title,x.roomCode,x.className,x.subject,x.hostUid,x.createdBy].join(" ").toLowerCase().includes(q)));
- $("academicTestStatusText").textContent=`${academicTestCache.length} test(s) across all Hosts • ${arr.length} shown`;
- if(!arr.length){body.innerHTML='<tr><td colspan="9" class="empty">No Academic or Olympiad tests match these filters.</td></tr>';return;}
- body.innerHTML=arr.map(x=>{const cat=(x.examCategory||"olympiad"),mode=cat==="academic"?"academic":"olympiad",active=x.active!==false;return `<tr><td><b>${cat==="academic"?"Academic":"Olympiad"}</b></td><td><b>${esc(x.title||"Untitled test")}</b><br><small>${esc(x.roomCode||x.id)}</small></td><td>${esc(x.className||"—")}</td><td>${esc(x.subject||"—")}</td><td><small>${esc(x.hostUid||x.createdBy||"—")}</small></td><td>${Number(x.questionsCount||x.questions?.length||0)}</td><td>${esc(x.status||"DRAFT")}</td><td>${active?"Published / enabled":"Unpublished / disabled"}</td><td><div class="toolbar"><button class="secondary academicManage" data-id="${esc(x.id)}" data-mode="${mode}">Manage / Edit</button><button class="secondary academicToggle" data-id="${esc(x.id)}" data-active="${active?"1":"0"}">${active?"Unpublish":"Publish"}</button><button class="secondary academicClose" data-id="${esc(x.id)}">Close Test</button><button class="danger academicDelete" data-id="${esc(x.id)}">Delete</button></div></td></tr>`}).join("");
+ $("academicTestStatusText").textContent=`${academicTestCache.length} test(s) created by Hosts / Administrator • ${arr.length} shown`;
+ if(!arr.length){body.innerHTML='<tr><td colspan="10" class="empty">No Academic or Olympiad tests match these filters.</td></tr>';return;}
+ body.innerHTML=arr.map(x=>{const cat=(x.examCategory||"olympiad"),mode=cat==="academic"?"academic":"olympiad",active=x.active!==false,premium=x.premiumCatalogVisible!==false;return `<tr><td><b>${cat==="academic"?"Academic":"Olympiad"}</b></td><td><b>${esc(x.title||"Untitled test")}</b><br><small>${esc(x.roomCode||x.id)}</small></td><td>${esc(x.className||"—")}</td><td>${esc(x.subject||"—")}</td><td><small>${esc(x.hostUid||x.createdBy||"—")}</small></td><td>${Number(x.questionsCount||x.questions?.length||0)}</td><td>${esc(x.status||"DRAFT")}</td><td>${active?"Published / enabled":"Unpublished / disabled"}</td><td><button class="secondary premiumCatalogueToggle" data-id="${esc(x.id)}" data-visible="${premium?"1":"0"}">${premium?"Shown in Premium":"Hidden from Premium"}</button></td><td><div class="toolbar"><button class="secondary academicManage" data-id="${esc(x.id)}" data-mode="${mode}">Manage / Edit</button><button class="secondary academicToggle" data-id="${esc(x.id)}" data-active="${active?"1":"0"}">${active?"Unpublish":"Publish"}</button><button class="secondary academicClose" data-id="${esc(x.id)}">Close Test</button><button class="danger academicDelete" data-id="${esc(x.id)}">Delete</button></div></td></tr>`}).join("");
+ document.querySelectorAll(".premiumCatalogueToggle").forEach(b=>b.onclick=()=>togglePremiumCatalogue(b.dataset.id,b.dataset.visible==="1"));
  document.querySelectorAll(".academicManage").forEach(b=>b.onclick=()=>location.href=`academic-host.html?id=${encodeURIComponent(b.dataset.id)}&mode=${b.dataset.mode}`);
  document.querySelectorAll(".academicToggle").forEach(b=>b.onclick=()=>toggleAcademicTest(b.dataset.id,b.dataset.active==="1"));
  document.querySelectorAll(".academicClose").forEach(b=>b.onclick=()=>closeAcademicTest(b.dataset.id));
@@ -174,9 +175,15 @@ function renderAcademicTests(){
 }
 async function loadAcademicTests(){
  if(!admin())return;
- const body=$("academicTestRows");if(body)body.innerHTML='<tr><td colspan="9">Loading…</td></tr>';
+ const body=$("academicTestRows");if(body)body.innerHTML='<tr><td colspan="10">Loading…</td></tr>';
  try{const snap=await get(ref(db,"academicOlympiadTests"));const data=snap.val()||{};academicTestCache=Object.entries(data).filter(([,x])=>x&&x.roomCode).map(([id,x])=>({id,...x})).sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));renderAcademicTests();}
- catch(e){if(body)body.innerHTML=`<tr><td colspan="9">Unable to load tests: ${esc(e.message||e)}</td></tr>`;}
+ catch(e){if(body)body.innerHTML=`<tr><td colspan="10">Unable to load tests: ${esc(e.message||e)}</td></tr>`;}
+}
+async function togglePremiumCatalogue(id,currentlyVisible){
+ if(!admin())return;const next=!currentlyVisible;const action=next?"show":"hide";
+ if(!confirm(`${action.toUpperCase()} this test in the ${next?"appropriate":"appropriate"} Premium Student Catalogue? ${next?"Students with an active subscription will be able to find and start it.":"It will no longer appear in the Premium Student Catalogue."}`))return;
+ try{await update(ref(db,`academicOlympiadTests/${id}`),{premiumCatalogVisible:next,premiumCatalogUpdatedAt:Date.now(),premiumCatalogUpdatedBy:currentUser.uid});await loadAcademicTests();}
+ catch(e){alert(`Unable to ${action} test in Premium Catalogue: ${e.message||e}`);}
 }
 async function toggleAcademicTest(id,currentlyActive){
  if(!admin())return;const action=currentlyActive?"unpublish":"publish";

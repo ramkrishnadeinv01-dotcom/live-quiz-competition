@@ -11,7 +11,8 @@ const cleanMobile=v=>String(v||'').replace(/\\D/g,'');
 // against Firebase before the examination can begin.
 const pageParams=new URLSearchParams(location.search);
 const assignedMode=pageParams.has('assignment');
-const publicMode=pageParams.get('public')==='1';
+const premiumMode=pageParams.get('premium')==='1';
+const publicMode=pageParams.get('public')==='1'||premiumMode;
 let publicParticipant=null;
 function setCategoryLabels(record){
  const label=record?.examCategory==='academic'?'Academic':'Olympiad';
@@ -33,11 +34,11 @@ if(assignedMode){
 if(publicMode){
  const heading=document.querySelector('#joinPanel h1');
  const intro=document.querySelector('#joinPanel .muted');
- if(heading)heading.textContent='Free Public examination Examination';
- if(intro)intro.textContent='Your saved participant profile will be used automatically. No room code or manual details are required.';
+ if(heading)heading.textContent=premiumMode?'Premium Examination':'Free Public Examination';
+ if(intro)intro.textContent=premiumMode?'Your premium subscription and saved participant profile will be verified automatically. No room code or Host allotment is required.':'Your saved participant profile will be used automatically. No room code or manual details are required.';
  ['pName','pMobile','pSubject','pCode'].forEach(id=>{const el=$(id);if(el){el.readOnly=true;el.required=false;}});
  const cls=$('pClass');if(cls){cls.disabled=true;cls.required=false;}
- const join=$('joinBtn');if(join)join.textContent='Start Public Mock Test';
+ const join=$('joinBtn');if(join)join.textContent=premiumMode?'Start Premium Examination':'Start Public Mock Test';
  document.querySelectorAll('#joinPanel .field').forEach(el=>el.classList.add('hidden'));
 }
 $('pClass').innerHTML='<option value="">Select class</option>'+Array.from({length:12},(_,i)=>`<option>Class ${i+1}</option>`).join('');
@@ -51,7 +52,7 @@ async function init(){try{
    const cached=JSON.parse(sessionStorage.getItem('quizParticipant')||'null')||{};
    const profileSnap=await get(ref(db,`participants/${uid}`));
    publicParticipant=profileSnap.val()||cached;
-   if(!profileSnap.exists()||publicParticipant.status&&publicParticipant.status!=='approved')throw Error('Please sign in to your approved participant account to take a public Olympiad.');
+   if(!profileSnap.exists()||publicParticipant.status&&publicParticipant.status!=='approved')throw Error('Please sign in to your approved participant account to take this examination.');
    if(cached.uid&&cached.uid!==uid)throw Error('Your participant session does not match the signed-in account. Please sign out and sign in again.');
    $('pName').value=publicParticipant.name||cached.name||'';
    $('pMobile').value=cleanMobile(publicParticipant.phone||cached.phone||'');
@@ -59,7 +60,8 @@ async function init(){try{
    const testSnap=await get(ref(db,`academicOlympiadTests/${pageParams.get('id')}`));
    const publicTest=testSnap.val();
    setCategoryLabels(publicTest);
-   if(!publicTest||publicTest.active===false||publicTest.accessMode==='private'||(publicTest.accessMode&&publicTest.accessMode!=='public'))throw Error('This public Olympiad is no longer available.');
+   if(!publicTest||publicTest.active===false||publicTest.status==='CLOSED'||publicTest.examStatus==='CLOSED'||(premiumMode?publicTest.premiumCatalogVisible===false:publicTest.accessMode==='private'||(publicTest.accessMode&&publicTest.accessMode!=='public')))throw Error(premiumMode?'This Premium examination is no longer available in the catalogue.':'This public Olympiad is no longer available.');
+   if(premiumMode){const sub=(await get(ref(db,`subscriptions/${uid}`))).val()||{};if(!premiumSubscriptionValid(sub))throw Error('An active Premium subscription is required to take this examination.');}
    $('pSubject').value=publicTest.subject||'';
    $('pCode').value='';
    $('joinStatus').textContent='Profile verified. Starting your public examination…';
@@ -114,7 +116,9 @@ if(assignmentId){
  [testId,test]=found;
  setCategoryLabels(test);
  if(publicMode){
-  if(test.active===false||test.status==='CLOSED'||test.examStatus==='CLOSED'||test.accessMode==='private'||(test.accessMode&&test.accessMode!=='public'))throw Error('This examination is not published or is no longer available.');
+  if(test.active===false||test.status==='CLOSED'||test.examStatus==='CLOSED'||(premiumMode?test.premiumCatalogVisible===false:test.accessMode==='private'||(test.accessMode&&test.accessMode!=='public')))throw Error(premiumMode?'This Premium examination is not published or is no longer available.':'This examination is not published or is no longer available.');
+  if(premiumMode&&!(await checkAllottedEntitlement(uid)))throw Error('An active Premium subscription is required to take this examination.');
+  if(premiumMode&&test.startMode==='scheduled'&&test.scheduleAt){const opensAt=new Date(test.scheduleAt).getTime();if(Number.isFinite(opensAt)&&Date.now()<opensAt)throw Error('This Premium examination is scheduled to open at '+new Date(opensAt).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST.');}
   className=publicParticipant.className||test.className||'';
   if(publicParticipant.className&&test.className&&String(publicParticipant.className).trim().toLowerCase()!==String(test.className).trim().toLowerCase())throw Error('This examination is for '+test.className+'. Your saved profile is registered for '+publicParticipant.className+'.');
   subject=test.subject||'';
@@ -139,7 +143,7 @@ if(assignmentId){
    if(Number.isFinite(scheduledAt)&&Date.now()<scheduledAt)throw Error('This assigned examination is scheduled to open at '+new Date(scheduledAt).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST.');
   }
  } else if(!publicMode&&test.status!=='LIVE')throw Error(test.status==='CLOSED'?'This examination is closed.':'The examination has not been started by the administrator.');
- if(!assignmentId&&test.accessMode==='private'){
+ if(!assignmentId&&!premiumMode&&test.accessMode==='private'){
   const normName=v=>String(v||'').trim().normalize('NFKC').replace(/\s+/g,' ').toLocaleLowerCase();
   const ok=(test.approvedParticipants||[]).some(p=>cleanMobile(p.mobile)===mobile&&normName(p.name)===normName(name)&&String(p.className||test.className).trim().toLowerCase()===className.trim().toLowerCase());
   if(!ok)throw Error('Access denied. Your name, mobile number and class must match the administrator-approved participant list.');

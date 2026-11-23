@@ -1,0 +1,45 @@
+WORLD OF EXAM — INDEPENDENT PREMIUM STUDENT CATALOGUE (CORRECTED)
+
+Purpose
+Premium Students is now a standalone catalogue and is not routed to allotted-tests.html or testAssignments.
+
+Student experience
+- Academic Premium opens premium-catalogue.html?category=academic.
+- Olympiad Premium opens premium-catalogue.html?category=olympiad.
+- Each catalogue lists tests from academicOlympiadTests for its category.
+- Tests created by Admin or Hosts are eligible, regardless of their original accessMode (Private or Public/Free).
+- Students select a test and start it directly. No Host allotment, assignment record or room code is required.
+- Active participant account and active/trial subscription with valid dates are checked in the catalogue and again on the exam page.
+
+Administrator control
+- Administrator > Academic & Olympiad Test Management has a Premium Catalogue column.
+- The Show/Hide button controls premiumCatalogVisible on each test.
+- Existing tests with no premiumCatalogVisible property are treated as shown by default; Administrator can hide them.
+- New tests created in Academic Host are shown by default; Administrator can hide them at any time.
+- Closed or disabled tests are not listed.
+
+Files changed
+- student.html
+- premium-catalogue.html (new)
+- premium-catalogue.js (new)
+- academic-test.html
+- academic-test.js
+- academic-host.html
+- academic-host.js
+- administrator.html
+- administrator.js
+
+Firebase Rules/configuration were not modified.
+
+Deployment
+Upload the changed files to the repository root, preserving the directory structure. Replace existing files and add the two new premium-catalogue files. Commit and hard-refresh the browser.
+
+Testing checklist
+1. Active Premium participant: Academic Premium shows Academic tests only.
+2. Active Premium participant: Olympiad Premium shows Olympiad tests only.
+3. Private test appears if Premium Catalogue is enabled.
+4. Public/Free-created test appears if Premium Catalogue is enabled.
+5. Student starts test directly without an assignment or room code.
+6. Admin hides a test: it disappears from the relevant catalogue.
+7. Expired/free-only participant is blocked from Premium catalogue and direct premium exam URL.
+8. Free public catalogues and Host allotment workflow remain separate.
