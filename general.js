@@ -10,12 +10,27 @@ const room=(params.get("room")||sessionStorage.getItem("generalRoom")||"").toUpp
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 let questions={},submitted=false,rendered=false,lastStatus="",pollBusy=false;
 function show(t){$("status").textContent=t;}
+
+function subscriptionAllowsAllottedTests(sub){
+ if(!sub||!["active","trial"].includes(String(sub.status||"").toLowerCase()))return false;
+ const today=new Date();today.setHours(0,0,0,0);
+ const parseDate=v=>{if(!v)return null;const d=new Date(String(v).length===10?`${v}T00:00:00`:v);return Number.isNaN(d.getTime())?null:d;};
+ const start=parseDate(sub.startDate),end=parseDate(sub.endDate);
+ if(start&&today<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
+ if(end&&today>new Date(end.getFullYear(),end.getMonth(),end.getDate()))return false;
+ return true;
+}
+async function checkAllottedEntitlement(userUid){
+ const snap=await get(ref(db,`subscriptions/${userUid}`));
+ return subscriptionAllowsAllottedTests(snap.val()||null);
+}
+
 function questionKeys(){return Object.keys(questions).sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));}
 function hideQuestions(message){$("questions").innerHTML="";rendered=false;show(message);}
 function renderQuestions(keys){if(rendered)return;$("questions").innerHTML=keys.map((k,i)=>`<div class="card"><h3>Question ${i+1}</h3><div class="question">${esc(questions[k].text||"")}</div><textarea id="a_${k}" rows="4" style="width:100%;box-sizing:border-box" placeholder="Write your answer here"></textarea></div>`).join("")+`<div class="card"><button id="submit" class="success">SUBMIT EXAM</button></div>`;$("submit").onclick=()=>submit(keys);rendered=true;}
 async function init(){
  const user=await authReady;if(!user)return show("Participant sign-in failed. Please refresh or contact the host.");
- const assignmentId=params.get("assignment");if(assignmentId){if(user.isAnonymous)return show("Please sign in to your approved participant account before opening this assigned examination.");const a=(await get(ref(db,`testAssignments/${user.uid}/${assignmentId}`))).val();if(!a||a.category!=="general"||a.testId!==room||a.participantUid!==user.uid)return show("This General Examination is not assigned to your account.");if(a.dueAt&&Date.now()>a.dueAt)return show("The deadline for this assigned examination has passed.");}
+ const assignmentId=params.get("assignment");if(assignmentId){if(user.isAnonymous)return show("Please sign in to your approved participant account before opening this assigned examination.");if(!(await checkAllottedEntitlement(user.uid)))return show("Your free access period has expired. Free Academic and Olympiad mock tests remain available, but Host-allotted General examinations require an active subscription.");const a=(await get(ref(db,`testAssignments/${user.uid}/${assignmentId}`))).val();if(!a||a.category!=="general"||a.testId!==room||a.participantUid!==user.uid)return show("This General Examination is not assigned to your account.");if(a.dueAt&&Date.now()>a.dueAt)return show("The deadline for this assigned examination has passed.");}
  if(!p||!/^[A-Z0-9]{6}$/.test(room))return show("Participant details or room code are missing. Return to Participant Panel and open the exam again.");
  $("room").textContent=room;await refreshExam();setInterval(refreshExam,2000);
 }

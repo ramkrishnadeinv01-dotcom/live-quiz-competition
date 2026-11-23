@@ -84,8 +84,24 @@ $('joinBtn').onclick=async()=>{try{
   className=publicParticipant.className||className;
  }else if(!assignmentId&&(!name||mobile.length!==10||!className||!subject||!code))throw Error('Enter your name, valid 10-digit mobile number, class, subject and room code.');
  $('joinStatus').textContent=assignmentId?'Loading your allotted examination…':'Checking room and participant access…';
- if(assignmentId){
+ 
+function subscriptionAllowsAllottedTests(sub){
+ if(!sub||!["active","trial"].includes(String(sub.status||"").toLowerCase()))return false;
+ const today=new Date();today.setHours(0,0,0,0);
+ const parseDate=v=>{if(!v)return null;const d=new Date(String(v).length===10?`${v}T00:00:00`:v);return Number.isNaN(d.getTime())?null:d;};
+ const start=parseDate(sub.startDate),end=parseDate(sub.endDate);
+ if(start&&today<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
+ if(end&&today>new Date(end.getFullYear(),end.getMonth(),end.getDate()))return false;
+ return true;
+}
+async function checkAllottedEntitlement(userUid){
+ const snap=await get(ref(db,`subscriptions/${userUid}`));
+ return subscriptionAllowsAllottedTests(snap.val()||null);
+}
+
+if(assignmentId){
   if(!uid)throw Error('Please sign in to your approved participant account again.');
+  if(!(await checkAllottedEntitlement(uid)))throw Error('Your free access period has expired. Free Academic and Olympiad mock tests remain available, but Host-allotted examinations require an active subscription.');
   assignment=(await get(ref(db,`testAssignments/${uid}/${assignmentId}`))).val();
   if(!assignment||assignment.category!=='olympiad'||assignment.participantUid!==uid)throw Error('This examination is not assigned to your participant account.');
   if(assignment.dueAt&&Date.now()>assignment.dueAt)throw Error('The deadline for this assigned examination has passed.');

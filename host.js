@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence, indexedDBLocalPersistence } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, set, update, get, onValue, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { subscriptionIsCurrentlyValid } from "./subscription-access.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 
@@ -72,12 +73,28 @@ async function ensureAuthPersistence(){
 
 const $=id=>document.getElementById(id);
 const ADMIN_EMAIL="ramkrishnadeinv.01@gmail.com";
-let uid=null, currentUser=null, hostProfile=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
+let uid=null, currentUser=null, hostProfile=null, hostSubscription=null, room=null, qNo=1, answersCache={}, participantsCache={}, questionsCache={}, allAnswersCache={};
 let hostTimerInterval=null, competitionFrozen=false;
-let unsubRoom=null, unsubParticipants=null, unsubQuestions=null, answerListeners={};
+let unsubRoom=null, unsubParticipants=null, unsubQuestions=null, unsubHostSubscription=null, answerListeners={};
 
 function isAdmin(user=currentUser){return String(user?.email||"").toLowerCase()===ADMIN_EMAIL.toLowerCase();}
 function isApproved(){return isAdmin() || hostProfile?.status==="approved";}
+function hasFullHostSubscription(){return isAdmin() || subscriptionIsCurrentlyValid(hostSubscription);}
+function requireFullHostSubscription(feature="this feature"){
+  if(hasFullHostSubscription())return true;
+  alert(`Your free subscription period has ended. ${feature} requires an active subscription. You can continue using free Public Academic and Olympiad Mock Tests.`);
+  return false;
+}
+function renderHostSubscriptionAccess(){
+  const full=hasFullHostSubscription();
+  const notice=$("hostSubscriptionAccessNotice");
+  if(notice){notice.classList.toggle("hidden",full||!currentUser||isAdmin());notice.textContent="Your free subscription period has ended. Your Host Profile remains active. You can continue to create and manage Public Academic and Olympiad Mock Tests. Test Allotment, Live Quiz, MCQ/General examinations and other premium facilities require an active subscription.";}
+  ["testAllotmentCard"].forEach(id=>{const el=$(id);if(el)el.classList.toggle("hidden",!full);});
+  document.querySelectorAll(".host-menu-card.assignment,.host-menu-card.live,.host-menu-card.mcq,.host-menu-card.general").forEach(el=>el.classList.toggle("hidden",!full));
+  ["openOtherResultsBtn","openHindiResultsBtn","openOtherResultsManageBtn"].forEach(id=>{const el=$(id);if(el){const card=el.closest(".host-menu-card");if(card)card.classList.toggle("hidden",!full);}});
+  ["openMcqResultsBtn","openMcqLiveResultsBtn"].forEach(id=>{const el=$(id);if(el){const card=el.closest(".card");if(card)card.classList.toggle("hidden",!full);}});
+  if(!full && location.hash==="#liveQuiz"){location.hash="";}
+}
 async function ensureHostProfile(user){
   if(!user)return null;
   const h=await get(ref(db,`hosts/${user.uid}`));
@@ -127,6 +144,7 @@ function renderAccess(){
     fillHostProfileForm();
     renderHostHomeProfile();
     const complete=!!hostProfile?.status && profileComplete(hostProfile);
+    renderHostSubscriptionAccess();
     if(editBtn)editBtn.classList.toggle("hidden",!complete);
     if(updateBox)updateBox.classList.toggle("hidden",complete && !window.__hostProfileEditing);
   }
@@ -385,6 +403,7 @@ async function saveQuestion(){
  await set(qRef(qNo),data); questionsCache[`q${qNo}`]=data; $("controlMsg").textContent=`Question ${qNo} saved.`;
 }
 async function createRoom(){
+ if(!requireFullHostSubscription("Live Quiz Competition"))return;
  if(!isApproved()) return alert("Host permission is pending or inactive. Please obtain Administrator approval first.");
  const code=Math.random().toString(36).slice(2,8).toUpperCase(); room=code;
  const title=$("quizTitle").value.trim()||"Live Quiz", count=Number($("qCount").value||10);
@@ -406,6 +425,7 @@ async function loadExistingRooms(){
  }catch(e){ console.error(e); }
 }
 async function openRoom(code){
+ if(!requireFullHostSubscription("Live Quiz Competition"))return;
  if(!isApproved()) return alert("Host permission is not active. Please obtain Administrator approval first.");
  const snap=await get(ref(db,`rooms/${code}`)); const r=snap.val();
  if(!r || r.hostUid!==uid) return alert("Saved quiz room not found or not owned by this host.");
@@ -421,6 +441,7 @@ async function openRoom(code){
  $("controlMsg").textContent=`Quiz room ${code} loaded. Saved questions and results are available.`;
 }
 async function deleteQuizRoom(){
+  if(!requireFullHostSubscription("Live Quiz Competition"))return;
   if(!uid || !isApproved()) return alert("Host permission is not active.");
   const sel=$("existingRooms");
   const code=sel?.value || room;
@@ -746,7 +767,7 @@ async function importWordQuestions(){
   }catch(err){console.error(err); status.textContent=`Import failed: ${err?.message||err}`;}
 }
 
-function syncLiveQuizRoute(){const live=location.hash==="#liveQuiz";const appBox=$("hostApp");const menu=$("hostMenu");const approved=!!currentUser&&isApproved();if(appBox)appBox.classList.toggle("hidden",!(approved&&live));if(menu)menu.classList.toggle("hidden",!(approved&&!live));document.body.classList.toggle("host-authenticated",approved&&!live);}
+function syncLiveQuizRoute(){const live=location.hash==="#liveQuiz";const appBox=$("hostApp");const menu=$("hostMenu");const approved=!!currentUser&&isApproved()&&hasFullHostSubscription();if(appBox)appBox.classList.toggle("hidden",!(approved&&live));if(menu)menu.classList.toggle("hidden",!(approved&&!live));document.body.classList.toggle("host-authenticated",approved&&!live);}
 window.addEventListener("hashchange",syncLiveQuizRoute);
 $("backHostHomeBtn2")?.addEventListener("click",()=>{location.hash="";syncLiveQuizRoute();window.scrollTo({top:0,behavior:"smooth"});});
 
@@ -762,17 +783,23 @@ onAuthStateChanged(auth,async user=>{
   currentUser=user||null; uid=user?.uid||null;
   $("authStatus").textContent=user?(isAdmin(user)?"Administrator signed in":"Signed in"):"Not signed in";
   $("loginCard").classList.toggle("hidden",!!user);
-  if(!user){document.body.classList.remove("host-authenticated");clearHostRegistrationFields();msg("");$("registrationBox").classList.add("hidden");$("signupBtn").classList.remove("hidden");$("registrationSubmitBtn").classList.remove("hidden");$("registrationSubmitBtn").disabled=false;$("hostApp").classList.add("hidden");$("hostMenu")?.classList.add("hidden");$("adminLauncher").classList.add("hidden");closeAdminModal();$("hostAccessCard").classList.add("hidden");return;}
+  if(!user){if(unsubHostSubscription){unsubHostSubscription();unsubHostSubscription=null;}hostSubscription=null;document.body.classList.remove("host-authenticated");clearHostRegistrationFields();msg("");$("registrationBox").classList.add("hidden");$("signupBtn").classList.remove("hidden");$("registrationSubmitBtn").classList.remove("hidden");$("registrationSubmitBtn").disabled=false;$("hostApp").classList.add("hidden");$("hostMenu")?.classList.add("hidden");$("adminLauncher").classList.add("hidden");closeAdminModal();$("hostAccessCard").classList.add("hidden");return;}
   try{
     hostProfile=await ensureHostProfile(user);
+    const subscriptionSnap=await get(ref(db,`subscriptions/${user.uid}`));
+    hostSubscription=subscriptionSnap.exists()?subscriptionSnap.val():null;
+    if(unsubHostSubscription)unsubHostSubscription();
+    unsubHostSubscription=onValue(ref(db,`subscriptions/${user.uid}`),snap=>{hostSubscription=snap.exists()?snap.val():null;renderHostSubscriptionAccess();syncLiveQuizRoute();});
     renderAccess();
     syncLiveQuizRoute();
     if(isAdmin(user)){await loadHostRequests();}
     if(isApproved()){
-      await loadExistingRooms();
-      await refreshAllotmentLists().catch(console.warn);
-      const last=localStorage.getItem("liveQuizLastRoom");
-      if(last){const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}
+      if(hasFullHostSubscription()){
+        await loadExistingRooms();
+        await refreshAllotmentLists().catch(console.warn);
+        const last=localStorage.getItem("liveQuizLastRoom");
+        if(last){const s=await get(ref(db,`rooms/${last}`));if(s.exists()&&s.val().hostUid===uid) await openRoom(last);}
+      } else { renderHostSubscriptionAccess(); }
     }
   }catch(e){console.error(e);msg(`Access check failed: ${e.message||e}`);}
 });
@@ -818,6 +845,7 @@ $("hostAllotmentRows")?.addEventListener("click",e=>{const v=e.target.closest("[
 $("hostAssignmentCloseDetail")?.addEventListener("click",()=>$("hostAssignmentDetailModal")?.classList.remove("open"));
 $("hostAssignmentDetailModal")?.addEventListener("click",e=>{if(e.target.id==="hostAssignmentDetailModal")e.currentTarget.classList.remove("open");});
 async function refreshAllotmentLists(){
+ if(!requireFullHostSubscription("Test Allotment & Assignment"))return;
  if(!isApproved()&&!isAdmin())return;
  const msgEl=$("allotmentMsg"),cat=$("allotCategory"),testSel=$("allotTest"),partSel=$("allotParticipant");
  try{
@@ -845,6 +873,7 @@ async function refreshAllotmentLists(){
  }catch(e){console.error(e);if(msgEl)msgEl.textContent=`Unable to load allotment lists: ${e.message||e}. Check participantDirectory and testAssignments database rules.`;}
 }
 async function createTestAllotment(){
+ if(!requireFullHostSubscription("Test Allotment & Assignment"))return;
  const category=$("allotCategory").value,testId=$("allotTest").value,studentId=$("allotParticipant").value,dueRaw=$("allotDue").value;
  if(!isApproved()&&!isAdmin())return;
  if(!testId||!studentId){$("allotmentMsg").textContent="Select an examination and an approved participant.";return;}
@@ -875,14 +904,14 @@ $("refreshAllotmentBtn")?.addEventListener("click",refreshAllotmentLists);
 // Host Control Centre navigation buttons
 function bindHostPortalButtons(){
   const actions={
-    openLiveQuizBtn:()=>{localStorage.setItem('hostPortalLastSection','liveQuiz');location.hash='#liveQuiz';syncLiveQuizRoute();window.scrollTo({top:0,behavior:'smooth'});},
-    openMcqBtn:()=>location.href='host-mcq.html',
-    openGeneralBtn:()=>location.href='host-general.html',
-    openOtherResultsBtn:()=>location.href='other-results.html',
-    openHindiResultsBtn:()=>location.href='hindi-pakhwada-publication.html',
+    openLiveQuizBtn:()=>{if(!requireFullHostSubscription("Live Quiz Competition"))return;localStorage.setItem('hostPortalLastSection','liveQuiz');location.hash='#liveQuiz';syncLiveQuizRoute();window.scrollTo({top:0,behavior:'smooth'});},
+    openMcqBtn:()=>{if(requireFullHostSubscription("MCQ Exam Setup"))location.href='host-mcq.html';},
+    openGeneralBtn:()=>{if(requireFullHostSubscription("General Question Exam Setup"))location.href='host-general.html';},
+    openOtherResultsBtn:()=>{if(requireFullHostSubscription("Other Examination Result Publication"))location.href='other-results.html';},
+    openHindiResultsBtn:()=>{if(requireFullHostSubscription("Hindi Pakhwada Result Publication"))location.href='hindi-pakhwada-publication.html';},
     openWebsiteAnalyticsBtn:()=>location.href='website-analytics.html',
-    openOtherResultsManageBtn:()=>location.href='other-results.html#manage',
-    openMcqResultsBtn:()=>location.href='host-mcq-results.html',
+    openOtherResultsManageBtn:()=>{if(requireFullHostSubscription("Other Examination Result Management"))location.href='other-results.html#manage';},
+    openMcqResultsBtn:()=>{if(requireFullHostSubscription("MCQ Result Management"))location.href='host-mcq-results.html';},
     homeLogoutBtn:async()=>{clearHostRegistrationFields();await signOut(auth);},
     openAdminPageBtn:()=>location.href='administrator.html'
   };
@@ -890,4 +919,4 @@ function bindHostPortalButtons(){
 }
 bindHostPortalButtons();
 
-$("openMcqLiveResultsBtn")?.addEventListener("click",()=>{const code=prompt("Enter the 6-character MCQ Room Code:");if(code&&/^[A-Z0-9]{6}$/i.test(code.trim()))location.href=`host-mcq.html?room=${encodeURIComponent(code.trim().toUpperCase())}`;});
+$("openMcqLiveResultsBtn")?.addEventListener("click",()=>{if(!requireFullHostSubscription("MCQ Live Results"))return;const code=prompt("Enter the 6-character MCQ Room Code:");if(code&&/^[A-Z0-9]{6}$/i.test(code.trim()))location.href=`host-mcq.html?room=${encodeURIComponent(code.trim().toUpperCase())}`;});

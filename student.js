@@ -64,10 +64,29 @@ async function handleParticipantAuth(user){
  await update(ref(db,`participantDirectory/${user.uid}`),{uid:user.uid,email:user.email,name:participantProfile.name||"",className:participantProfile.className||"",status:participantProfile.status,updatedAt:Date.now()});
  sessionStorage.setItem("quizParticipant",JSON.stringify(participant));showDashboard(participant);$("connection").textContent="Approved · Signed in";
 }
+
+function subscriptionAllowsAllottedTests(sub){
+ if(!sub||!["active","trial"].includes(String(sub.status||"").toLowerCase()))return false;
+ const today=new Date();today.setHours(0,0,0,0);
+ const parseDate=v=>{if(!v)return null;const d=new Date(String(v).length===10?`${v}T00:00:00`:v);return Number.isNaN(d.getTime())?null:d;};
+ const start=parseDate(sub.startDate),end=parseDate(sub.endDate);
+ if(start&&today<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
+ if(end&&today>new Date(end.getFullYear(),end.getMonth(),end.getDate()))return false;
+ return true;
+}
+async function checkAllottedEntitlement(userUid){
+ const snap=await get(ref(db,`subscriptions/${userUid}`));
+ return subscriptionAllowsAllottedTests(snap.val()||null);
+}
+
 async function loadMyAllottedTests(){
  const box=$("myAllottedTests"),uid=auth.currentUser?.uid;if(!box||!uid)return;
  box.innerHTML="<p>Loading your assigned examinations…</p>";
  try{
+  if(!(await checkAllottedEntitlement(uid))){
+   box.innerHTML='<div class="status blocked"><b>Your free access period has expired.</b><br>Your participant account and profile remain active. You can continue using free Academic and Olympiad mock tests. Host-allotted examinations, reattempts and other premium facilities require an active subscription.</div>';
+   return;
+  }
   const snap=await get(ref(db,`testAssignments/${uid}`));
   const items=Object.entries(snap.val()||{}).map(([id,a])=>({...a,id})).filter(a=>a&&a.status!=="ARCHIVED").sort((a,b)=>(b.assignedAt||0)-(a.assignedAt||0));
   if(!items.length){box.innerHTML='<div class="status">No examinations have been allotted to you yet.</div>';return;}
@@ -99,7 +118,7 @@ async function loadMyAllottedTests(){
   box.querySelectorAll('.allottedDeleteBtn').forEach(btn=>btn.onclick=async()=>{const a=items.find(x=>x.id===btn.dataset.id);if(!a||!confirm(`Delete the completed assignment record for “${a.testTitle||'this examination'}”? Your submitted result history will remain saved.`))return;try{await update(ref(db,`testAssignments/${uid}/${a.id}`),{status:"ARCHIVED",archivedAt:Date.now(),archivedBy:uid,isLatest:false});await loadMyAllottedTests();}catch(e){alert(`Unable to archive completed record: ${e.message||e}`);}});
  }catch(e){console.error(e);box.innerHTML=`<div class="status blocked">Unable to load assigned examinations: ${esc(e.message||e)}</div>`;}
 }
-function startAllottedTest(a){if(!a)return;const category=a.category;if(category==="olympiad"){location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="mcq"){location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="general"){location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}alert("Unsupported examination category.");}
+async function startAllottedTest(a){if(!a)return;const uid=auth.currentUser?.uid;if(!uid||!(await checkAllottedEntitlement(uid))){alert('Your free access period has expired. Free Academic and Olympiad mock tests remain available, but Host-allotted examinations require an active subscription.');await loadMyAllottedTests();return;}const category=a.category;if(category==="olympiad"){location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="mcq"){location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}if(category==="general"){location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;return;}alert("Unsupported examination category.");}
 
 function showLogin(){const j=$("joinCard"),d=$("dashboardCard"),q=$("quizCard");if(j)j.classList.remove("hidden");if(d)d.classList.add("hidden");if(q)q.classList.add("hidden");$("connection").textContent="Sign in required";}
 async function registerParticipant(){

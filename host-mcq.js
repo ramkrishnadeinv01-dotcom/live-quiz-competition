@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/fireba
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update, remove, onValue } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js";
+import { subscriptionIsCurrentlyValid } from "./subscription-access.js";
 
 const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getDatabase(app);
 const $=id=>document.getElementById(id), ADMIN="ramkrishnadeinv.01@gmail.com";
@@ -10,7 +11,7 @@ const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;"," ":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}
 function msg(t,cls=""){ $("msg").textContent=t; $("msg").className="status "+cls; }
 function isAdmin(u){return String(u?.email||"").toLowerCase()===ADMIN;}
-async function access(u){if(!u)return false;if(isAdmin(u))return true;const s=await get(ref(db,`hosts/${u.uid}`));return s.exists()&&s.val()?.status==="approved";}
+async function access(u){if(!u)return false;if(isAdmin(u))return true;const [s,sub]=await Promise.all([get(ref(db,`hosts/${u.uid}`)),get(ref(db,`subscriptions/${u.uid}`))]);return s.exists()&&s.val()?.status==="approved"&&subscriptionIsCurrentlyValid(sub.val());}
 function code(){let x="";for(let i=0;i<6;i++)x+=chars[Math.floor(Math.random()*chars.length)];return x;}
 function renderQuestions(){const n=Math.max(1,Math.min(100,Number($("count").value||10)));questions=Array.from({length:n},(_,i)=>questions[i]||{text:"",options:{A:"",B:"",C:"",D:""},correct:"A"});$("questions").innerHTML=questions.map((q,i)=>`<div class="qbox"><h3>Question ${i+1}</h3><div class="field"><label>Question *</label><textarea id="q_${i}" rows="3" style="width:100%;box-sizing:border-box">${esc(q.text)}</textarea></div><div class="qgrid"><div class="field"><label>A *</label><input id="a_${i}" value="${esc(q.options.A)}"></div><div class="field"><label>B *</label><input id="b_${i}" value="${esc(q.options.B)}"></div><div class="field"><label>C *</label><input id="c_${i}" value="${esc(q.options.C)}"></div><div class="field"><label>D *</label><input id="d_${i}" value="${esc(q.options.D)}"></div><div class="field"><label>Correct Answer *</label><select id="cans_${i}"><option>A</option><option>B</option><option>C</option><option>D</option></select></div></div></div>`).join("");questions.forEach((q,i)=>$("cans_"+i).value=q.correct||"A");}
 function collect(){return questions.map((_,i)=>({text:$("q_"+i).value.trim(),options:{A:$("a_"+i).value.trim(),B:$("b_"+i).value.trim(),C:$("c_"+i).value.trim(),D:$("d_"+i).value.trim()},correct:$("cans_"+i).value}));}
@@ -101,7 +102,7 @@ async function handleMCQUpload(file){
   }
 }
 
-onAuthStateChanged(auth,async u=>{uid=u?.uid||null;$("authStatus").textContent=u?`Signed in: ${u.email}`:"Not signed in";if(!u||!(await access(u))){msg("Host approval is required before managing MCQ exams.","blocked");$("createBtn").disabled=true;$("refreshBtn").disabled=true;$("loadBtn").disabled=true;}else{await refreshRooms();msg("Approved host. Select an existing room or create a new MCQ exam.","live");}});
+onAuthStateChanged(auth,async u=>{uid=u?.uid||null;$("authStatus").textContent=u?`Signed in: ${u.email}`:"Not signed in";if(!u||!(await access(u))){msg("An approved Host with a currently valid subscription is required to manage MCQ exams. Free Public Academic/Olympiad Mock Tests remain available after expiry.","blocked");$("createBtn").disabled=true;$("refreshBtn").disabled=true;$("loadBtn").disabled=true;}else{await refreshRooms();msg("Approved host. Select an existing room or create a new MCQ exam.","live");}});
 
 
 // v70 — Direct room opening for athlete-wise live MCQ monitoring

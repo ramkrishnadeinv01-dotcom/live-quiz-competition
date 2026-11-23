@@ -11,6 +11,21 @@ const participant=JSON.parse(sessionStorage.getItem("quizParticipant")||"null");
 let questions=[],idx=0,selected="",answers={},timer=null,endAt=0,startedAt=0,roomUnsub=null,runId="",finalized=false,submitting=false;
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const statusOf=r=>String(r?.examStatus||"NOT STARTED").toUpperCase();
+
+function subscriptionAllowsAllottedTests(sub){
+ if(!sub||!["active","trial"].includes(String(sub.status||"").toLowerCase()))return false;
+ const today=new Date();today.setHours(0,0,0,0);
+ const parseDate=v=>{if(!v)return null;const d=new Date(String(v).length===10?`${v}T00:00:00`:v);return Number.isNaN(d.getTime())?null:d;};
+ const start=parseDate(sub.startDate),end=parseDate(sub.endDate);
+ if(start&&today<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
+ if(end&&today>new Date(end.getFullYear(),end.getMonth(),end.getDate()))return false;
+ return true;
+}
+async function checkAllottedEntitlement(userUid){
+ const snap=await get(ref(db,`subscriptions/${userUid}`));
+ return subscriptionAllowsAllottedTests(snap.val()||null);
+}
+
 const keyForParticipant=()=>String(participant?.phone||"").replace(/\D/g,"");
 
 function hideExam(){
@@ -224,7 +239,7 @@ async function init(){
   if(!participant)return showError("Participant details are missing. Please return to the Participant Panel and enter your details.");
   try{
     const assignmentId=params.get("assignment");
-    if(assignmentId){if(!signedIn||signedIn.isAnonymous)return showError("Please sign in to your approved participant account before opening this assigned examination.");const a=(await get(ref(db,`testAssignments/${signedIn.uid}/${assignmentId}`))).val();if(!a||a.category!=="mcq"||a.testId!==room||a.participantUid!==signedIn.uid)return showError("This MCQ examination is not assigned to your account.");if(a.dueAt&&Date.now()>a.dueAt)return showError("The deadline for this assigned examination has passed.");}
+    if(assignmentId){if(!signedIn||signedIn.isAnonymous)return showError("Please sign in to your approved participant account before opening this assigned examination.");if(!(await checkAllottedEntitlement(signedIn.uid)))return showError("Your free access period has expired. Free Academic and Olympiad mock tests remain available, but Host-allotted MCQ examinations require an active subscription.");const a=(await get(ref(db,`testAssignments/${signedIn.uid}/${assignmentId}`))).val();if(!a||a.category!=="mcq"||a.testId!==room||a.participantUid!==signedIn.uid)return showError("This MCQ examination is not assigned to your account.");if(a.dueAt&&Date.now()>a.dueAt)return showError("The deadline for this assigned examination has passed.");}
     const snap=await get(ref(db,`rooms/${room}`));
     if(!snap.exists())return showError("Room not found.");
     const r=snap.val()||{};

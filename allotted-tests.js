@@ -7,6 +7,21 @@ const $=id=>document.getElementById(id);
 let profile=null,uid=null,assignments=[],pendingEntries=[];
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function status(t){$("pageStatus").textContent=t;}
+
+function subscriptionAllowsAllottedTests(sub){
+ if(!sub||!["active","trial"].includes(String(sub.status||"").toLowerCase()))return false;
+ const today=new Date();today.setHours(0,0,0,0);
+ const parseDate=v=>{if(!v)return null;const d=new Date(String(v).length===10?`${v}T00:00:00`:v);return Number.isNaN(d.getTime())?null:d;};
+ const start=parseDate(sub.startDate),end=parseDate(sub.endDate);
+ if(start&&today<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
+ if(end&&today>new Date(end.getFullYear(),end.getMonth(),end.getDate()))return false;
+ return true;
+}
+async function checkAllottedEntitlement(userUid){
+ const snap=await get(ref(db,`subscriptions/${userUid}`));
+ return subscriptionAllowsAllottedTests(snap.val()||null);
+}
+
 function showSection(which){["pending","completed","results"].forEach(k=>{$(k+"Section").classList.toggle("at-hidden",k!==which);document.querySelector(`[data-section="${k}"]`).classList.toggle("active",k===which);});}
 document.querySelectorAll(".at-tab").forEach(b=>b.addEventListener("click",()=>showSection(b.dataset.section)));
 $("closeResultModal")?.addEventListener("click",closeResultModal);
@@ -16,7 +31,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("resultModal")?.c
 $("backBtn").onclick=()=>location.href="student.html";
 $("refreshBtn").onclick=()=>loadAssignments();
 $("logoutBtn").onclick=async()=>{if(!confirm("Log out of your participant account? Your profile and examination history will remain saved."))return;await signOut(auth);location.href="student.html";};
-function startExam(a){if(a.category==="olympiad"||a.category==="academic")location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="mcq")location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="general")location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else alert("Unsupported examination category.");}
+async function startExam(a){if(!uid||!(await checkAllottedEntitlement(uid))){status("Your free access period has expired. Host-allotted examinations require an active subscription.");return;}if(a.category==="olympiad"||a.category==="academic")location.href=`academic-test.html?id=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="mcq")location.href=`mcq.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else if(a.category==="general")location.href=`general.html?room=${encodeURIComponent(a.testId)}&assignment=${encodeURIComponent(a.id)}`;else alert("Unsupported examination category.");}
 async function latestAttempt(a){
  if(a.category==="olympiad"||a.category==="academic"){
   const snap=await get(ref(db,`academicOlympiadAttempts/${a.testId}/${uid}`)),v=snap.val()||{};
@@ -182,6 +197,13 @@ onAuthStateChanged(auth,async user=>{
   const snap=await get(ref(db,`participants/${uid}`));profile=snap.val();
   if(!profile||profile.status!=="approved"){status("Your participant account is not approved. Please contact the Administrator.");return;}
   $("profileLine").innerHTML=`<span>👤 ${esc(profile.name||"Participant")}</span><span>📱 ${esc(profile.phone||"")}</span><span>✉ ${esc(user.email||"")}</span><span>Account: Approved</span>`;
+  if(!(await checkAllottedEntitlement(uid))){
+   status("Your free access period has expired. Your participant account remains active. Free Academic and Olympiad mock tests are still available, but Host-allotted examinations and reattempts require an active subscription.");
+   $("pendingList").innerHTML='<div class="at-empty">Host-allotted examinations are unavailable because your free access period has expired.</div>';
+   $("completedList").innerHTML='<div class="at-empty">Your previous submission records are preserved. Renew or obtain an active subscription to access allotted examination services.</div>';
+   $("resultsList").innerHTML='<div class="at-empty">Your saved results have not been deleted.</div>';
+   return;
+  }
   await loadAssignments();
  }catch(e){status("Account verification failed: "+(e.message||e));}
 });
