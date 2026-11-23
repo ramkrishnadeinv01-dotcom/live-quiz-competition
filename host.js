@@ -901,6 +901,49 @@ $("hostAllotmentRows")?.addEventListener("click",async e=>{const b=e.target.clos
 $("createAllotmentBtn")?.addEventListener("click",createTestAllotment);
 $("refreshAllotmentBtn")?.addEventListener("click",refreshAllotmentLists);
 
+
+// Participant Progress: read-only overview of this host's participants and their assigned examination attempts.
+let participantProgressRowsCache=[];
+const progressEsc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+function progressTime(v){const n=Number(v||0);return n?new Date(n).toLocaleString():"—";}
+function progressScore(a){const score=a?.score??a?.marksObtained??a?.obtainedMarks??a?.totalScore??a?.percentage;const total=a?.totalMarks??a?.maxMarks??a?.totalQuestions;return score==null?"—":`${score}${total!=null?` / ${total}`:""}`;}
+function renderParticipantProgress(){
+ const search=String($("progressSearch")?.value||"").toLowerCase(),cat=$("progressCategory")?.value||"",status=$("progressStatus")?.value||"",person=$("progressParticipant")?.value||"";
+ const rows=participantProgressRowsCache.filter(r=>(!search||`${r.participantName} ${r.participantEmail} ${r.phone}`.toLowerCase().includes(search))&&(!cat||r.category===cat)&&(!status||r.status===status)&&(!person||r.studentId===person));
+ const body=$("participantProgressRows");if(!body)return;
+ body.innerHTML=rows.length?rows.map((r,i)=>`<tr style="border-top:1px solid #e5edf5"><td style="padding:11px"><b>${progressEsc(r.participantName)}</b><br><small>${progressEsc(r.participantEmail||r.phone||"")}</small></td><td style="padding:11px">${progressEsc(r.testTitle)}</td><td style="padding:11px">${progressEsc(r.category.toUpperCase())}<br><small>${progressEsc(r.subject||"")}</small></td><td style="padding:11px">${progressEsc(progressTime(r.activityAt))}</td><td style="padding:11px"><b>${progressEsc(r.status)}</b></td><td style="padding:11px">${progressEsc(r.score)}</td><td style="padding:11px;white-space:nowrap"><button type="button" data-progress-view="${i}" class="secondary">View</button> <button type="button" data-progress-download="${i}" class="success">Download</button></td></tr>`).join(""):`<tr><td colspan="7" style="padding:20px;text-align:center">No matching examination records found.</td></tr>`;
+ const stats=$("participantProgressStats");if(stats){const people=new Set(participantProgressRowsCache.map(r=>r.studentId)).size,submitted=participantProgressRowsCache.filter(r=>r.status==="SUBMITTED").length,pending=participantProgressRowsCache.filter(r=>r.status==="PENDING").length,active=participantProgressRowsCache.filter(r=>r.status==="IN PROGRESS").length;stats.innerHTML=[[people,"Participants"],[participantProgressRowsCache.length,"Exam records"],[submitted,"Submitted"],[active,"In progress"],[pending,"Pending"]].map(([n,l])=>`<div style="background:#fff;border:1px solid #dce6f1;border-radius:12px;padding:15px"><div style="font-size:26px;font-weight:850;color:#123d75">${n}</div><div style="color:#64748b;font-size:13px">${l}</div></div>`).join("");}
+}
+async function loadParticipantProgress(){
+ const msgEl=$("participantProgressMessage"),body=$("participantProgressRows");if(body)body.innerHTML='<tr><td colspan="7" style="padding:20px">Loading participant examination records…</td></tr>';
+ try{
+  const directorySnap=await get(ref(db,isAdmin()?"participantDirectory":`hostParticipantMappings/${uid}`));const directory=directorySnap.val()||{};const participants=Object.entries(directory).filter(([id,p])=>p&&(!p.status||p.status==="approved"));
+  const all=[];
+  for(const [studentId,p] of participants){
+   const assignmentSnap=await get(ref(db,`testAssignments/${studentId}`));const assignments=assignmentSnap.val()||{};
+   for(const [assignmentId,a] of Object.entries(assignments)){
+    if(!a||a.status==="ARCHIVED")continue;
+    if(!isAdmin()&&a.assignedBy!==uid)continue;
+    let attempt=null;try{attempt=await hostLatestAssignmentAttempt({...a,studentId});}catch(err){console.warn("Progress attempt lookup failed",assignmentId,err);}
+    const status=attempt?(attempt.submittedAt||attempt.status==="SUBMITTED"||attempt.completedAt?"SUBMITTED":"IN PROGRESS"):(a.status==="COMPLETED"?"SUBMITTED":"PENDING");
+    const record={studentId,participantName:p.name||a.participantName||p.email||studentId,participantEmail:p.email||a.participantEmail||"",phone:p.phone||p.mobile||p.phoneNumber||"",assignmentId,category:a.category||"general",testId:a.testId,testTitle:a.testTitle||a.title||"Examination",subject:a.subject||"",status,activityAt:attempt?.submittedAt||attempt?.completedAt||attempt?.startedAt||a.assignedAt||0,score:attempt?progressScore(attempt):"—",attempt:attempt||null,assignment:a};
+    all.push(record);
+   }
+  }
+  participantProgressRowsCache=all.sort((a,b)=>Number(b.activityAt||0)-Number(a.activityAt||0));
+  const select=$("progressParticipant");if(select){const old=select.value;select.innerHTML='<option value="">All participants</option>'+participants.map(([id,p])=>`<option value="${progressEsc(id)}">${progressEsc(p.name||p.email||id)}</option>`).join("");select.value=old;}
+  renderParticipantProgress();if(msgEl)msgEl.textContent=`Loaded ${all.length} examination record(s) for ${participants.length} participant account(s). Records are limited to assignments visible to this host.`;
+ }catch(e){console.error(e);if(msgEl)msgEl.textContent=`Unable to load participant progress: ${e.message||e}`;if(body)body.innerHTML=`<tr><td colspan="7" style="padding:20px">Unable to load records. Please check your participant mapping and read permissions.</td></tr>`;}
+}
+function progressPrintable(r){const a=r.attempt||{};const fields=Object.entries(a).filter(([k,v])=>!/[answer|token|uid|email|phone]/i.test(k)&&["string","number","boolean"].includes(typeof v)).map(([k,v])=>`<tr><th>${progressEsc(k)}</th><td>${progressEsc(v)}</td></tr>`).join("");return `<!doctype html><html><head><meta charset="utf-8"><title>Participant Examination Result</title><style>body{font:14px Arial,sans-serif;color:#172b4d;padding:28px}h1{color:#173f78}table{border-collapse:collapse;width:100%;margin-top:18px}td,th{border:1px solid #ccd6e3;padding:9px;text-align:left}th{background:#eef3f9;width:30%}.meta{line-height:1.8}</style></head><body><h1>World of Exam — Participant Result</h1><div class="meta"><b>Participant:</b> ${progressEsc(r.participantName)}<br><b>Email / Mobile:</b> ${progressEsc(r.participantEmail||r.phone)}<br><b>Examination:</b> ${progressEsc(r.testTitle)}<br><b>Category / Subject:</b> ${progressEsc(r.category)} / ${progressEsc(r.subject)}<br><b>Status:</b> ${progressEsc(r.status)}<br><b>Latest activity:</b> ${progressEsc(progressTime(r.activityAt))}<br><b>Score:</b> ${progressEsc(r.score)}</div><h3>Recorded attempt details</h3><table>${fields||'<tr><td>No additional attempt fields are available.</td></tr>'}</table><p>Generated from the World of Exam Host Portal.</p><script>window.onload=()=>window.print()<\/script></body></html>`;}
+function downloadProgressRecord(r,printNow=false){const w=window.open("","_blank");if(!w){alert("Please allow pop-ups to view/download the result.");return;}w.document.open();w.document.write(progressPrintable(r));w.document.close();if(printNow){w.focus();setTimeout(()=>w.print(),350);}}
+$("openParticipantProgressBtn")?.addEventListener("click",async()=>{const m=$("participantProgressModal");m?.classList.remove("hidden");m.style.display="block";await loadParticipantProgress();});
+$("closeParticipantProgressBtn")?.addEventListener("click",()=>{const m=$("participantProgressModal");if(m){m.classList.add("hidden");m.style.display="none";}});
+$("refreshParticipantProgressBtn")?.addEventListener("click",loadParticipantProgress);
+["progressSearch","progressCategory","progressStatus","progressParticipant"].forEach(id=>$(id)?.addEventListener("input",renderParticipantProgress));
+$("participantProgressRows")?.addEventListener("click",e=>{const v=e.target.closest("[data-progress-view],[data-progress-download]");if(!v)return;const idx=Number(v.dataset.progressView??v.dataset.progressDownload),r=participantProgressRowsCache.filter(x=>(!$("progressSearch")?.value||`${x.participantName} ${x.participantEmail} ${x.phone}`.toLowerCase().includes($("progressSearch").value.toLowerCase()))&&(!$("progressCategory")?.value||x.category===$("progressCategory").value)&&(!$("progressStatus")?.value||x.status===$("progressStatus").value)&&(!$("progressParticipant")?.value||x.studentId===$("progressParticipant").value))[idx];if(r)downloadProgressRecord(r,!!v.dataset.progressDownload);});
+$("downloadProgressExcelBtn")?.addEventListener("click",()=>{if(!window.XLSX){alert("Excel library is not available.");return;}const rows=participantProgressRowsCache.map(r=>({Participant:r.participantName,Email:r.participantEmail,Mobile:r.phone,Examination:r.testTitle,Category:r.category,Subject:r.subject,Status:r.status,Score:r.score,LatestActivity:progressTime(r.activityAt)}));const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),"Participant Progress");XLSX.writeFile(wb,"Participant_Progress.xlsx");});
+
 // Host Control Centre navigation buttons
 function bindHostPortalButtons(){
   const actions={
