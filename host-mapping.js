@@ -5,7 +5,7 @@ import { firebaseConfig } from "./firebase-config.js";
 const app=getApps().length?getApps()[0]:initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const ADMIN="ramkrishnadeinv.01@gmail.com", $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const isAdmin=u=>String(u?.email||"").toLowerCase()===ADMIN;
-function panel(id,title,html){let x=$(id);if(!x){x=document.createElement('section');x.id=id;x.className='card';x.style.cssText='margin:18px 0;padding:20px;border:1px solid #d9b65b;border-radius:16px;background:#0b2448;color:#fff';const target=document.querySelector('#dashboardCard')||document.querySelector('#hostMenu')||document.querySelector('#adminApp')||document.body;target.prepend(x);}x.innerHTML=`<h2 style="color:#ffe2a0">${title}</h2>${html}`;return x;}
+function panel(id,title,html){let x=$(id);if(!x){const target=id==='adminHostTransferPanel'?$('#admin-page-host-transfers'):null;if(!target)return null;x=document.createElement('section');x.id=id;x.className='card';x.style.cssText='margin:18px 0;padding:20px;border:1px solid #d9b65b;border-radius:16px;background:#0b2448;color:#fff';target.appendChild(x);}x.innerHTML=`<h2 style="color:#ffe2a0">${title}</h2>${html}`;return x;}
 async function participantUI(u){
  const box=panel('participantHostMappingPanel','👥 Choose Your Host',`<p>Host selection is optional. Without a host, your account remains managed by the Administrator.</p><p>Loading your host options…</p>`);
  box.style.display='block';
@@ -88,6 +88,7 @@ async function hostUI(u){const h=(await get(ref(db,`hosts/${u.uid}`))).val();if(
 async function adminUI(u){
  if(!isAdmin(u))return;
  const box=panel('adminHostTransferPanel','🔁 Host Transfer Approval','<p>Loading transfer requests…</p>');
+ if(!box){console.error('Host Transfer page container is missing from administrator.html');return;}
  const req=(await get(ref(db,'hostTransferRequests'))).val()||{};
  const rows=Object.entries(req).filter(([id,x])=>x?.status==='pending');
  // Resolve UIDs using the existing participant and host profile records.
