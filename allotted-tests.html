@@ -29,6 +29,21 @@ body{margin:0;background:radial-gradient(circle at 12% 0%,#173d72 0,#081d3c 42%,
 .at-empty,.at-message{padding:18px;border-radius:12px;background:#ffffff0b;border:1px dashed #9fb5d555;color:#d4e2f6}
 .at-hidden{display:none!important}
 @media(max-width:650px){.at-wrap{padding:12px 10px 35px}.at-hero{padding:19px}.at-tabs{grid-template-columns:1fr}.at-tab{min-height:unset}.at-section{padding:15px}.at-meta{grid-template-columns:1fr 1fr}}
+/* High-contrast expired-access notice: readable on both light and dark page themes */
+#pageStatus.at-message{
+  background:#fff4d6 !important;
+  color:#142b4d !important;
+  border:2px solid #c99a32 !important;
+  border-left:7px solid #9b6812 !important;
+  font-size:16px !important;
+  font-weight:700 !important;
+  line-height:1.65 !important;
+  padding:18px 20px !important;
+  border-radius:12px !important;
+  box-shadow:0 5px 16px rgba(5,20,45,.12) !important;
+}
+#pageStatus.at-message strong,#pageStatus.at-message b{color:#092044 !important}
+@media(max-width:650px){#pageStatus.at-message{font-size:14px !important;padding:14px !important}}
 </style>
 
 <!-- Google Analytics 4: World of Exam -->

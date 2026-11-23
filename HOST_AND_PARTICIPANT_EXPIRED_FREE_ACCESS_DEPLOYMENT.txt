@@ -1,0 +1,56 @@
+WORLD OF EXAM — HOST + PARTICIPANT EXPIRED FREE ACCESS CONTROL
+Base project: live-quiz-competition-main (48).zip
+
+POLICY
+- Host and Participant profiles remain active; accounts are not deleted, suspended, or deactivated by subscription expiry.
+- A currently valid subscription period retains the existing full feature set.
+- When the subscription is missing, inactive, not yet started, or expired, the Host can continue using free Public Academic and Olympiad Mock Tests only.
+- After expiry, Host Test Allotment & Assignment, Live Quiz, MCQ exams, General Question exams, MCQ result management, and other result-publication facilities are restricted.
+- Direct links to restricted Host modules are also checked; the dashboard is not the only restriction.
+- Participant access remains as implemented in the companion update: free Academic/Olympiad mock tests remain available; allotted/assigned examinations and reattempts are blocked when subscription validity fails.
+- Existing profiles, host rooms, academic/olympiad records, assignments, submitted answers, and result history are retained. No records are deleted.
+- A valid active subscription restores the restricted facilities automatically.
+- Administrator account is exempt.
+
+FILES TO REPLACE IN THE GITHUB REPOSITORY ROOT
+Host / shared:
+- host.html
+- host.js
+- academic-host.js
+- host-mcq.js
+- host-general.js
+- host-mcq-results.js
+- other-results.js
+- hindi-pakhwada-publication.js
+- subscription-access.js (new shared helper)
+Participant:
+- student.js
+- student.html
+- allotted-tests.js
+- allotted-tests.html
+- academic-test.js
+- academic-test.html
+- mcq.js
+- mcq.html
+- general.js
+- general.html
+
+IMPORTANT
+- The latest Host subscription-panel visibility correction is included in host.html.
+- No Firebase Rules, Firebase configuration, or database data are changed.
+- Enforcement is application-level in the portal code. Existing Firebase Rules remain as they were.
+- Subscription validity is read from subscriptions/{uid}; status must be active/trial and startDate/endDate must include the current date.
+- Date values should be YYYY-MM-DD or valid date values.
+
+DEPLOYMENT
+1. Back up the current repository.
+2. Replace the files listed above in the GitHub repository root. Upload subscription-access.js as a new file.
+3. Commit the changes and wait for GitHub Pages deployment.
+4. Hard refresh both portals (Ctrl+F5).
+5. Test at least these cases:
+   A. Expired Free Host: profile remains active; only Public Academic/Olympiad Mock Test management is available; Test Allotment and premium modules are blocked.
+   B. Valid Free/Trial Host: existing feature access remains available during the valid period.
+   C. Valid Premium Host: all subscribed Host modules remain available.
+   D. Expired Free Participant: profile remains active; free Academic/Olympiad tests work; allotted/assigned tests and reattempts are blocked.
+   E. Valid Premium Participant: assigned-test access works as before.
+6. Confirm existing host rooms, assignments, submissions, and results remain visible in the database and have not been deleted.
