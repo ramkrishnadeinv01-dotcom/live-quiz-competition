@@ -27,7 +27,7 @@ function renderHosts(){
 }
 async function loadHosts(){
  if(!admin())return;
- try{const snap=await get(ref(db,"hosts"));const obj=snap.val()||{};hostCache=Object.entries(obj).map(([uid,h])=>({uid,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));for(const h of hostCache){if(h.status==="approved")await set(ref(db,`approvedHostsPublic/${h.uid}`),{hostName:h.hostName||"",email:h.email||"",designation:h.designation||"",placeOfPosting:h.placeOfPosting||"",status:"approved"});else await remove(ref(db,`approvedHostsPublic/${h.uid}`));}renderHosts();}
+ try{const snap=await get(ref(db,"hosts"));const obj=snap.val()||{};hostCache=Object.entries(obj).map(([uid,h])=>({uid,...h})).sort((a,b)=>(Number(b.requestedAt)||0)-(Number(a.requestedAt)||0));for(const h of hostCache){if(h.status==="approved")await set(ref(db,`approvedHostsPublic/${h.uid}`),{hostName:h.hostName||"",email:h.email||"",designation:h.designation||"",placeOfPosting:h.placeOfPosting||"",status:"approved"});else await remove(ref(db,`approvedHostsPublic/${h.uid}`));}renderHosts();renderComplimentaryUsers();}
  catch(e){$("status").textContent=`Unable to load Host requests: ${e.message||e}`;$("hostRequests").innerHTML=`<tr><td colspan="9">Unable to load Host requests.</td></tr>`;}
  renderSubscriptions();
 }
@@ -47,7 +47,7 @@ function renderParticipants(){
 }
 async function loadParticipants(){
  if(!admin())return;const body=$("participantRequests"),status=$("participantStatus");if(!body)return;
- try{const snap=await get(ref(db,"participants"));const obj=snap.val()||{};participantCache=Object.entries(obj).map(([uid,p])=>({uid,...(p||{})})).filter(p=>p.emailVerified===true || ["pending","approved","rejected","revoked"].includes(String(p.status||"").toLowerCase())).sort((a,b)=>(Number(b.requestedAt||b.submittedAt||b.createdAt)||0)-(Number(a.requestedAt||a.submittedAt||a.createdAt)||0));renderParticipants();}
+ try{const snap=await get(ref(db,"participants"));const obj=snap.val()||{};participantCache=Object.entries(obj).map(([uid,p])=>({uid,...(p||{})})).filter(p=>p.emailVerified===true || ["pending","approved","rejected","revoked"].includes(String(p.status||"").toLowerCase())).sort((a,b)=>(Number(b.requestedAt||b.submittedAt||b.createdAt)||0)-(Number(a.requestedAt||a.submittedAt||a.createdAt)||0));renderParticipants();renderComplimentaryUsers();}
  catch(e){if(status)status.textContent=`Unable to load Participant requests: ${e.message||e}`;body.innerHTML=`<tr><td colspan="8">Unable to load Participant requests: ${esc(e.message||e)}</td></tr>`;}
 }
 
@@ -204,6 +204,24 @@ async function deleteAcademicTest(id){
  catch(e){alert(`Delete failed: ${e.message||e}`);}
 }
 
+function renderComplimentaryUsers(){
+ const role=$("complimentaryAccountType")?.value||"student",sel=$("complimentaryUserSelect");if(!sel)return;
+ const list=role==="student"?participantCache.filter(p=>String(p.status||"").toLowerCase()==="approved"):hostCache.filter(h=>String(h.status||"").toLowerCase()==="approved"&&h.accountType!=="coaching_centre");
+ const old=sel.value;sel.innerHTML='<option value="">Select an approved '+(role==="student"?'Student':'Individual Host')+'</option>'+list.map(x=>{const name=x.name||x.participantName||x.hostName||x.email||x.uid,phone=x.phone||x.mobile||"";return `<option value="${esc(x.uid)}">${esc(name)}${phone?' — '+esc(phone):''} (${esc(x.email||x.uid)})</option>`;}).join("");if(list.some(x=>x.uid===old))sel.value=old;
+}
+async function grantComplimentaryPremium(){
+ if(!admin())return;const role=$("complimentaryAccountType").value,uid=$("complimentaryUserSelect").value,duration=$("complimentaryDuration").value,reason=String($("complimentaryReason").value||"").trim();if(!uid)return alert("Select an approved account.");
+ const person=(role==="student"?participantCache:hostCache).find(x=>x.uid===uid);if(!person||String(person.status||"").toLowerCase()!=="approved")return alert("Only approved accounts can receive complimentary Premium access.");
+ const existing=subscriptionCache.find(x=>x.uid===uid)?.data||{};if(existing.complimentary===true&&!confirm("This account already has complimentary access. Replace its duration and reason?"))return;
+ if(existing.status==="active"&&!existing.complimentary&&!confirm("This account already has an active subscription. Granting complimentary access will replace that subscription record. Continue?"))return;
+ const start=new Date();start.setHours(0,0,0,0);let end="";if(duration!=="lifetime"){const d=new Date(start);d.setMonth(d.getMonth()+Number(duration));d.setDate(d.getDate()-1);end=d.toISOString().slice(0,10);}
+ const localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;const startDate=localDate(start);if(end){const ed=new Date(start);ed.setMonth(ed.getMonth()+Number(duration));ed.setDate(ed.getDate()-1);end=localDate(ed);}const payload={uid,accountType:role==="student"?"participant":"individual_host",plan:role==="student"?"student_premium":"host_premium",planLabel:role==="student"?"Complimentary Student Premium":"Complimentary Host Premium",status:"active",startDate,endDate:end,paymentEnabled:false,complimentary:true,complimentaryReason:reason,complimentaryGrantedAt:Date.now(),complimentaryGrantedBy:currentUser.uid,complimentaryDuration:duration,updatedAt:Date.now(),updatedBy:currentUser.uid};
+ try{await set(ref(db,`subscriptions/${uid}`),payload);let auditWarning="";try{await set(ref(db,`complimentaryPremiumAudit/${uid}/${Date.now()}`),{action:"granted",accountType:role,reason,duration,startDate,endDate:end,adminUid:currentUser.uid,timestamp:Date.now()});}catch(auditError){auditWarning=` Access was granted, but the audit log could not be saved: ${auditError.message||auditError}`;}await loadSubscriptions();$("complimentaryStatus").textContent=`Complimentary ${role} Premium granted successfully.${auditWarning}`;alert(`Complimentary Premium access granted successfully.${auditWarning}`);}catch(e){alert(`Unable to grant complimentary access: ${e.message||e}`);}
+}
+async function revokeComplimentaryPremium(){
+ if(!admin())return;const uid=$("complimentaryUserSelect").value;if(!uid)return alert("Select an account first.");const sub=subscriptionCache.find(x=>x.uid===uid)?.data||{};if(sub.complimentary!==true)return alert("The selected account does not have complimentary Premium access.");if(!confirm("Revoke complimentary Premium access immediately? The account will return to its Free access level."))return;
+ try{const now=Date.now();await update(ref(db,`subscriptions/${uid}`),{status:"revoked",complimentaryRevokedAt:now,complimentaryRevokedBy:currentUser.uid,updatedAt:now,updatedBy:currentUser.uid});let auditWarning="";try{await set(ref(db,`complimentaryPremiumAudit/${uid}/${now}`),{action:"revoked",accountType:sub.accountType||"unknown",adminUid:currentUser.uid,timestamp:now});}catch(auditError){auditWarning=` Access was revoked, but the audit log could not be saved: ${auditError.message||auditError}`;}await loadSubscriptions();$("complimentaryStatus").textContent=`Complimentary Premium access revoked.${auditWarning}`;alert(`Complimentary Premium access revoked.${auditWarning}`);}catch(e){alert(`Unable to revoke access: ${e.message||e}`);}
+}
 function subscriptionDate(ts){if(!ts)return "—";const d=new Date(ts);return Number.isNaN(d.getTime())?String(ts):d.toLocaleDateString("en-IN");}
 function renderSubscriptions(){
  const body=$("subscriptionRows");if(!body)return;
@@ -281,5 +299,6 @@ onAuthStateChanged(auth,u=>{if(u&&!isAdmin(u)){currentUser=null;$("authStatus").
 
 $("refreshAcademicTestsBtn")?.addEventListener("click",loadAcademicTests);["academicTestSearch","academicTestCategory","academicTestStatus"].forEach(id=>$(id)?.addEventListener("input",renderAcademicTests));
 
+$("complimentaryAccountType")?.addEventListener("change",renderComplimentaryUsers);$("grantComplimentaryBtn")?.addEventListener("click",grantComplimentaryPremium);$("revokeComplimentaryBtn")?.addEventListener("click",revokeComplimentaryPremium);
 $("refreshCoachingCentresBtn")?.addEventListener("click",loadCoachingCentres);$("refreshSubscriptionsBtn")?.addEventListener("click",()=>{loadHosts().then(loadSubscriptions);});$("saveSubscriptionBtn")?.addEventListener("click",saveSubscription);
 $("refreshCentreSubscriptionsBtn")?.addEventListener("click",()=>{loadCoachingCentres().then(loadSubscriptions);});$("saveCentreSubscriptionBtn")?.addEventListener("click",saveCentreSubscription);$("centreSubscriptionPlan")?.addEventListener("change",()=>{const p=$("centreSubscriptionPlan").value,limit=centrePlanLimit(p);$("centreStudentLimit").value=limit===undefined||limit===null?"":limit;});
