@@ -375,6 +375,9 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <h3>📝 Complete Host Registration</h3>
 <p class="muted">All information marked with * is required. The account and host approval request will be created only after you submit this completed form.</p>
 <div class="row" style="margin-top:12px">
+
+</div>
+<div class="row" style="margin-top:12px">
 <div class="field"><label>Host Name *</label><input autocomplete="off" id="hostName" placeholder="Full name" type="text"/></div>
 <div class="field"><label>Designation *</label><input autocomplete="off" id="hostDesignation" placeholder="Designation" type="text"/></div>
 </div>
@@ -415,6 +418,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <div class="card hidden" id="hostAccessCard">
 <h2>🔐 Host Permission</h2>
 <div class="status" id="hostAccessStatus"></div>
+
 <div class="row" style="margin-top:12px"><button class="secondary hidden" id="editHostProfileBtn" type="button">✏️ Edit Profile</button></div>
 <div class="status hidden" id="hostProfileUpdate" style="margin-top:12px">
 <b>Complete / Update Host Registration</b>
@@ -454,6 +458,10 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
     <div><small style="color:#64748b">Purpose Details</small><div id="homeHostProfilePurposeDetails">—</div></div>
   </div>
 </section>
+<section class="card" id="hostSubscriptionSection" style="margin:18px 0;border:1px solid #c9dff7;border-radius:18px;padding:20px;background:#fff;box-shadow:0 8px 24px rgba(20,40,80,.06)">
+  <div id="hostSubscriptionMount" data-account-type="individual_host"></div>
+</section>
+<div id="hostSubscriptionAccessNotice" class="card hidden" role="status" style="margin:14px 0;border-left:5px solid #d97706;background:#fff7ed;color:#7c2d12;padding:16px;border-radius:12px;font-weight:650"></div>
 <section class="host-hero we-old-hero">
 <h2>Host Control Centre</h2>
 <p>Select the examination mode you want to conduct. Each module opens in its dedicated setup page.</p>
@@ -564,7 +572,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="host.js?v=20261122-academic-assignment-fix" type="module"></script>
+<script src="host.js?v=20261122-coaching-centre-registration" type="module"></script>
 <script type="module" src="host-mapping.js?v=83.5"></script>
 
 <script>
@@ -686,216 +694,5 @@ body:not(.host-authenticated) #hostMenu{display:none!important;visibility:hidden
 </script>
 
 <script type="module" src="website-analytics-tracker.js?v=65"></script>
-
-<style id="host-test-assignment-route-guard">
-  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostHomeProfileCard,
-  body.host-assignment-view:has(#hostMenu:not(.hidden)) #weWelcomePanel,
-  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu > .host-menu-grid,
-  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu > .host-hero,
-  body.host-assignment-view:has(#hostMenu:not(.hidden)) #hostMenu > .we-old-hero {
-    display:none!important;
-  }
-</style>
-<script id="host-test-assignment-route-guard-js">
-(function () {
-  function isAssignmentControl(node) {
-    if (!node || !node.closest) return false;
-    if (node.closest('#openTestAssignmentPageBtn')) return true;
-    const control = node.closest('button, a, [role="button"]');
-    if (!control) return false;
-    const label = (control.innerText || control.textContent || '').replace(/\s+/g,' ').trim().toLowerCase();
-    return label === 'test assignment' || label.startsWith('open test assignment');
-  }
-  document.addEventListener('click', function (event) {
-    if (!isAssignmentControl(event.target)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-    const target = new URL(location.href);
-    target.searchParams.set('module', 'assignment');
-    target.hash = '';
-    location.assign(target.pathname + target.search);
-  }, true);
-  if (new URLSearchParams(location.search).get('module') === 'assignment') {
-    document.body.classList.add('host-assignment-view');
-  }
-})();
-</script>
-
-
-<style id="we-host-sidebar-layout-v1">
-/* Individual Host Portal: Administrator-style persistent left navigation. */
-body:has(#weHostWorkspace:not(.hidden)){background:#edf3fb!important}
-body:has(#weHostWorkspace:not(.hidden)) .host-page-shell{padding:18px clamp(12px,2.2vw,32px) 38px!important;max-width:none!important}
-body:has(#weHostWorkspace:not(.hidden)) #hostMenu{max-width:none!important;width:100%!important}
-#weHostWorkspace{display:grid;grid-template-columns:285px minmax(0,1fr);gap:22px;align-items:start;width:100%;max-width:1600px;margin:0 auto}
-#weHostSidebar{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto;background:linear-gradient(180deg,#081d3c,#102c55);border:1px solid #315786;border-radius:22px;padding:18px 13px;color:#fff;box-shadow:0 14px 34px rgba(7,25,54,.18)}
-#weHostSidebar .we-side-brand{padding:7px 10px 17px;border-bottom:1px solid rgba(255,255,255,.18);margin-bottom:13px}
-#weHostSidebar .we-side-brand strong{display:block;font-size:19px;line-height:1.25;color:#fff}
-#weHostSidebar .we-side-brand small{display:block;color:#bcd0ed;margin-top:5px;font-size:12px}
-#weHostSidebar .we-side-group{font-size:10px;letter-spacing:1.5px;font-weight:900;color:#91b5e7;padding:13px 10px 6px;text-transform:uppercase}
-#weHostSidebar button{width:100%;display:flex;align-items:center;gap:11px;text-align:left;padding:12px 11px;margin:3px 0;border:1px solid transparent;border-radius:12px;background:transparent;color:#eaf2ff;font-size:13px;font-weight:800;line-height:1.35;cursor:pointer;box-shadow:none}
-#weHostSidebar button:hover{background:#173d70;border-color:#3e6da5}
-#weHostSidebar button.active{background:#1d477d;border-color:#5590d4;color:#fff;box-shadow:inset 3px 0 #f3c85c}
-#weHostSidebar button .we-side-icon{width:23px;flex:0 0 23px;font-size:17px;text-align:center}
-#weHostMain{min-width:0;min-height:520px}
-#weHostMain .we-host-view{display:none}
-#weHostMain .we-host-view.active{display:block}
-#weHostMain .we-host-view > .card,#weHostMain .we-host-view > section{margin-top:0!important}
-#weHostMain .we-view-heading{background:linear-gradient(110deg,#0a2145,#1856a8);color:#fff;border-radius:22px;padding:25px 28px;margin-bottom:20px;box-shadow:0 12px 28px rgba(12,45,91,.16)}
-#weHostMain .we-view-heading h2{margin:0 0 7px;color:#fff;font-size:clamp(23px,2.2vw,32px)}
-#weHostMain .we-view-heading p{margin:0;color:#dceaff}
-#weHostMain .we-dashboard-view .we-welcome-panel{margin-top:0}
-#weHostMain #hostHomeProfileCard{margin-top:0!important}
-#weHostMain #testAllotmentCard{margin-top:0!important}
-#weHostMain #hostApp{display:none}
-#weHostMain #hostApp.we-host-active{display:block}
-
-#weHostMain .we-assignment-monitor{background:#fff;border:1px solid #d8e3f1;border-radius:18px;padding:22px;box-shadow:0 8px 24px rgba(20,40,80,.06);color:#17345d}
-#weHostMain .we-assignment-monitor h3{color:#123d75!important;margin:0 0 10px}
-#weHostMain .we-assignment-monitor p{color:#536b8b!important}
-#weHostMain .we-assignment-monitor label{color:#294c79!important}
-#weHostMain .we-assignment-monitor table{color:#17345d!important}
-#weHostMain .we-assignment-monitor th{color:#17345d!important;background:#eaf1fb}
-#weHostMain .we-assignment-monitor td{color:#17345d!important}
-
-
-
-
-
-
-#weHostMain .we-assignment-view .we-allotment-form{display:none!important}
-#weHostMain .we-allotment-view .we-assignment-monitor{display:none!important}
-#weHostMain .we-assignment-view .we-assignment-monitor{display:block!important}
-#weHostMain .host-menu-grid{margin-top:0}
-#weHostMain .we-host-view .card{border-radius:18px}
-.host-nav-signout{white-space:nowrap}
-@media(max-width:900px){
- #weHostWorkspace{grid-template-columns:1fr;gap:12px}
- #weHostSidebar{position:relative;top:auto;max-height:none;overflow:visible;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;padding:12px}
- #weHostSidebar .we-side-brand,#weHostSidebar .we-side-group{grid-column:1/-1}
- #weHostSidebar button{font-size:12px;padding:10px 8px}
-}
-@media(max-width:520px){
- #weHostSidebar{grid-template-columns:1fr 1fr}
- #weHostMain .we-view-heading{padding:19px}
-}
-</style>
-<script id="we-host-sidebar-layout-v1-script">
-(function(){
- const $=id=>document.getElementById(id);
- function build(){
-  const menu=$('hostMenu');
-  if(!menu||menu.classList.contains('hidden')||$('weHostWorkspace'))return;
-  const shell=document.createElement('div');shell.id='weHostWorkspace';
-  const sidebar=document.createElement('aside');sidebar.id='weHostSidebar';sidebar.setAttribute('aria-label','Host workspace navigation');
-  sidebar.innerHTML='<div class="we-side-brand"><strong>♟ Host Workspace</strong><small>World of Exam · Individual Host</small></div>'+
-   '<div class="we-side-group">Workspace</div>'+
-   '<button type="button" data-view="dashboard" class="active"><span class="we-side-icon">🏠</span>Dashboard</button>'+
-   '<button type="button" data-view="profile"><span class="we-side-icon">👤</span>My Host Profile</button>'+
-   '<button type="button" data-view="subscription"><span class="we-side-icon">💳</span>Subscription</button>'+
-   '<div class="we-side-group">Examination Management</div>'+
-   '<button type="button" data-view="allotment"><span class="we-side-icon">📌</span>Test Allotment</button>'+
-   '<button type="button" data-view="assignment"><span class="we-side-icon">📋</span>Test Assignment</button>'+
-   '<button type="button" data-action="live"><span class="we-side-icon">🏆</span>Live Quiz Competition</button>'+
-   '<button type="button" data-action="mcq"><span class="we-side-icon">📝</span>MCQ Exam Setup</button>'+
-   '<button type="button" data-action="general"><span class="we-side-icon">✍️</span>General Question Exam</button>'+
-   '<button type="button" data-action="olympiad"><span class="we-side-icon">🎓</span>Olympiad Mock Tests</button>'+
-   '<button type="button" data-action="academic"><span class="we-side-icon">📚</span>Academic Mock Tests</button>'+
-   '<div class="we-side-group">Results</div>'+
-   '<button type="button" data-action="other"><span class="we-side-icon">📊</span>Other Exam Results</button>'+
-   '<button type="button" data-action="hindi"><span class="we-side-icon">🏅</span>Hindi Pakhwada Results</button>'+
-   '<button type="button" data-action="results"><span class="we-side-icon">📈</span>Result Management</button>';
-  const main=document.createElement('main');main.id='weHostMain';
-  const children=Array.from(menu.childNodes);
-  children.forEach(n=>main.appendChild(n));
-  menu.appendChild(shell);shell.append(sidebar,main);
-
-  const welcome=$('weWelcomePanel'), profile=$('hostHomeProfileCard'), allot=$('testAllotmentCard'), grid=main.querySelector('.host-menu-grid');
-  const oldHero=main.querySelector('.we-old-hero');
-  const resultCard=Array.from(main.children).find(el=>el.classList?.contains('card')&&el.textContent.includes('Result Management')&&el.querySelector('#openMcqResultsBtn'));
-  const app=$('hostApp');
-  function makeView(key,title,desc){
-   const v=document.createElement('section');v.className='we-host-view';v.dataset.panel=key;
-   if(title){const h=document.createElement('div');h.className='we-view-heading';h.innerHTML='<h2>'+title+'</h2><p>'+desc+'</p>';v.appendChild(h)}
-   main.appendChild(v);return v;
-  }
-  const dashboard=makeView('dashboard','Host Control Centre','Manage your examinations, participants, assignments and results from one workspace.');
-  const profileView=makeView('profile','My Host Profile','View and update your saved host information.');
-  const subscriptionView=makeView('subscription','Subscription & Premium Access','Review your current host subscription and available benefits.');
-  const allotView=makeView('allotment','Test Allotment','Assign an existing examination to approved participants.');
-  const assignmentView=makeView('assignment','Test Assignment','Monitor pending and completed assignments and review submitted work.');
-  const liveView=makeView('live','Live Quiz Competition','Manage your live quiz rooms, questions, participants and winners.');
-  const resultView=makeView('results','Result Management','Review and export examination results.');
-  if(welcome)dashboard.appendChild(welcome);
-  if(oldHero)dashboard.appendChild(oldHero);
-  if(grid)dashboard.appendChild(grid);
-  if(profile)profileView.appendChild(profile);
-  if(allot){
-   const h3=Array.from(allot.querySelectorAll('h3')).find(x=>/Assignment Monitoring/i.test(x.textContent));
-   const formWrap=document.createElement('div');formWrap.className='we-allotment-form';
-   const monitor=document.createElement('div');monitor.className='we-assignment-monitor';
-   if(h3){
-    let n=h3;
-    while(n){const next=n.nextSibling;monitor.appendChild(n);n=next;if(!n)break;}
-   }
-   formWrap.appendChild(allot.firstElementChild); // heading
-   // Keep all allotment form nodes before monitoring in their original order.
-   const modal=allot.querySelector('#hostAssignmentDetailModal');
-   if(modal)monitor.appendChild(modal);
-   allot.insertBefore(formWrap,allot.firstChild);
-   allotView.appendChild(allot);
-   assignmentView.appendChild(monitor);
-  }
-  if(app)liveView.appendChild(app);
-  if(resultCard)resultView.appendChild(resultCard);
-  // Keep a lightweight dashboard and a dedicated assignment monitor. Modules whose
-  // existing handlers navigate to their established setup pages continue to do so.
-  function activate(key){
-   main.querySelectorAll('.we-host-view').forEach(v=>v.classList.toggle('active',v.dataset.panel===key));
-   sidebar.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.view===key));
-   if(key==='allotment')allot?.classList.add('we-allotment-view');
-   else allot?.classList.remove('we-allotment-view');
-   if(key==='assignment')allot?.classList.add('we-assignment-view');
-   else allot?.classList.remove('we-assignment-view');
-   if(key==='live'&&app)app.classList.add('we-host-active');
-   else if(app)app.classList.remove('we-host-active');
-   try{history.replaceState(null,'',key==='dashboard'?'host.html':'host.html#'+key)}catch(e){}
-   window.scrollTo({top:0,behavior:'smooth'});
-  }
-  sidebar.addEventListener('click',e=>{
-   const b=e.target.closest('button');if(!b)return;
-   if(b.dataset.view){activate(b.dataset.view);return;}
-   const a=b.dataset.action;
-   const target={live:'openLiveQuizBtn',mcq:'openMcqBtn',general:'openGeneralBtn',olympiad:null,academic:null,other:'openOtherResultsBtn',hindi:'openHindiResultsBtn',results:'openMcqResultsBtn'}[a];
-   if(a==='olympiad'){location.href='academic-host.html?mode=olympiad';return}
-   if(a==='academic'){location.href='academic-host.html?mode=academic';return}
-   if(target&&$(target)){$(target).click();return}
-  });
-  const params=new URLSearchParams(location.hash.replace(/^#/,''));const initial=location.hash.slice(1);
-  activate(['profile','subscription','allotment','assignment','live','results'].includes(initial)?initial:'dashboard');
-  // Existing profile edit action remains bound to the same saved-profile controls.
-  const edit=$('homeEditHostProfileBtn');
-  if(edit)edit.addEventListener('click',()=>{setTimeout(()=>{const f=$('hostProfileUpdate');if(f)f.scrollIntoView({behavior:'smooth',block:'center'});},50)});
-  // Route the old Test Assignment launcher to the dedicated sidebar view, without a reload.
-  const assignmentBtn=$('openTestAssignmentPageBtn');
-  if(assignmentBtn){assignmentBtn.addEventListener('click',e=>{e.preventDefault();activate('assignment')},true)}
-  const back=$('backToHostDashboardBtn');
-  if(back){back.addEventListener('click',e=>{e.preventDefault();activate('dashboard')},true)}
-  // Subscription view: preserve existing subscription data/controls if present; otherwise
-  // show the same account status already exposed by the authenticated host header.
-  const subCard=main.querySelector('#hostSubscriptionCard,[data-host-subscription],.host-subscription-card');
-  if(subCard)subscriptionView.appendChild(subCard);
-  else subscriptionView.insertAdjacentHTML('beforeend','<div class="card"><h3>Host Subscription</h3><p>Your subscription and complimentary premium status are managed by the existing account entitlement system.</p><p>For subscription details, use the Host Subscription page available from your account.</p></div>');
-  // The old home sign-out button remains the source of truth; top-bar sign-out calls it.
- }
- document.addEventListener('DOMContentLoaded',()=>{
-  const menu=$('hostMenu');if(!menu)return;
-  const obs=new MutationObserver(()=>{if(!menu.classList.contains('hidden'))build()});
-  obs.observe(menu,{attributes:true,attributeFilter:['class']});
-  build();setTimeout(build,600);setTimeout(build,1600);
- });
-})();
-</script>
-
+<script type="module">import {mountSubscriptionPanel} from "./subscription-client.js?v=20261122-phase3";mountSubscriptionPanel(document.getElementById("hostSubscriptionMount"),"individual_host");</script>
 </body></html>
