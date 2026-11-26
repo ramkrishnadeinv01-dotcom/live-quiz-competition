@@ -883,28 +883,58 @@ async function refreshAllotmentLists(){
 }
 async function createTestAllotment(){
  if(!requireFullHostSubscription("Test Allotment & Assignment"))return;
- const category=$("allotCategory").value,testId=$("allotTest").value,studentId=$("allotParticipant").value,dueRaw=$("allotDue").value;
+ const category=$("allotCategory").value;
+ const testIds=[...$("allotTest").selectedOptions].map(o=>o.value).filter(Boolean);
+ const studentIds=[...$("allotParticipant").selectedOptions].map(o=>o.value).filter(Boolean);
+ const dueRaw=$("allotDue").value;
  if(!isApproved()&&!isAdmin())return;
- if(!testId||!studentId){$("allotmentMsg").textContent="Select an examination and an approved participant.";return;}
+ if(!testIds.length||!studentIds.length){$("allotmentMsg").textContent="Select at least one examination and one approved participant. You can select multiple items in both lists.";return;}
  try{
-  const [pSnap,tSnap]=await Promise.all([get(ref(db,`participantDirectory/${studentId}`)),get(ref(db,(category==="olympiad"||category==="academic")?`academicOlympiadTests/${testId}`:`rooms/${testId}`))]);
-  if(!pSnap.exists()||pSnap.val().status!=="approved")throw Error("The selected participant is not approved.");if(!isAdmin()){const m=(await get(ref(db,`participantHostMapping/${studentId}`))).val();if(!m||m.hostUid!==uid||m.status!=="approved")throw Error("This participant is not mapped to your host account.");}if(!tSnap.exists())throw Error("The selected examination no longer exists.");
-  const p=pSnap.val(),t=tSnap.val(),id=crypto.randomUUID(),allSnap=await get(ref(db,`testAssignments/${studentId}`));
-  const previous=Object.entries(allSnap.val()||{}).map(([oldId,a])=>({id:oldId,...a})).filter(a=>a&&a.category===category&&a.testId===testId);
-  let freshGeneration=1;
-  if(previous.length){
-   freshGeneration=Math.max(...previous.map(a=>Number(a.generation)||1))+1;
-   const last=previous.sort((a,b)=>(Number(b.assignedAt)||0)-(Number(a.assignedAt)||0))[0];
-   const choice=confirm(`This examination was allotted to ${p.name||"this participant"} earlier (${previous.length} previous allotment record(s)).\n\nChoose OK to create a FRESH allotment. The student will see it as a new pending task. Previous attempts and results will be retained.\n\nChoose Cancel to keep the earlier assignment unchanged.`);
-   if(!choice){$("allotmentMsg").textContent="No new allotment created. The earlier assignment remains unchanged.";return;}
-   for(const old of previous){
-    if(old.status!=="ARCHIVED") await update(ref(db,`testAssignments/${studentId}/${old.id}`),{isLatest:false,supersededBy:id,supersededAt:Date.now()});
+  const total=testIds.length*studentIds.length;
+  if(total>500&&!confirm(`You are about to create ${total} assignments (${studentIds.length} participants × ${testIds.length} examinations). Continue?`))return;
+  $("createAllotmentBtn").disabled=true;
+  $("allotmentMsg").textContent=`Preparing ${total} assignment(s)…`;
+  const testPath=(category==="olympiad"||category==="academic")?"academicOlympiadTests":"rooms";
+  const [testSnaps,participantSnaps]=await Promise.all([
+   Promise.all(testIds.map(id=>get(ref(db,`${testPath}/${id}`)))),
+   Promise.all(studentIds.map(id=>get(ref(db,`participantDirectory/${id}`))))
+  ]);
+  const tests=new Map(testIds.map((id,i)=>[id,testSnaps[i].exists()?testSnaps[i].val():null]));
+  const people=new Map(studentIds.map((id,i)=>[id,participantSnaps[i].exists()?participantSnaps[i].val():null]));
+  for(const [id,p] of people){if(!p||p.status!=="approved")throw Error(`${p?.name||id} is not an approved participant.`);}
+  for(const [id,t] of tests){if(!t)throw Error(`The selected examination ${id} no longer exists.`);if(!isAdmin()&&t.hostUid&&t.hostUid!==uid)throw Error("One selected examination does not belong to your host account.");}
+  if(!isAdmin()){
+   const mappings=await Promise.all(studentIds.map(id=>get(ref(db,`participantHostMapping/${id}`))));
+   for(let i=0;i<studentIds.length;i++){const m=mappings[i].val();if(!m||m.hostUid!==uid||m.status!=="approved")throw Error(`${people.get(studentIds[i]).name||studentIds[i]} is not mapped to your host account.`);}
+  }
+  const plans=[];
+  for(const studentId of studentIds){
+   const p=people.get(studentId),allSnap=await get(ref(db,`testAssignments/${studentId}`));
+   const existing=Object.entries(allSnap.val()||{}).map(([oldId,a])=>({id:oldId,...a}));
+   for(const testId of testIds){
+    const t=tests.get(testId),previous=existing.filter(a=>a&&a.category===category&&a.testId===testId);
+    const generation=previous.length?Math.max(...previous.map(a=>Number(a.generation)||1))+1:1;
+    plans.push({studentId,p,testId,t,previous,generation});
    }
   }
-  const record={assignmentId:id,category,testId,roomCode:(category==="olympiad"||category==="academic")?(t.roomCode||""):testId,testTitle:t.title||t.mcqTitle||t.generalTitle||`${t.className||""} ${t.subject||""} ${category.toUpperCase()}`,className:t.className||"",subject:String(t.subject||t.mcqSubject||t.generalSubject||"").trim()||"Other Tests",participantUid:studentId,participantName:p.name||"",participantEmail:p.email||"",assignedBy:uid,assignedByEmail:currentUser.email||"",assignedAt:Date.now(),dueAt:dueRaw?new Date(dueRaw).getTime():null,status:"ASSIGNED",attemptLimit:0,generation:freshGeneration,isLatest:true,previousAssignmentCount:previous.length};
-  await set(ref(db,`testAssignments/${studentId}/${id}`),record);
-  $("allotmentMsg").textContent=previous.length?"Fresh examination allotment created. The participant will see it as a new pending task; previous results are retained.":"Examination assigned successfully. The participant can now find it under My Allotted Tests.";await refreshAllotmentLists();
- }catch(e){console.error(e);$("allotmentMsg").textContent=`Assignment failed: ${e.message||e}`;}
+  const repeats=plans.filter(x=>x.previous.length);
+  if(repeats.length){
+   const names=repeats.slice(0,8).map(x=>`${x.p.name||x.studentId} — ${x.t.title||x.t.mcqTitle||x.t.generalTitle||x.testId}`).join("\n");
+   const extra=repeats.length>8?`\n…and ${repeats.length-8} more`:"";
+   if(!confirm(`${repeats.length} participant/examination combination(s) were allotted earlier.\n\nOK = create fresh assignments and retain previous results.\nCancel = stop the entire batch without making changes.\n\n${names}${extra}`)){ $("allotmentMsg").textContent="Batch cancelled. No assignments were changed.";return; }
+  }
+  let created=0;const now=Date.now(),dueAt=dueRaw?new Date(dueRaw).getTime():null;
+  for(const plan of plans){
+   const {studentId,p,testId,t,previous,generation}=plan,id=crypto.randomUUID();
+   for(const old of previous){if(old.status!=="ARCHIVED")await update(ref(db,`testAssignments/${studentId}/${old.id}`),{isLatest:false,supersededBy:id,supersededAt:now});}
+   const record={assignmentId:id,category,testId,roomCode:(category==="olympiad"||category==="academic")?(t.roomCode||""):testId,testTitle:t.title||t.mcqTitle||t.generalTitle||`${t.className||""} ${t.subject||""} ${category.toUpperCase()}`,className:t.className||"",subject:String(t.subject||t.mcqSubject||t.generalSubject||"").trim()||"Other Tests",participantUid:studentId,participantName:p.name||"",participantEmail:p.email||"",assignedBy:uid,assignedByEmail:currentUser.email||"",assignedAt:now,dueAt,status:"ASSIGNED",attemptLimit:0,generation,isLatest:true,previousAssignmentCount:previous.length};
+   await set(ref(db,`testAssignments/${studentId}/${id}`),record);created++;
+   $("allotmentMsg").textContent=`Assigned ${created} of ${plans.length} examination-participant combinations…`;
+  }
+  $("allotmentMsg").textContent=`Successfully assigned ${testIds.length} examination(s) to ${studentIds.length} participant(s): ${created} assignment(s) created. Previous attempts and results have been retained.`;
+  await refreshAllotmentLists();
+ }catch(e){console.error(e);$("allotmentMsg").textContent=`Batch assignment stopped: ${e.message||e}. Any assignments already created remain saved.`;}
+ finally{$("createAllotmentBtn").disabled=false;}
 }
 $("hostAllotmentRows")?.addEventListener("click",async e=>{const b=e.target.closest(".deleteHostAllotmentBtn");if(!b)return;const student=b.dataset.student,id=b.dataset.id;if(!confirm("Archive this examination allotment? It will disappear from the participant task list, but its history will be retained for future fresh re-allotments."))return;try{await update(ref(db,`testAssignments/${student}/${id}`),{status:"ARCHIVED",archivedAt:Date.now(),archivedBy:uid,isLatest:false});await refreshAllotmentLists();}catch(err){alert(`Unable to delete allotment: ${err.message||err}`);}});
 $("createAllotmentBtn")?.addEventListener("click",createTestAllotment);
