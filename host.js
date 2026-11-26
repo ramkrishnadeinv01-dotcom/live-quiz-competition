@@ -853,6 +853,18 @@ async function showHostAssignmentResult(id,download=false){
 $("hostAllotmentRows")?.addEventListener("click",e=>{const v=e.target.closest("[data-host-assignment-view]"),p=e.target.closest("[data-host-assignment-pdf]");if(v)showHostAssignmentResult(v.dataset.hostAssignmentView,false);if(p)showHostAssignmentResult(p.dataset.hostAssignmentPdf,true);});
 $("hostAssignmentCloseDetail")?.addEventListener("click",()=>$("hostAssignmentDetailModal")?.classList.remove("open"));
 $("hostAssignmentDetailModal")?.addEventListener("click",e=>{if(e.target.id==="hostAssignmentDetailModal")e.currentTarget.classList.remove("open");});
+function weSetupBulkChipPicker(selectId,label){
+ const sel=$(selectId);if(!sel)return;
+ let box=document.getElementById(`${selectId}ChipPicker`);
+ if(!box){box=document.createElement("div");box.id=`${selectId}ChipPicker`;box.className="we-bulk-chip-picker";box.setAttribute("role","group");box.setAttribute("aria-label",label);
+  sel.classList.add("we-native-multi-hidden");sel.insertAdjacentElement("afterend",box);
+  const count=document.createElement("div");count.id=`${selectId}ChipCount`;count.className="we-bulk-chip-count";box.insertAdjacentElement("afterend",count);
+ }
+ const options=[...sel.options].filter(o=>o.value);
+ box.innerHTML=options.length?options.map((o,i)=>`<button type="button" class="we-bulk-chip${o.selected?" selected":""}" data-chip-value="${allotEsc(o.value)}" aria-pressed="${o.selected?"true":"false"}"><span class="we-chip-dot">${o.selected?"✓":""}</span><span>${allotEsc(o.textContent)}</span></button>`).join(""):'<span class="we-bulk-chip-empty">No options available.</span>';
+ box.querySelectorAll("[data-chip-value]").forEach(btn=>btn.addEventListener("click",()=>{const option=[...sel.options].find(o=>o.value===btn.dataset.chipValue);if(!option)return;option.selected=!option.selected;weSetupBulkChipPicker(selectId,label);}));
+ const countEl=document.getElementById(`${selectId}ChipCount`);if(countEl){const n=options.filter(o=>o.selected).length;countEl.textContent=`${n} ${label.toLowerCase()} selected`;}
+}
 async function refreshAllotmentLists(){
  if(!requireFullHostSubscription("Test Allotment & Assignment"))return;
  if(!isApproved()&&!isAdmin())return;
@@ -860,11 +872,12 @@ async function refreshAllotmentLists(){
  try{
   const [mapSnap,roomSnap,olympSnap]=await Promise.all([get(ref(db,isAdmin()?"participantDirectory":`hostParticipantMappings/${uid}`)),get(ref(db,"rooms")),get(ref(db,"academicOlympiadTests"))]);
   const directory=mapSnap.val()||{};partSel.innerHTML='<option value="">Select an approved participant</option>'+Object.entries(directory).filter(([id,p])=>p&&p.status==="approved").map(([id,p])=>`<option value="${allotEsc(id)}">${allotEsc(p.name||p.email)} — ${allotEsc(p.email||"")}${p.className?" — "+allotEsc(p.className):""}</option>`).join("");
+  weSetupBulkChipPicker("allotParticipant","Participants");
   const subjectSel=$("allotSubject");let availableTests=[];
   const subjectOf=t=>String(t.subject||t.mcqSubject||t.generalSubject||"").trim()||"Other Tests";
   const renderTests=()=>{const c=cat.value;availableTests=[];if(c==="olympiad"||c==="academic"){availableTests=Object.entries(olympSnap.val()||{}).filter(([id,t])=>t&&(!t.hostUid||t.hostUid===uid||isAdmin())&&(c==="academic"?t.examCategory==="academic":t.examCategory!=="academic")).map(([id,t])=>({id,title:t.title||`${t.className||""} ${t.subject||""} ${c==="academic"?"Academic":"Olympiad"}`,meta:`${t.className||""} · ${t.subject||""}`,type:c,subject:subjectOf(t)}));}else{availableTests=Object.entries(roomSnap.val()||{}).filter(([id,r])=>r&&r.examType===c&&(r.hostUid===uid||isAdmin())).map(([id,r])=>({id,title:r.mcqTitle||r.generalTitle||r.title||id,meta:`${id} · ${String(r.examStatus||"NOT STARTED")}`,type:c,subject:subjectOf(r)}));}
-   const subjects=[...new Set(availableTests.map(t=>t.subject))].sort((a,b)=>a.localeCompare(b));subjectSel.innerHTML='<option value="">Select a subject</option>'+subjects.map(x=>`<option value="${allotEsc(x)}">${allotEsc(x)}</option>`).join("");testSel.disabled=true;testSel.innerHTML='<option value="">First select a subject</option>';};
-  const renderSubjectTests=()=>{const chosen=subjectSel.value,arr=availableTests.filter(t=>t.subject===chosen);testSel.disabled=!chosen;testSel.innerHTML=chosen?'<option value="">Select an examination</option>'+arr.map(t=>`<option value="${allotEsc(t.id)}" data-title="${allotEsc(t.title)}">${allotEsc(t.title)} — ${allotEsc(t.meta)}</option>`).join(""):'<option value="">First select a subject</option>';};
+   const subjects=[...new Set(availableTests.map(t=>t.subject))].sort((a,b)=>a.localeCompare(b));subjectSel.innerHTML='<option value="">Select a subject</option>'+subjects.map(x=>`<option value="${allotEsc(x)}">${allotEsc(x)}</option>`).join("");testSel.disabled=true;testSel.innerHTML='<option value="">First select a subject</option>';weSetupBulkChipPicker("allotTest","Examinations");};
+  const renderSubjectTests=()=>{const chosen=subjectSel.value,arr=availableTests.filter(t=>t.subject===chosen);testSel.disabled=!chosen;testSel.innerHTML=chosen?'<option value="">Select an examination</option>'+arr.map(t=>`<option value="${allotEsc(t.id)}" data-title="${allotEsc(t.title)}">${allotEsc(t.title)} — ${allotEsc(t.meta)}</option>`).join(""):'<option value="">First select a subject</option>';weSetupBulkChipPicker("allotTest","Examinations");};
   renderTests();cat.onchange=renderTests;subjectSel.onchange=renderSubjectTests;
   let rows=[];for(const studentId of Object.keys(directory)){const ownSnap=await get(ref(db,`testAssignments/${studentId}`));Object.entries(ownSnap.val()||{}).forEach(([id,a])=>{if(a&&a.assignedBy===uid&&a.status!=="ARCHIVED")rows.push({...a,studentId,id});});}
   const participantFilter=$("hostAssignmentParticipant"),subjectFilter=$("hostAssignmentSubject");
