@@ -322,6 +322,101 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 .we-bulk-chip-count{font-size:12px;color:#d7e3f5;margin-top:5px}
 #allotTest.we-native-multi-hidden,#allotParticipant.we-native-multi-hidden{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important}
 </style>
+
+<style id="we-bulk-chip-picker-layout-fix">
+/* Keep the original select elements for the existing assignment logic, but never display their native dropdown UI. */
+#testAllotmentCard select#allotTest.we-native-multi-hidden,
+#testAllotmentCard select#allotParticipant.we-native-multi-hidden {
+  display: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+/* The chip area is the only visible multi-selection control. */
+#testAllotmentCard .we-bulk-chip-picker {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 7px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 42px !important;
+  max-height: 150px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  padding: 9px !important;
+  margin-top: 8px !important;
+  border: 1px solid #d7e3f4 !important;
+  border-radius: 12px !important;
+  background: #f8fbff !important;
+}
+#testAllotmentCard .we-bulk-chip-picker .we-bulk-chip {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: auto !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 30px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 5px 10px 5px 7px !important;
+  border: 1px solid #cbd8eb !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #17365f !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  white-space: normal !important;
+  cursor: pointer !important;
+}
+#testAllotmentCard .we-bulk-chip-picker .we-bulk-chip:hover {
+  border-color: #2563eb !important;
+  background: #eff6ff !important;
+}
+#testAllotmentCard .we-bulk-chip-picker .we-bulk-chip.selected {
+  background: #eaf2ff !important;
+  border-color: #2563eb !important;
+  color: #123d7a !important;
+}
+#testAllotmentCard .we-bulk-chip-picker .we-chip-dot {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 2px solid #91a7c5 !important;
+  background: #fff !important;
+  color: #fff !important;
+  font-size: 10px !important;
+}
+#testAllotmentCard .we-bulk-chip-picker .we-bulk-chip.selected .we-chip-dot {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #fff !important;
+}
+#testAllotmentCard .we-bulk-chip-count {
+  display: block !important;
+  margin-top: 5px !important;
+  color: #d7e3f5 !important;
+  font-size: 12px !important;
+}
+#testAllotmentCard .field { min-width: 0 !important; }
+</style>
+
 </head>
 <body>
 <nav class="host-site-nav" aria-label="Main navigation">
@@ -478,7 +573,7 @@ body:has(#hostMenu:not(.hidden)) .admin-launcher small{display:inline-block!impo
 <h2>Host Control Centre</h2>
 <p>Select the examination mode you want to conduct. Each module opens in its dedicated setup page.</p>
 </section>
-<div class="card" id="testAllotmentCard" style="margin:18px 0;border:2px solid #d9b65b;background:#071b3a;color:#fff"><h2 style="color:#ffe2a0">📌 Test Allotment &amp; Assignment</h2><p style="color:#d7e3f5">Assign an existing Olympiad, MCQ or General Examination to selected approved participants. Assigned students can open it from their Participant Panel without entering a room code.</p><div class="row"><div class="field"><label style="color:#ffe2a0">Examination Category</label><select id="allotCategory"><option value="olympiad">Olympiad</option><option value="academic">Academic</option><option value="mcq">MCQ Examination</option><option value="general">General Examination</option></select></div><div class="field"><label style="color:#ffe2a0">Select Subject</label><select id="allotSubject"><option value="">Select a subject</option></select></div><div class="field"><label style="color:#ffe2a0">Select Examination(s) — multiple allowed</label><select id="allotTest" multiple size="5" disabled style="min-height:125px"><option value="">First select a subject</option></select><small style="color:#d7e3f5">Select multiple examinations using Ctrl-click (or Cmd-click on Mac).</small></div></div><div class="row" style="margin-top:10px"><div class="field"><label style="color:#ffe2a0">Select Participant(s) — multiple allowed</label><select id="allotParticipant" multiple size="5" style="min-height:125px"><option value="">Load approved participants…</option></select><small style="color:#d7e3f5">Select multiple participants using Ctrl-click (or Cmd-click on Mac).</small></div><div class="field"><label style="color:#ffe2a0">Due date &amp; time (optional)</label><input id="allotDue" type="datetime-local"/></div></div><div class="row" style="margin-top:12px"><button class="success" id="createAllotmentBtn" type="button">Assign Examination</button><button class="secondary" id="refreshAllotmentBtn" type="button">Refresh Lists</button></div><p id="allotmentMsg" aria-live="polite"></p><h3 style="color:#ffe2a0;margin-top:22px">Assignment Monitoring &amp; Result Review</h3><p style="color:#526985">Filter assignments by participant and subject, then switch between Pending and Completed to review submitted work.</p><div class="row" style="margin:12px 0"><div class="field"><label>Participant</label><select id="hostAssignmentParticipant"><option value="">All Participants</option></select></div><div class="field"><label>Subject</label><select id="hostAssignmentSubject"><option value="">All Subjects</option></select></div><div class="field"><label>Assignment Status</label><select id="hostAssignmentStatus"><option value="ALL">All Assignments</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option></select></div></div><div style="overflow-x:auto"><table style="width:100%;color:#fff"><thead><tr><th>Examination</th><th>Subject</th><th>Participant</th><th>Category</th><th>Due</th><th>Status</th><th>Result / Action</th></tr></thead><tbody id="hostAllotmentRows"><tr><td colspan="7">No allotments loaded.</td></tr></tbody></table></div><div id="hostAssignmentDetailModal" class="detail-modal"><div class="detail-card" style="max-height:85vh;overflow:auto"><div class="toolbar" style="justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2"><h2 id="hostAssignmentDetailTitle">Detailed Assignment Result</h2><button class="btn secondary" id="hostAssignmentCloseDetail" type="button">✕ Close</button></div><div id="hostAssignmentDetailBody"></div></div></div><div class="we-assignment-back"><button class="secondary" id="backToHostDashboardBtn" type="button">← Back to Host Dashboard</button></div></div>
+<div class="card" id="testAllotmentCard" style="margin:18px 0;border:2px solid #d9b65b;background:#071b3a;color:#fff"><h2 style="color:#ffe2a0">📌 Test Allotment &amp; Assignment</h2><p style="color:#d7e3f5">Assign an existing Olympiad, MCQ or General Examination to selected approved participants. Assigned students can open it from their Participant Panel without entering a room code.</p><div class="row"><div class="field"><label style="color:#ffe2a0">Examination Category</label><select id="allotCategory"><option value="olympiad">Olympiad</option><option value="academic">Academic</option><option value="mcq">MCQ Examination</option><option value="general">General Examination</option></select></div><div class="field"><label style="color:#ffe2a0">Select Subject</label><select id="allotSubject"><option value="">Select a subject</option></select></div><div class="field"><label style="color:#ffe2a0">Select Examination(s) — multiple allowed</label><select id="allotTest" multiple size="5" disabled style="min-height:125px"><option value="">First select a subject</option></select><small style="color:#d7e3f5">Click each examination chip to select or deselect it.</small></div></div><div class="row" style="margin-top:10px"><div class="field"><label style="color:#ffe2a0">Select Participant(s) — multiple allowed</label><select id="allotParticipant" multiple size="5" style="min-height:125px"><option value="">Load approved participants…</option></select><small style="color:#d7e3f5">Click each participant chip to select or deselect it.</small></div><div class="field"><label style="color:#ffe2a0">Due date &amp; time (optional)</label><input id="allotDue" type="datetime-local"/></div></div><div class="row" style="margin-top:12px"><button class="success" id="createAllotmentBtn" type="button">Assign Examination</button><button class="secondary" id="refreshAllotmentBtn" type="button">Refresh Lists</button></div><p id="allotmentMsg" aria-live="polite"></p><h3 style="color:#ffe2a0;margin-top:22px">Assignment Monitoring &amp; Result Review</h3><p style="color:#526985">Filter assignments by participant and subject, then switch between Pending and Completed to review submitted work.</p><div class="row" style="margin:12px 0"><div class="field"><label>Participant</label><select id="hostAssignmentParticipant"><option value="">All Participants</option></select></div><div class="field"><label>Subject</label><select id="hostAssignmentSubject"><option value="">All Subjects</option></select></div><div class="field"><label>Assignment Status</label><select id="hostAssignmentStatus"><option value="ALL">All Assignments</option><option value="PENDING">Pending</option><option value="COMPLETED">Completed</option></select></div></div><div style="overflow-x:auto"><table style="width:100%;color:#fff"><thead><tr><th>Examination</th><th>Subject</th><th>Participant</th><th>Category</th><th>Due</th><th>Status</th><th>Result / Action</th></tr></thead><tbody id="hostAllotmentRows"><tr><td colspan="7">No allotments loaded.</td></tr></tbody></table></div><div id="hostAssignmentDetailModal" class="detail-modal"><div class="detail-card" style="max-height:85vh;overflow:auto"><div class="toolbar" style="justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2"><h2 id="hostAssignmentDetailTitle">Detailed Assignment Result</h2><button class="btn secondary" id="hostAssignmentCloseDetail" type="button">✕ Close</button></div><div id="hostAssignmentDetailBody"></div></div></div><div class="we-assignment-back"><button class="secondary" id="backToHostDashboardBtn" type="button">← Back to Host Dashboard</button></div></div>
 <div class="host-menu-grid">
 <div class="host-menu-card" style="border-top:5px solid #0f766e"><div class="host-menu-icon">📊</div><h3>Participant’s Progress</h3><p>Monitor each participant’s examination submissions, latest results, pending assignments and detailed performance across examination types.</p><button id="openParticipantProgressBtn" type="button">Open Participant Progress →</button></div>
 <div class="host-menu-card assignment"><div class="host-menu-icon">📋</div><h3>Test Assignment</h3><p>Allot existing Olympiad, MCQ and General examinations to approved participants. Review assignment status and manage previous allotments.</p><button id="openTestAssignmentPageBtn" type="button">Open Test Assignment →</button></div>
